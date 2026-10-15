@@ -1,8 +1,20 @@
-# 3 LINE-AR — V57.3.0 beta 6
+# 3 LINE-AR — V57.4.0 beta 7
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
 Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC por código o QR, IA rival y realidad aumentada experimental.
+
+## V57.4: dos métodos de selección AR y barreras de líneas y territorios
+
+**Regla definitiva:** toda línea colocada previamente bloquea cruces posteriores en el tablero. Un triángulo conquistado y sombreado también prohíbe atravesar su zona. Se pueden crear líneas desde un mismo vértice y no hay límite de distancia si no existe barrera. Los cálculos de colisión siguen proyectados al plano XZ.
+
+**Realidad aumentada, opción 1 — TOCAR PUNTO:** toca los nodos que ves en la pantalla del teléfono para elegir origen y destino.
+
+**Realidad aumentada, opción 2 — APUNTAR EN AR:** mueve el teléfono hasta que la cruz del centro esté sobre un nodo holográfico. El texto mostrará «OBJETIVO: NODO #». Pulsa **SELECCIONAR PUNTO APUNTADO**; después apunta y confirma otro nodo. En dispositivos con entradas WebXR, también se atiende al evento `select`. Este sistema **no detecta dedos en el aire** en Android común: la selección espacial se realiza con la cámara y confirmación. Detección de mano real requiere capacidades adicionales del dispositivo.
+
+**Insignias:** 16 figuras elegibles antes de jugar; cada jugador transmite insignia y color al rival. Las zonas coloreadas muestran el símbolo de su dueño.
+
+**Pantallas pequeñas:** la barra de herramientas AR usa grilla de 3–4 columnas con tamaño mínimo de botones, safe-area para barras del sistema y una distribución horizontal compacta. Prueba los controles en 320–430 px de ancho, en vertical y horizontal; los dispositivos reales pueden variar.
 
 ## V57.3: selección de nodos AR y paredes de zonas conquistadas
 
@@ -43,7 +55,7 @@ Cuando la Fundación obtenga aprobación de Google H5 Games Ads y un identificad
 - **10 niveles iniciales**: 5, 6, 7, 9, 9, 12, 16, 20, 25 y 30 nodos. Desde nivel 5 los nodos se ubican aleatoriamente con una semilla controlada por el anfitrión para que ambos móviles vean el mismo tablero.
 - **Dado de seis caras (1–6 conexiones)** con aleatoriedad derivada de crypto.getRandomValues; no sigue una secuencia fija.
 - **Solo base holográfica inferior**, postes y nodos flotantes, sin cubo 3D cerrado.
-- Las reglas permiten cruzar líneas abiertas, pero impiden atravesar territorios de triángulos ya conquistados (proyección XZ) y nodos intermedios. Al cerrar un triángulo, se bloquean los nodos interiores y se colorea el área y la insignia de su dueño. Se trata de un bloqueo **2D proyectado**, no todavía de detección volumétrica exacta de paredes 3D.
+- Las reglas bloquean cruces tanto con líneas ya colocadas como con triángulos conquistados (proyección XZ), además de nodos intermedios. Al cerrar un triángulo, se bloquean los nodos interiores y se colorea el área y la insignia de su dueño. Se trata de un bloqueo **2D proyectado**, no todavía de detección volumétrica exacta de paredes 3D.
 - El anfitrión conserva autoridad sobre el dado, las reglas, los turnos, la puntuación, los puntos y el nivel en partidas PvP.
 
 ## Para probar en dos dispositivos
@@ -75,7 +87,7 @@ La publicidad H5 Games Ads necesita aprobación e ID auténtico. No se habilitar
 
 ## Calidad, versión y despliegue
 
-- La versión en cabecera es **V57.3.0** y la versión interna es **57.3.0-beta.1**.
+- La versión en cabecera es **V57.4.0** y la versión interna es **57.4.0-beta.1**.
 - Cada cambio debe actualizar `version.json`, `CHANGELOG.md` y las etiquetas de recursos del HTML.
 - Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs`, `tests/tutorial.test.mjs` y `tests/ar-picking.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
