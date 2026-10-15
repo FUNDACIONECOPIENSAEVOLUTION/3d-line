@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#06101c">
-<title>3 LINE-AR | v57.7.0 beta</title>
+<title>3 LINE-AR | v57.8.0 beta</title>
 <meta name="description" content="3 LINE-AR: conecta nodos, conquista triángulos y juega 3D o AR con amigos.">
 <link rel="icon" href="https://raw.githubusercontent.com/instructorandradedcc/3-line-AR/main/3line-ar-logo.png">
-<link rel="stylesheet" href="./styles.css?v=57.7.0">
+<link rel="stylesheet" href="./styles.css?v=57.8.0">
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js" defer></script>
 <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js" defer></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./game.js?v=57.7.0"></script>
+<script type="module" src="./game.js?v=57.8.0"></script>
 </head>
 <body>
 <section id="loginGate" class="login-gate" aria-labelledby="loginTitle">
@@ -31,7 +31,7 @@
 <div id="app" class="auth-locked">
 <header class="topbar">
 <div class="brand"><img src="https://raw.githubusercontent.com/instructorandradedcc/3-line-AR/main/3line-ar-logo.png" alt="3 LINE-AR"><div><b>3 LINE<span>-AR</span></b><small>TACTICAL NEXUS</small></div></div>
-<div class="topright"><span class="version">V57.7.0 · BETA 10</span><span id="connection" class="connection">SIN CONECTAR</span></div>
+<div class="topright"><span class="version">V57.8.0 · BETA 11</span><span id="connection" class="connection">SIN CONECTAR</span></div>
 </header>
 <main>
 <section id="menu" class="panel menu gamer-menu">
@@ -39,10 +39,18 @@
 <div class="player-profile"><button id="logoutBtn" class="logout-menu" title="Cerrar sesión">⏻ SALIR DE LA CUENTA</button>
   <div class="player-profile-top"><div class="avatar" id="profileAvatar">◆</div><div class="agent"><small>AGENTE</small><strong id="profileName">INVITADO</strong></div><div class="rank"><span>NIVEL <b id="rankLevel">1</b></span><span>ELO <b id="eloValue">1000</b></span></div></div>
   <div class="player-custom"><span>LÁSER</span><div id="colors" class="color-choices"><button data-color="#00eaff" class="swatch current" style="--pick:#00eaff" aria-label="Cian"></button><button data-color="#ff2d7a" class="swatch" style="--pick:#ff2d7a" aria-label="Rosa"></button><button data-color="#50ff65" class="swatch" style="--pick:#50ff65" aria-label="Verde"></button><button data-color="#ffd231" class="swatch" style="--pick:#ffd231" aria-label="Dorado"></button><button data-color="#b35aff" class="swatch" style="--pick:#b35aff" aria-label="Violeta"></button></div></div>
-  <div class="player-custom"><span>INSIGNIA</span><div id="badges" class="badge-choices" role="group" aria-label="Escoger insignia"><button data-badge="◆" title="Diamante" aria-label="Insignia Diamante" class="current">◆</button><button data-badge="⚡" title="Rayo" aria-label="Insignia Rayo">⚡</button><button data-badge="★" title="Estrella" aria-label="Insignia Estrella">★</button><button data-badge="✦" title="Destello" aria-label="Insignia Destello">✦</button><button data-badge="☣" title="Símbolo" aria-label="Insignia Símbolo">☣</button><button data-badge="🛡" title="Escudo" aria-label="Insignia Escudo">🛡</button><button data-badge="👑" title="Corona" aria-label="Insignia Corona">👑</button><button data-badge="🐉" title="Dragón" aria-label="Insignia Dragón">🐉</button><button data-badge="🦅" title="Águila" aria-label="Insignia Águila">🦅</button><button data-badge="🤖" title="Robot" aria-label="Insignia Robot">🤖</button><button data-badge="👾" title="Alien" aria-label="Insignia Alien">👾</button><button data-badge="🔥" title="Fuego" aria-label="Insignia Fuego">🔥</button><button data-badge="❄" title="Hielo" aria-label="Insignia Hielo">❄</button><button data-badge="⚔" title="Espadas" aria-label="Insignia Espadas">⚔</button><button data-badge="☯" title="Equilibrio" aria-label="Insignia Equilibrio">☯</button><button data-badge="♜" title="Torre" aria-label="Insignia Torre">♜</button></div></div><p id="badgeProgressNote" class="badge-progress-note" role="status" aria-live="polite">Cinco insignias gratuitas · desbloquea las demás con videos recompensados cuando estén disponibles.</p>
+  <div class="player-custom"><span>INSIGNIA</span><div id="badges" class="badge-choices" role="group" aria-label="Escoger insignia"><button data-badge="◆" title="Diamante" aria-label="Insignia Diamante" class="current">◆</button><button data-badge="⚡" title="Rayo" aria-label="Insignia Rayo">⚡</button><button data-badge="★" title="Estrella" aria-label="Insignia Estrella">★</button><button data-badge="✦" title="Destello" aria-label="Insignia Destello">✦</button><button data-badge="☣" title="Símbolo" aria-label="Insignia Símbolo">☣</button><button data-badge="🛡" title="Escudo" aria-label="Insignia Escudo">🛡</button><button data-badge="👑" title="Corona" aria-label="Insignia Corona">👑</button><button data-badge="🐉" title="Dragón" aria-label="Insignia Dragón">🐉</button><button data-badge="🦅" title="Águila" aria-label="Insignia Águila">🦅</button><button data-badge="🤖" title="Robot" aria-label="Insignia Robot">🤖</button><button data-badge="👾" title="Alien" aria-label="Insignia Alien">👾</button><button data-badge="🔥" title="Fuego" aria-label="Insignia Fuego">🔥</button><button data-badge="❄" title="Hielo" aria-label="Insignia Hielo">❄</button><button data-badge="⚔" title="Espadas" aria-label="Insignia Espadas">⚔</button><button data-badge="☯" title="Equilibrio" aria-label="Insignia Equilibrio">☯</button><button data-badge="♜" title="Torre" aria-label="Insignia Torre">♜</button></div></div><button id="toggleBadgesBtn" class="badge-more" type="button" aria-expanded="false" aria-controls="badges">••• VER INSIGNIAS ESPECIALES <span aria-hidden="true">›</span></button><p id="badgeProgressNote" class="badge-progress-note" role="status" aria-live="polite">Cinco insignias gratuitas · desbloquea las demás con videos recompensados cuando estén disponibles.</p>
 </div>
 <div class="account-controls"><button id="googleBtn" class="subtle">G CONECTAR GOOGLE</button><button id="guestBtn" class="subtle">JUGAR COMO INVITADO</button></div>
 <p id="googleNote" class="fineprint">Google requiere configurar el ID de cliente y verificar las credenciales. El modo invitado funciona con Firebase anónimo o local, y persiste en este dispositivo.</p>
+<div class="game-rule-picker" role="group" aria-label="Modalidad de partida">
+  <div class="game-rule-title">ELIGE TU MODALIDAD</div>
+  <div class="rule-choice-grid">
+    <button id="ruleRandomBtn" class="rule-choice rule-current" aria-pressed="true" type="button"><strong>⚄ GALÁCTICO</strong><small>Dado de 1 a 6 conexiones</small></button>
+    <button id="ruleAscendBtn" class="rule-choice" aria-pressed="false" type="button"><strong>↗ ASCENSO</strong><small>1, 2, 3… por turno de cada jugador</small></button>
+  </div>
+  <div class="rule-description" id="ruleDescription" role="status">Cada turno comienza lanzando el dado aleatorio.</div>
+</div>
 <div class="actions gamer-actions">
   <button id="academyBtn" class="laser-gold">📖 ACADEMIA · REGLAS Y EJERCICIOS</button>
   <button id="tutorialBtn" class="primary">🎓 TUTORIAL: NIVEL 1 · 5 PUNTOS</button>
@@ -58,7 +66,7 @@
 <section id="waiting" class="panel waiting hidden">
 <p class="eyebrow">SALA PRIVADA · ANFITRIÓN</p><h2>Invita a tu rival</h2>
 <div id="roomCode" class="roomcode" aria-label="Código de la sala">------</div><div id="qr" class="qr" aria-label="QR de invitación"></div>
-<p id="waitingNote" class="muted">Conectando con el servidor de señalización…</p>
+<p id="waitingNote" class="muted">Conectando con el servidor de señalización…</p><p class="muted" id="roomRuleNote">⚄ MODO GALÁCTICO</p>
 <div class="actions"><button id="copyBtn" class="primary">COPIAR INVITACIÓN</button><button id="cancelBtn" class="subtle">CANCELAR SALA</button></div>
 </section>
 <section id="game" class="game hidden"><div id="tutorialHint" class="tutorial-hint hidden"></div>
@@ -70,7 +78,7 @@
     <span id="diceResult">TIRAR</span>
   </button>
   <small id="roomDisplay">SALA LOCAL</small><b id="turnDisplay">TURNO 1</b>
-  <small class="level-tag" id="levelTag">NIVEL 1</small><span id="energyDisplay">LANZA EL DADO</span>
+  <small class="level-tag" id="levelTag">NIVEL 1</small><small id="matchRuleDisplay" class="mode-live-label">⚄ MODO GALÁCTICO</small><span id="energyDisplay">LANZA EL DADO</span>
 </div>
 <div class="score-player"><small id="namePlayer2">BOT</small><strong id="score1">0</strong></div>
 </div></div>
@@ -96,7 +104,7 @@
 <p id="restartAdHint" class="reward-detail" aria-live="polite">En la beta puedes repetir gratuitamente; cuando haya videos aprobados, podrás elegir ver uno para reiniciar directamente.</p></section>
 <section id="monetization" class="panel monetize"><div><b>🎁 RECOMPENSAS</b><p>Monedas: <strong id="coins">0</strong> · Anuncios recompensados solo cuando exista aprobación de Google H5 Games Ads.</p></div><button id="rewardBtn" disabled>VIDEO RECOMPENSADO NO DISPONIBLE</button></section>
 </main>
-<footer>3 LINE-AR · FUNDACIÓN ECOPIENSA EVOLUTION · BETA V57.7.0 · <a href="./README.md">Ayuda y limitaciones</a></footer>
+<footer>3 LINE-AR · FUNDACIÓN ECOPIENSA EVOLUTION · BETA V57.8.0 · <a href="./README.md">Ayuda y limitaciones</a></footer>
 </div>
 <div id="toast" class="game-toast" role="status" aria-live="polite"></div>
 <div id="gameDialog" class="game-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameDialogTitle" aria-describedby="gameDialogMessage">
