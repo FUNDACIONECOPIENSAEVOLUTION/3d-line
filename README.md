@@ -1,4 +1,4 @@
-# 3 LINE-AR — V57.7.0 beta 10
+# 3 LINE-AR — V57.8.0 beta 11
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
@@ -7,6 +7,19 @@ Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC 
 ## V57.6.1: regreso al juego después del bloqueo del teléfono
 
 Al apagar la pantalla, Android puede terminar la **sesión WebXR de cámara** por razones de gestión de recursos. El estado de la partida se recupera por PeerJS al volver, pero una sesión de AR terminada **no se puede reabrir automáticamente sin interacción del usuario**. Esta versión muestra un aviso neón para que vuelvas a pulsar **ACTIVAR AR** y **FIJAR TABLERO**. La sala, puntuaciones y conexiones no se borran por salir de AR. Se necesita prueba real de suspensión/reanudación en teléfono.
+
+## V57.8: dos modalidades y niveles dobles
+
+Al empezar una partida contra BOT o crear una sala PvP, elige una de dos modalidades:
+
+- **⚄ MODO GALÁCTICO** (existente): el dado genera aleatoriamente entre **1 y 6 conexiones** por turno.
+- **↗ MODO ASCENSO** (nuevo): **cada jugador, por separado**, dispone de 1 conexión en su primer turno, 2 en el segundo, 3 en el tercero y así sucesivamente. Se activa pulsando el núcleo central del marcador; no hay azar. Si quedan menos conexiones legales de las asignadas, se reduce al número disponible. El anfitrión define el modo de una sala; el invitado lo recibe junto con el estado y lo ve en la cabecera.
+
+**Para desbloquear el nivel siguiente, tienes que ganar el nivel actual tanto en GALÁCTICO como en ASCENSO contra el BOT.** Después de ganar el primer modo aparece un botón para jugar directamente el modo pendiente. Los niveles ya ganados en versiones anteriores no se bloquean de nuevo: el nuevo requisito rige al progresar desde el nivel actualmente disponible. Se conserva el tutorial de cinco puntos (reglas aleatorias para aprender).
+
+**Insignias:** las cinco originales quedan visibles de forma predeterminada. Usa **••• VER INSIGNIAS ESPECIALES** para desplegar una fila desplazable con las once restantes; conservan candado y contador de videos. Al cerrar, el menú recupera su diseño compacto. El selector de modo tiene brillo animado ligero y respeta la opción del sistema operativo de reducir movimiento.
+
+**Crear las cuentas de monetización** después de la reunión: guía paso a paso en [docs/CREAR_CUENTAS_ADSENSE_ADMOB.md](./docs/CREAR_CUENTAS_ADSENSE_ADMOB.md). No se ha creado ninguna cuenta en nombre del propietario ni se han activado anuncios reales.
 
 ## V57.7: videos recompensados, insignias y reintento contra BOT
 
