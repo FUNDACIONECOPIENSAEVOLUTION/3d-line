@@ -162,12 +162,136 @@ function pointInsideTriangle(p,a,b,c){
  const v1=area(a,b,p),v2=area(b,c,p),v3=area(c,a,p);
  return (v1>1e-5&&v2>1e-5&&v3>1e-5)||(v1< -1e-5&&v2< -1e-5&&v3< -1e-5);
 }
-function blockedNodes(s){
- const blocked=new Set();
- for(const t of s.tris){const a=xy(t.a),b=xy(t.b),c=xy(t.c);
- for(let i=0;i<POINTS.length;i++)if(![t.a,t.b,t.c].includes(i)&&pointInsideTriangle(xy(i),a,b,c))blocked.add(i);}
- return [...blocked];
+// Geometría real XYZ: un triángulo es una superficie 2D en el espacio,
+// NO encierra por sí solo un nodo situado encima o debajo de esa cara.
+function v3(p){return {x:p.x,y:p.y,z:p.z};}
+function sub3(a,b){return {x:a.x-b.x,y:a.y-b.y,z:a.z-b.z};}
+function dot3(a,b){return a.x*b.x+a.y*b.y+a.z*b.z;}
+function cross3(a,b){return {x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x};}
+function normSq3(v){return dot3(v,v);}
+function pointSegmentDistance3(p,a,b){
+ const d=sub3(b,a),len=normSq3(d);
+ const t=len<1e-12?0:Math.max(0,Math.min(1,dot3(sub3(p,a),d)/len));
+ const closest={x:a.x+d.x*t,y:a.y+d.y*t,z:a.z+d.z*t};
+ return Math.sqrt(normSq3(sub3(p,closest)));
 }
+function segmentDistance3(a,b,c,d){
+ // Distancia entre DOS segmentos 3D; proyecciones 2D que se cruzan a distinta
+ // altura NO constituyen una intersección.
+ const u=sub3(b,a),v=sub3(d,c),w=sub3(a,c);
+ const A=dot3(u,u),B=dot3(u,v),C=dot3(v,v),D=dot3(u,w),E=dot3(v,w);
+ let sn,sd=A*C-B*B,tn,td=sd;
+ if(A<1e-12)return pointSegmentDistance3(a,c,d);
+ if(C<1e-12)return pointSegmentDistance3(c,a,b);
+ if(sd<1e-12){sn=0;sd=1;tn=E;td=C;}
+ else{sn=B*E-C*D;tn=A*E-B*D;
+  if(sn<0){sn=0;tn=E;td=C;}
+  else if(sn>sd){sn=sd;tn=E+B;td=C;}
+ }
+ if(tn<0){tn=0;if(-D<0)sn=0;else if(-D>A)sn=sd;else{sn=-D;sd=A;}}
+ else if(tn>td){tn=td;if(-D+B<0)sn=0;else if(-D+B>A)sn=sd;else{sn=-D+B;sd=A;}}
+ const sc=Math.abs(sn)<1e-12?0:sn/sd,tc=Math.abs(tn)<1e-12?0:tn/td;
+ return Math.sqrt(normSq3({x:w.x+sc*u.x-tc*v.x,y:w.y+sc*u.y-tc*v.y,z:w.z+sc*u.z-tc*v.z}));
+}
+function triangleNormal(a,b,c){return cross3(sub3(b,a),sub3(c,a));}
+function projectedTriangleFace(face){
+ const [A,B,C]=[POINTS[face.a],POINTS[face.b],POINTS[face.c]];
+ const n=triangleNormal(A,B,C),x=Math.abs(n.x),y=Math.abs(n.y),z=Math.abs(n.z);
+ if(x>=y&&x>=z)return p=>({x:p.y,y:p.z});
+ if(y>=z)return p=>({x:p.x,y:p.z});
+ return p=>({x:p.x,y:p.y});
+}
+function rayTriangleT(origin,dir,a,b,c){
+ // Möller-Trumbore, ambas caras, devuelve distancia del rayo al triángulo.
+ const edge1=sub3(b,a),edge2=sub3(c,a),p=cross3(dir,edge2);
+ const det=dot3(edge1,p);if(Math.abs(det)<1e-10)return null;
+ const inv=1/det,t=sub3(origin,a),u=dot3(t,p)*inv;
+ if(u< -1e-7||u>1+1e-7)return null;
+ const q=cross3(t,edge1),v=dot3(dir,q)*inv;
+ if(v< -1e-7||u+v>1+1e-7)return null;
+ const distance=dot3(edge2,q)*inv;
+ return distance>1e-7?distance:null;
+}
+function segmentIntersectsFace3D(a,b,face){
+ const A=POINTS[a],B=POINTS[b],T=[POINTS[face.a],POINTS[face.b],POINTS[face.c]];
+ const n=triangleNormal(...T),length=Math.sqrt(normSq3(n));
+ if(length<1e-9)return false;
+ const d0=dot3(sub3(A,T[0]),n)/length,d1=dot3(sub3(B,T[0]),n)/length;
+ if(d0*d1< -1e-9){
+  const t=d0/(d0-d1),hit={x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t,z:A.z+(B.z-A.z)*t};
+  const proj=projectedTriangleFace(face);
+  return pointInsideTriangle(proj(hit),proj(T[0]),proj(T[1]),proj(T[2]));
+ }
+ // Segmento coplanar: entra en la superficie sombreada por cualquiera de sus lados.
+ if(Math.abs(d0)<1e-6&&Math.abs(d1)<1e-6){
+  const proj=projectedTriangleFace(face),P=proj(A),Q=proj(B);
+  const [U,V,W]=T.map(proj);
+  if(pointInsideTriangle(P,U,V,W)||pointInsideTriangle(Q,U,V,W))return true;
+  if(pointInsideTriangle({x:(P.x+Q.x)/2,y:(P.y+Q.y)/2},U,V,W))return true;
+  return [[U,V],[V,W],[W,U]].some(([X,Y])=>segmentsCross(P,Q,X,Y));
+ }
+ return false;
+}
+function closedTriangleShells(tris){
+ // Solo una malla cerrada (cada arista usada exactamente por dos caras)
+ // puede crear un volumen bloqueado. Una cara o varios triángulos abiertos NO.
+ const edges=new Map();
+ tris.forEach((t,i)=>{
+  for(const [a,b] of [[t.a,t.b],[t.b,t.c],[t.c,t.a]]){
+   const key=a<b?a+'-'+b:b+'-'+a;
+   if(!edges.has(key))edges.set(key,[]);
+   edges.get(key).push(i);
+  }
+ });
+ const seen=new Set(),result=[];
+ for(let i=0;i<tris.length;i++){
+  if(seen.has(i))continue;
+  const todo=[i],part=[];seen.add(i);
+  while(todo.length){
+   const j=todo.pop();part.push(j);const t=tris[j];
+   for(const [a,b] of [[t.a,t.b],[t.b,t.c],[t.c,t.a]]){
+    const key=a<b?a+'-'+b:b+'-'+a;
+    for(const k of edges.get(key)||[])if(!seen.has(k)){seen.add(k);todo.push(k);}
+   }
+  }
+  if(part.length<4)continue;
+  const counts=new Map(),vertices=new Set();
+  for(const j of part){const t=tris[j];
+   for(const v of [t.a,t.b,t.c])vertices.add(v);
+   for(const [a,b] of [[t.a,t.b],[t.b,t.c],[t.c,t.a]]){
+    const key=a<b?a+'-'+b:b+'-'+a;
+    counts.set(key,(counts.get(key)||0)+1);
+   }
+  }
+  if(vertices.size>=4&&[...counts.values()].every(c=>c===2))result.push(part.map(j=>tris[j]));
+ }
+ return result;
+}
+function pointInsideClosedShell(p,shell){
+ const dirs=[{x:1,y:.347,z:.159},{x:.197,y:1,z:.439},{x:.281,y:.233,z:1}];
+ let insideVotes=0;
+ for(const dir of dirs){
+  const hits=[];
+  for(const t of shell){
+   const hit=rayTriangleT(p,dir,POINTS[t.a],POINTS[t.b],POINTS[t.c]);
+   if(hit!==null&&!hits.some(n=>Math.abs(n-hit)<1e-5))hits.push(hit);
+  }
+  if(hits.length%2===1)insideVotes++;
+ }
+ return insideVotes>=2;
+}
+function blockedNodes(s){
+ const closed=closedTriangleShells(s.tris||[]);
+ if(!closed.length)return [];
+ const blocked=[];
+ for(let i=0;i<POINTS.length;i++){
+  // Las esquinas de la malla cerrada son jugables; solamente se bloquean
+  // los nodos estrictamente EN EL INTERIOR de un sólido completamente sellado.
+  if(closed.some(shell=>!shell.some(t=>[t.a,t.b,t.c].includes(i))&&pointInsideClosedShell(POINTS[i],shell)))blocked.push(i);
+ }
+ return blocked;
+}
+
 function segmentsCross(a,b,c,d){
  const A=area(a,b,c),B=area(a,b,d),C=area(c,d,a),D=area(c,d,b);
  return ((A>1e-6&&B< -1e-6)||(A< -1e-6&&B>1e-6))&&((C>1e-6&&D< -1e-6)||(C< -1e-6&&D>1e-6));
@@ -180,29 +304,20 @@ function nearSegment(p,a,b){
 // Las líneas sueltas NO son paredes. Solo la zona de un triángulo ya conquistado
 // (s.tris) impide nuevas conexiones que atraviesen su superficie proyectada XZ.
 // El análisis XZ coincide con las reglas actuales de encapsulamiento de nodos.
-function crossesOwnedTriangle(a,b,t){
- const A=xy(a),B=xy(b),T=[xy(t.a),xy(t.b),xy(t.c)];
- // Cualquier cruce estricto del límite de una zona pintada bloquea el camino.
- for(let i=0;i<3;i++)if(segmentsCross(A,B,T[i],T[(i+1)%3]))return true;
- // Una diagonal con extremos en los bordes puede atravesar el interior
- // sin cruzar estrictamente otro borde; el punto medio detecta ese caso.
- const midpoint={x:(A.x+B.x)/2,y:(A.y+B.y)/2};
- return pointInsideTriangle(midpoint,T[0],T[1],T[2]);
-}
+function crossesOwnedTriangle(a,b,t){return segmentIntersectsFace3D(a,b,t);}
 function edgeError(a,b,s){
  if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=POINTS.length||b>=POINTS.length||a===b)return 'Puntos inválidos.';
- if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo quedó dentro de una zona cerrada.';
- if(s.lines.some(x=>linkKey(x.a,x.b)===linkKey(a,b)))return 'Esta línea ya existe.';
- // La distancia no limita el juego; únicamente las zonas coloreadas impiden cruzar.
- const A=xy(a),B=xy(b);
- for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&nearSegment(xy(i),A,B)<.075)return 'La línea atraviesa otro nodo.';
- // Una conexión existente también es una barrera, aunque aún no cierre una zona.
- // Los segmentos con extremos comunes pueden salir del mismo nodo sin bloquearse.
- for(const line of s.lines){
-  if(a===line.a||a===line.b||b===line.a||b===line.b)continue;
-  if(segmentsCross(A,B,xy(line.a),xy(line.b)))return 'No puedes cruzar una línea ya colocada.';
+ if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo está encerrado en un volumen completamente cerrado.';
+ if(s.lines.some(l=>linkKey(l.a,l.b)===linkKey(a,b)))return 'Esta línea ya está construida.';
+ const A=POINTS[a],B=POINTS[b];
+ for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&pointSegmentDistance3(POINTS[i],A,B)<.055)return 'La conexión atravesaría otro nodo.';
+ for(const l of s.lines){
+  if(a===l.a||a===l.b||b===l.a||b===l.b)continue;
+  if(segmentDistance3(A,B,POINTS[l.a],POINTS[l.b])<.04)return 'No puedes cruzar una línea existente en el espacio 3D.';
  }
- for(const triangle of s.tris)if(crossesOwnedTriangle(a,b,triangle))return 'No puedes atravesar un triángulo ya conquistado.';
+ // Las caras triangulares conquistadas son superficies que bloquean SOLO si
+ // se atraviesan realmente en 3D; un punto por encima queda libre.
+ for(const t of s.tris)if(crossesOwnedTriangle(a,b,t))return 'Una cara conquistada bloquea esta trayectoria 3D.';
  return null;
 }
 const el=id=>document.getElementById(id);
@@ -261,8 +376,8 @@ function foundTriangles(a,b,lines,existing){
    if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(a,c)))continue;
    if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(b,c)))continue;
    const k=[a,b,c].sort((x,y)=>x-y).join('-');if(known.has(k))continue;
-   const A=xy(a),B=xy(b),C=xy(c);
-   if(Math.abs(area(A,B,C))<.085)continue;
+   const n=triangleNormal(POINTS[a],POINTS[b],POINTS[c]);
+   if(Math.sqrt(normSq3(n))<.085)continue;
    known.add(k);result.push({a,b,c,owner:game.turn});
  }
  return result;
