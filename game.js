@@ -211,7 +211,7 @@ function newState(){
  awardRecorded=false;
  return {schema:2,version:0,status:'play',turn:0,rolled:false,moves:0,dice:0,turns:0,
  lines:[],tris:[],scores:[0,0],winner:null,blocked:[],seed,level,
- players:[profilePacket(),{name:'RIVAL',color:'#ff2d7a',badge:'★'}],
+ players:[profilePacket(),{name:tutorial?'TUTOR BOT':'NEXUS BOT',color:'#ff2d7a',badge:'⚡'}],
  points:levelPoints(level,seed),maxTurns:LEVELS[level-1].count*2};
 }
 function enterGame(){
@@ -262,74 +262,95 @@ function endTurn(){
 function applyAction(type,data,player){
  if(!game||game.status!=='play'||game.turn!==player)return false;
  if(type==='ROLL'){
-   if(game.rolled)return false;
-   game.rolled=true;game.dice=1+rand(6);game.moves=Math.min(game.dice,Math.max(1,eligibleCount(game)));
+  if(game.rolled)return false;
+  const candidates=eligibleCount(game);
+  if(candidates===0){endTurn();}else{
+   game.rolled=true;game.dice=1+rand(6);game.moves=Math.min(game.dice,candidates);
+  }
  }else if(type==='LINE'){
-   if(!game.rolled||game.moves<1)return false;
-   const {a,b}=data;
-   if(!validEdge(a,b,game)){if(player===myPlayer)notify(edgeError(a,b,game));return false;}
-   game.lines.push({a,b,owner:player});
-   const newTris=foundTriangles(a,b,game.lines,game.tris);
-   game.tris.push(...newTris);game.scores[player]+=newTris.length*10;
-   game.blocked=blockedNodes(game);game.moves--;
-   if(game.moves===0)endTurn();
- }else if(type==='PASS'){if(!game.rolled)return false;endTurn();}
- else if(type==='SURRENDER'){game.status='end';game.winner=1-player;}
- else return false;
+  if(!game.rolled||game.moves<1)return false;
+  const {a,b}=data;
+  if(!validEdge(a,b,game)){if(player===myPlayer)notify(edgeError(a,b,game));return false;}
+  game.lines.push({a,b,owner:player});
+  const triangles=foundTriangles(a,b,game.lines,game.tris);
+  game.tris.push(...triangles);game.scores[player]+=triangles.length*10;
+  game.blocked=blockedNodes(game);game.moves--;
+  // No congelar tutorial si el dado otorga más líneas que las que quedan disponibles.
+  if(game.moves===0||eligibleCount(game)===0)endTurn();
+ }else if(type==='PASS'){
+  if(!game.rolled)return false;
+  endTurn();
+ }else if(type==='SURRENDER'){
+  game.status='end';game.winner=1-player;
+ }else return false;
  game.version++;setState(game);broadcast();
- if(mode==='cpu'||mode==='tutorial')scheduleCpu();
+ if(['cpu','tutorial'].includes(mode))scheduleCpu();
  return true;
 }
 function scheduleCpu(){
  clearTimeout(cpuTimer);
  if(!['cpu','tutorial'].includes(mode)||!game||game.status!=='play'||game.turn!==1)return;
+ const stateVersion=game.version;
  cpuTimer=setTimeout(()=>{
-  if(!game||game.status!=='play'||game.turn!==1)return;
+  if(!game||game.version!==stateVersion||game.status!=='play'||game.turn!==1)return;
   if(!game.rolled){applyAction('ROLL',{},1);return;}
-  if(mode==='tutorial'){applyAction('PASS',{},1);return;}
+  if(mode==='tutorial' && game.moves<game.dice){applyAction('PASS',{},1);return;}
   let best=null,bestValue=-Infinity;
   for(let a=0;a<POINTS.length;a++)for(let b=a+1;b<POINTS.length;b++){
-    if(!validEdge(a,b,game))continue;
-    const future=[...game.lines,{a,b,owner:1}];
-    const triangles=foundTriangles(a,b,future,game.tris).length;
-    const score=triangles*100-distance(a,b)+Math.random()*.12;
-    if(score>bestValue){bestValue=score;best={a,b};}
+   if(!validEdge(a,b,game))continue;
+   const future=[...game.lines,{a,b,owner:1}];
+   const score=foundTriangles(a,b,future,game.tris).length*100-distance(a,b)+(Math.random()*.12);
+   if(score>bestValue){bestValue=score;best={a,b};}
   }
   if(best)applyAction('LINE',best,1);
   else applyAction('PASS',{},1);
- },mode==='tutorial'?850:480);
+ },mode==='tutorial'?650:470);
 }
 function refresh(){
  if(!game)return;
  el('score0').textContent=game.scores[0];el('score1').textContent=game.scores[1];
+ el('namePlayer1').textContent=(game.players?.[0]?.name||'JUGADOR 1').slice(0,12).toUpperCase();
+ el('namePlayer2').textContent=(game.players?.[1]?.name||(mode==='tutorial'?'TUTOR BOT':'IA BOT')).slice(0,12).toUpperCase();
  el('roomDisplay').textContent=room?'SALA '+room:(mode==='cpu'?'VS CPU':'TUTORIAL');
  el('turnDisplay').textContent=game.status==='end'?'FIN DE PARTIDA':'TURNO JUGADOR '+(game.turn+1);
- el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':!game.rolled?'LANZA EL DADO':game.moves+' CONEXIONES';
- el('diceResult').textContent=game.rolled?('RESULTADO '+game.dice):'DADO 1–6';
+ el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':!game.rolled?'TOCA EL DADO':game.moves+' CONEXIONES';
+ const diceNumber=Number(game.dice)||0;
+ el('diceResult').textContent=diceNumber?String(diceNumber):'TIRAR';
  el('levelTag').textContent='NIVEL '+game.level+' · '+POINTS.length+' NODOS';
  const yourTurn=game.turn===myPlayer&&game.status==='play'&&(mode!=='pvp'||connected);
  el('diceBtn').disabled=!yourTurn||game.rolled;el('passBtn').disabled=!yourTurn||!game.rolled;
  el('leaveBtn').disabled=false;
- el('selectedLabel').textContent=game.status==='end'?'Partida finalizada':!yourTurn?'Espera el turno de tu rival':!game.rolled?'Lanza el dado para conseguir conexiones':selected<0?'Selecciona el primer nodo para unir':'Nodo '+(selected+1)+' elegido. Selecciona otro.';
+ el('selectedLabel').textContent=game.status==='end'?'Partida finalizada':
+  !yourTurn?(mode==='tutorial'?'El BOT está jugando, espera un momento…':'Espera el turno del rival'):
+  !game.rolled?'Pulsa el dado del centro para lanzar':selected<0?'Selecciona el primer nodo':'Nodo '+(selected+1)+' seleccionado. Elige otro.';
  for(let i=0;i<nodes.length;i++){
-  const selectedNow=i===selected,blocked=(game.blocked||[]).includes(i);
-  nodes[i].material.color.setHex(blocked?0x5b7181:selectedNow?0xffd231:0x68dcff);
-  nodes[i].scale.setScalar(selectedNow?1.4:1);
+  const isSelected=i===selected,blocked=(game.blocked||[]).includes(i);
+  nodes[i].material.color.setHex(blocked?0x5b7181:isSelected?0xffd231:0x68dcff);
+  nodes[i].scale.setScalar(isSelected?1.45:1);
  }
  tutorials();
 }
 function finishGame(){
  if(!game)return;
- awardResult();
- const result=game.winner===-1?'EMPATE':('GANA JUGADOR '+(game.winner+1));
- el('resultTitle').textContent=result;
- el('resultSummary').textContent='Nivel '+game.level+' · Puntos: '+game.scores[0]+' vs '+game.scores[1]+'. Triángulos: '+game.tris.length+'.';
+ const didWin=game.winner===myPlayer,solo=['tutorial','cpu'].includes(mode);
  if(arSession)arSession.end().catch(()=>{});
+ const won=awardResult();
+ el('resultTitle').textContent=game.winner===-1?'EMPATE':(didWin?'¡VICTORIA!':'PARTIDA TERMINADA');
+ el('resultSummary').textContent='Nivel '+game.level+' · Puntos '+game.scores[0]+' vs '+game.scores[1]+' · '+game.tris.length+' zonas conquistadas.';
+ el('levelWinNotice').textContent=won?
+  (game.level>=10?'¡Has completado los 10 niveles iniciales!':
+  '¡Nivel '+Math.min(10,game.level+1)+' desbloqueado! El anuncio se mostrará entre niveles cuando la cuenta publicitaria esté aprobada.'):
+  (game.winner===-1?'Empate: practica de nuevo.':'Puedes repetir el nivel para mejorarlo.');
+ el('continueBtn').classList.toggle('hidden',!solo||!didWin||game.level>=10);
  screen('results');
+ if(won)requestLevelInterstitial();
 }
 function showCpu(teach=false){
+ if(!currentAccount){openLoginGate('Inicia sesión primero.');return;}
  cleanup();tutorial=!!teach;mode=teach?'tutorial':'cpu';host=true;connected=true;myPlayer=0;
- networkStatus(teach?'TUTORIAL':'MODO CPU',true);setState(newState());scheduleCpu();
+ if(teach)selectedLevel=1;else selectedLevel=unlockedLevel;
+ networkStatus(teach?'TUTORIAL':'MODO CPU',true);
+ setState(newState());scheduleCpu();
 }
 function hostConnection(c){
  if(conn?.open){c.on('open',()=>{c.send({type:'ERROR',message:'La sala está ocupada'});c.close();});return;}
@@ -563,12 +584,30 @@ function startScanner(){
     if(c.length===6){stopScanner();el('joinCode').value=c;joinRoom(c);}
   },()=>{}).catch(()=>{notify('No se obtuvo acceso a la cámara. Usa el código de la sala.');stopScanner();});
 }
+let h5AdsEnabled=false;
+function requestLevelInterstitial(){
+ if(!h5AdsEnabled||typeof window.adBreak!=='function')return;
+ try{window.adBreak({type:'next',name:'level-completed',adBreakDone:()=>{}});}
+ catch(e){console.warn('Anuncio H5 no disponible:',e);}
+}
+function continueToNextLevel(){
+ if(!currentAccount||!game)return;
+ selectedLevel=Math.min(10,game.level+1);
+ tutorial=false;
+ showCpu(false);
+}
+function animateGalacticDice(){
+ const dice=el('diceBtn');
+ dice.classList.remove('is-rolling');void dice.offsetWidth;dice.classList.add('is-rolling');
+ setTimeout(()=>dice.classList.remove('is-rolling'),740);
+}
 function setAds(){
   // Activar solamente tras obtener la aprobación de Google H5 Games Ads.
   // Modificar en este archivo con un ID real: ca-pub-XXXXXXXXXXXXXXXX (16 dígitos).
   const PUBLISHER_ID='';
   const btn=el('rewardBtn');
   if(!/^ca-pub-\d{16}$/.test(PUBLISHER_ID))return;
+  h5AdsEnabled=true;
   const script=document.createElement('script');script.async=true;script.crossOrigin='anonymous';
   script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+PUBLISHER_ID;
   document.head.appendChild(script);
@@ -630,10 +669,11 @@ function bind(){
  el('closeScanBtn').addEventListener('click',stopScanner);
  el('copyBtn').addEventListener('click',()=>copyText(linkUrl()));
  el('cancelBtn').addEventListener('click',home);
- el('diceBtn').addEventListener('click',()=>action('ROLL'));
+ el('diceBtn').addEventListener('click',()=>{animateGalacticDice();action('ROLL');});
  el('passBtn').addEventListener('click',()=>action('PASS'));
  el('leaveBtn').addEventListener('click',()=>{if(!confirm('¿Abandonar la partida?'))return;action('SURRENDER');home();});
  el('homeBtn').addEventListener('click',home);
+ el('continueBtn').addEventListener('click',continueToNextLevel);
  el('resetViewBtn').addEventListener('click',resetView);
  el('arBtn').addEventListener('click',startAR);
  el('placeBtn').addEventListener('click',placeAR);
