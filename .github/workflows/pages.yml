@@ -21,7 +21,7 @@ jobs:
       - name: Preparar archivos públicos
         run: |
           mkdir -p site
-          cp index.html game.js styles.css version.json site/
+          cp index.html game.js styles.css version.json README.md site/
           touch site/.nojekyll
       - name: Configurar Pages
         uses: actions/configure-pages@v5
