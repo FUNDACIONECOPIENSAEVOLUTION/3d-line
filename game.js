@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.4.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.5.0';
 
 // v57.4.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.4.0-beta.1';
+const VERSION='57.5.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -97,7 +97,7 @@ async function loginGuestFlow(){
   notify('Invitado local: se conserva el acceso en este navegador; no hay cuenta cloud.');
 }
 async function logoutGame(){
-  if(!confirm('¿Cerrar sesión de este dispositivo?'))return;
+  if(!await gameConfirm('¿Cerrar sesión de este dispositivo y regresar a la pantalla de acceso?','CERRAR SESIÓN'))return;
   cleanup();localStorage.removeItem('3line57_guest_session');
   try{await logoutFirebase();}catch{}
   openLoginGate('Sesión cerrada. Vuelve a entrar para jugar.');
@@ -331,8 +331,36 @@ const distance=(a,b)=>POINTS[a].distanceTo(POINTS[b]);
 const validEdge=(a,b,s)=>!edgeError(a,b,s);
 const rand=n=>{const v=new Uint32Array(1);crypto.getRandomValues(v);return v[0]%n;};
 const roomId=()=>Array.from({length:6},()=>CODE_CHARS[rand(CODE_CHARS.length)]).join('');
-const copyText=async s=>{try{await navigator.clipboard.writeText(s);notify('Enlace copiado al portapapeles.');}catch{prompt('Copia el enlace de invitación:',s);}};
-function notify(message){const t=el('toast');t.textContent=message;t.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('visible'),4100);}
+const copyText=async s=>{
+ try{await navigator.clipboard.writeText(s);notify('Enlace copiado al portapapeles.');}
+ catch{await showGameDialog({title:'COPIAR INVITACIÓN',message:'Selecciona el enlace para copiarlo desde tu dispositivo.',accept:'LISTO',cancel:null,copy:s});}
+};
+function notify(message){
+ const t=el('toast');t.textContent='⬡ '+String(message);t.classList.add('visible');
+ clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('visible'),4600);
+}
+let gameDialogResolve=null;
+function closeGameDialog(accept){
+ const layer=el('gameDialog');layer.classList.add('hidden');
+ const callback=gameDialogResolve;gameDialogResolve=null;
+ if(callback)callback(Boolean(accept));
+}
+function showGameDialog({title='AVISO DEL NEXO',message,accept='ACEPTAR',cancel='CANCELAR',copy=null}){
+ if(gameDialogResolve)closeGameDialog(false);
+ el('gameDialogTitle').textContent=title;
+ el('gameDialogMessage').textContent=String(message);
+ el('gameDialogAccept').textContent=accept;
+ el('gameDialogCancel').classList.toggle('hidden',cancel===null);
+ if(cancel!==null)el('gameDialogCancel').textContent=cancel;
+ const field=el('gameDialogCopy');
+ field.classList.toggle('hidden',copy===null);
+ if(copy!==null)field.value=String(copy);
+ el('gameDialog').classList.remove('hidden');
+ if(copy!==null){field.focus();field.select();}
+ else el('gameDialogAccept').focus();
+ return new Promise(resolve=>{gameDialogResolve=resolve;});
+}
+const gameConfirm=(message,title='CONFIRMAR ACCIÓN')=>showGameDialog({title,message,accept:'SÍ, CONTINUAR',cancel:'REGRESAR'});
 function screen(id){for(const n of ['menu','waiting','game','results'])el(n).classList.toggle('hidden',n!==id);el('monetization').classList.toggle('hidden',id==='game');}
 function networkStatus(message,on=false){el('connection').textContent=message;el('connection').classList.toggle('online',on);}
 function linkUrl(){const u=new URL(location.href);u.search='';u.hash='';u.searchParams.set('room',room);return u.href;}
@@ -1029,6 +1057,13 @@ function enablePinchScale(){
 }
 
 function bind(){
+ el('gameDialogAccept').addEventListener('click',()=>closeGameDialog(true));
+ el('gameDialogCancel').addEventListener('click',()=>closeGameDialog(false));
+ el('gameDialog').addEventListener('pointerdown',e=>{if(e.target===el('gameDialog'))closeGameDialog(false);});
+ document.addEventListener('keydown',e=>{
+  if(el('gameDialog').classList.contains('hidden'))return;
+  if(e.key==='Escape'){e.preventDefault();closeGameDialog(false);}
+ });
  // En dispositivos móviles la suspensión de pantalla puede interrumpir WebRTC.
  // Al regresar se solicita snapshot completo sin reiniciar la partida ni nivel.
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')restoreNetworkAfterPause();});
@@ -1052,7 +1087,7 @@ function bind(){
  el('cancelBtn').addEventListener('click',home);
  el('diceBtn').addEventListener('click',()=>{animateGalacticDice();action('ROLL');});
  el('passBtn').addEventListener('click',()=>action('PASS'));
- el('leaveBtn').addEventListener('click',()=>{if(!confirm('¿Abandonar la partida?'))return;action('SURRENDER');home();});
+ el('leaveBtn').addEventListener('click',async()=>{if(!await gameConfirm('Abandonar la sala finalizará tu participación. ¿Quieres salir?','ABANDONAR PARTIDA'))return;action('SURRENDER');home();});
  el('homeBtn').addEventListener('click',home);
  el('continueBtn').addEventListener('click',continueToNextLevel);
  el('resetViewBtn').addEventListener('click',resetView);
