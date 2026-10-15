@@ -72,3 +72,45 @@ body{background:#020813;min-height:100dvh}
 .arenaLabel{color:#8edff1}
 body.xr-active #bg-canvas{display:none}
 @media(max-width:600px){.gamer-menu{margin-top:5px}.toolbar button{flex:1 1 92px}.die-icon{font-size:27px}.account-controls button{font-size:9px}}
+
+/* V57.1.0: acceso Firebase recuperado, HUD galáctico y escala táctil AR */
+.auth-locked{display:none!important}
+.login-gate{position:fixed;inset:0;z-index:110;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 20%,#09263d,#01060e 73%);padding:18px;overflow-y:auto}
+.login-gate.hidden{display:none!important}
+.login-panel{width:min(100%,390px);padding:25px;background:linear-gradient(145deg,#0c1e30f2,#050d1cf8);border:1px solid #1bb4e5;border-radius:22px;box-shadow:0 0 60px #00eaff2b;text-align:center;display:grid;gap:11px}
+.login-logo img{height:112px;width:112px;object-fit:contain;filter:drop-shadow(0 0 19px #00eaff70)}
+.login-panel h1{font-weight:900;letter-spacing:-.075em;font-size:35px;margin:0}.login-panel h1 span{color:var(--cyan)}
+.login-panel p{color:#b1cfdf;font-size:12px;line-height:1.65;margin:3px 0}
+.login-panel small{color:#789fb5;font-size:10px;line-height:1.5}
+.login-panel button{min-height:48px;font-size:11px;text-transform:uppercase}
+.login-panel .login-main{box-shadow:0 0 17px #00eaff2d}
+.login-status{min-height:20px;color:#ffdc70;font-size:11px;line-height:1.5}
+.logout-menu{display:block;margin:-4px 0 10px auto;border-color:#7e2848;color:#ff81ae;min-height:26px;padding:4px 8px;font-size:9px;border-radius:7px;background:#301222}
+.level-grid{display:block}
+.level-grid .level-current{width:100%;display:flex;justify-content:space-between;align-items:center;padding:13px;border:1px solid var(--cyan);background:#0a2d40;color:#edffff;border-radius:10px;font-size:12px}
+.level-current strong{font-size:19px;color:var(--green)}
+.game-header{padding:10px}
+.scoreline{max-width:720px;gap:5px;align-items:center}
+.scoreline .score-player{flex:1;min-width:0}
+.scoreline .score-player small{font-size:9px;word-break:break-word}
+.scoreline strong{font-size:clamp(27px,5vw,48px)}
+.scoreline .turncenter{display:grid;justify-items:center;align-items:center;gap:2px;flex:1.7}
+.galaxy-dice{display:flex;flex-direction:column;align-items:center;gap:0;padding:3px 8px;min-width:78px;min-height:84px;position:relative;background:radial-gradient(circle at 50% 35%,#0e5166,#071529 77%);color:var(--cyan);border:1px solid var(--cyan);box-shadow:0 0 18px #00eaff3c,inset 0 0 13px #00eaff44;border-radius:15px;cursor:pointer}
+.galaxy-dice:disabled{opacity:.5;filter:saturate(.7);cursor:not-allowed}
+.galaxy-dice svg{width:53px;height:53px;filter:drop-shadow(0 0 8px #00eaffb0)}
+.galaxy-dice span{font-size:10px;font-weight:900;letter-spacing:.07em;line-height:1.2;white-space:nowrap}
+.galaxy-dice:not(:disabled){animation:galaxyPulse 1.7s infinite alternate}
+.galaxy-dice.is-rolling svg{animation:galaxySpin .65s cubic-bezier(.5,.01,.3,1.15)}
+@keyframes galaxyPulse{from{box-shadow:0 0 12px #00eaff3b}to{box-shadow:0 0 22px #6affffab,0 0 12px #2dff8899}}
+@keyframes galaxySpin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.22)}100%{transform:rotate(540deg) scale(1)}}
+.turncenter #energyDisplay{font-size:10px}
+.turncenter #turnDisplay{font-size:clamp(12px,2.5vw,20px)}
+.ar-size-control{position:absolute;z-index:15;right:10px;top:50%;transform:translateY(-50%);display:grid;place-items:center;gap:9px;border:1px solid #23839d;background:#071b2de3;padding:11px 8px;border-radius:22px;color:#a5eeff}
+.ar-size-control label{font-size:9px;writing-mode:vertical-rl;font-weight:800;letter-spacing:.1em}
+.ar-size-control input{width:140px;transform:rotate(-90deg);margin:64px -53px;accent-color:var(--cyan);touch-action:none}
+.ar-size-control span{font-size:12px}
+body.xr-active #arSizeControl{position:fixed;top:50%;right:6px;transform:translateY(-50%);z-index:35}
+body.xr-active .game-header{z-index:35}
+#levelWinNotice{font-size:12px;color:#a6d5e8;line-height:1.5;margin:12px 0}
+#continueBtn{border-color:var(--green);color:#e4ffe6;background:linear-gradient(125deg,#1a774d,#0c2837);box-shadow:0 0 18px #42ff962b}
+@media(max-width:640px){.scoreline .turncenter{gap:2px}.galaxy-dice{min-width:60px;min-height:72px;padding:2px 3px}.galaxy-dice svg{width:39px;height:39px}.galaxy-dice span{font-size:8px}.login-panel{padding:20px}.ar-size-control{right:3px}}
