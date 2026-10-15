@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.2.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.3.0';
 
-// v57.2.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v57.3.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.2.0-beta.1';
+const VERSION='57.3.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -654,7 +654,7 @@ async function startAR(){
   }catch{
    hitSource=null;board.visible=true;arPlaced=true;board.position.set(0,-.25,-1.2);board.scale.setScalar(.26);syncARSlider();
    el('placeBtn').classList.add('hidden');
-   notify('AR en modo holograma sin seguimiento de suelo. Puedes ajustar la escala; no es un ancla fija.');
+   notify('Holograma AR activado. Lanza el dado y toca dos nodos; este modo no fija el suelo.');
   }
  }catch(e){notify('AR no disponible: '+(e.message||'equipo incompatible'));if(arSession)try{await arSession.end();}catch{}}
 }
@@ -664,7 +664,7 @@ function placeAR(){
  board.position.copy(p);board.quaternion.copy(q);board.scale.setScalar(.26);
  board.visible=true;arPlaced=true;syncARSlider();if(reticle)reticle.visible=false;
  el('placeBtn').classList.add('hidden');
- notify('Tablero fijado localmente. Los dos móviles deben alinear la posición manualmente; aún no hay anclas compartidas.');
+ notify('Tablero fijado: lanza el dado cuando sea tu turno y toca dos nodos. La ubicación AR sigue siendo local.');
 }
 async function stopScanner(){
   el('scanner').classList.add('hidden');
