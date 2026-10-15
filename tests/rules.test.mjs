@@ -39,17 +39,23 @@ test('triángulo encierra nodos interiores pero no sus vértices',()=>{
  const s={tris:[{a:0,b:1,c:2}],lines:[],blocked:[],level:1};
  assert.equal(JSON.stringify(api.blockedNodes(s)),JSON.stringify([3]));
 });
-test('una línea sin zona conquistada permite cruces y conexiones largas',()=>{
+test('una línea previa impide cruces incluso sin triángulos sombreados',()=>{
  api.setPoints([[0,0,0],[2,0,0],[0,0,2],[-.6,0,.8],[1.6,0,.8]]);
- const s={lines:[{a:0,b:1},{a:1,b:2},{a:0,b:2}],tris:[],blocked:[],level:1};
- assert.equal(api.edgeError(3,4,s),null, 'un cruce con líneas sin pintar está permitido');
+ const state={lines:[{a:0,b:2,owner:0}],tris:[],blocked:[],level:1};
+ assert.match(api.edgeError(3,4,state),/cruzar una línea ya colocada/);
+});
+test('las líneas desde un nodo común son válidas sin cruces',()=>{
+ api.setPoints([[0,0,0],[1,0,0],[0,0,1]]);
+ const state={lines:[{a:0,b:1}],tris:[],blocked:[],level:1};
+ assert.equal(api.edgeError(0,2,state),null);
+});
+test('la longitud por sí sola no impide conexiones',()=>{
  api.setPoints([[0,0,0],[20,0,0]]);
- assert.equal(api.edgeError(0,1,{lines:[],tris:[],blocked:[],level:1}),null,
-  'no hay límite de distancia mientras no cruce un territorio');
+ assert.equal(api.edgeError(0,1,{lines:[],tris:[],blocked:[],level:1}),null);
 });
 test('el interior coloreado bloquea cruzar el triángulo cerrado',()=>{
  api.setPoints([[0,0,0],[2,0,0],[0,0,2],[-.6,0,.8],[1.6,0,.8]]);
- const s={lines:[{a:0,b:1},{a:1,b:2},{a:0,b:2}],tris:[{a:0,b:1,c:2,owner:0}],blocked:[],level:1};
+ const s={lines:[],tris:[{a:0,b:1,c:2,owner:0}],blocked:[],level:1};
  assert.match(api.edgeError(3,4,s),/triángulo ya conquistado/);
 });
 test('bloquea nodos encerrados, aun cuando están cerca',()=>{
