@@ -1,11 +1,12 @@
 {
   "name": "3 LINE-AR",
-  "version": "57.0.0-beta.1",
+  "version": "57.1.0-beta.1",
   "buildDate": "2026-10-15",
-  "status": "public-beta-tests-pending",
+  "status": "beta-verify-firebase-and-device-ar",
   "network": "PeerJS WebRTC",
-  "ar": "XR referenceSpace fallback + optional surface hit-test; no shared anchors",
+  "ar": "webxr fallback + vertical scaling slider and touch pinch; local-only spatial anchoring",
   "monetization": "disabled without approved publisher ID",
   "levels": 10,
-  "accounts": "Google Identity prepared; requires Client ID and verified backend"
+  "accounts": "Firebase Auth restored (Google popup and anonymous persistence); domain authorization needs live verification",
+  "progression": "one visible unlocked level; local per-account completion; H5 interstitial between levels only with approved publisher"
 }
