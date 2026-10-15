@@ -148,6 +148,14 @@ La publicidad H5 Games Ads necesita aprobación e ID auténtico. No se habilitar
 - Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs`, `tests/tutorial.test.mjs` y `tests/ar-picking.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
 
+## Firebase Hosting gratuito para AdMob — infraestructura preparada
+
+Firebase Hosting puede ofrecer el portal del desarrollador sin dominio comprado, en la dirección `https://d-line-g.web.app/` **tras desplegarlo**. La configuración está lista en `firebase-admob-site/` y apunta al proyecto Firebase existente `d-line-g`. El juego principal continúa en GitHub Pages.
+
+**Todavía no se ha desplegado ese portal** ni se ha creado un archivo real `app-ads.txt` porque no existe Publisher ID de AdMob aprobado y las herramientas administrativas Firebase no están accesibles en esta conversación. Antes del primer despliegue hay que comprobar que el sitio de Hosting no contenga contenido que debamos conservar.
+
+Consulta [docs/FIREBASE_HOSTING_ADMOB.md](./docs/FIREBASE_HOSTING_ADMOB.md) para verificar el proyecto, publicar con confirmación en PowerShell y completar después el archivo `app-ads.txt` con el ID real. La app Android y el registro AdMob/Google Play se gestionan por separado.
+
 ## AWS
 
 El script `scripts/setup-aws-agent-toolkit.ps1` y la guía `AWS_SETUP_WINDOWS.md` están incluidos, pero no se aprovisionan recursos AWS de pago sin autorización expresa. Este proyecto actualmente usa GitHub Pages gratuito.
