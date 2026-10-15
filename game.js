@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.7.0';
-import {FREE_BADGES,BADGE_ORDER,badgeCost,initialRewards,normalizeRewards,isBadgeUnlocked,badgeProgress,applyCompletedBadgeVideo,rewardsStorageKey} from './rewards.js?v=57.7.0';
-import {RewardedVideoProvider} from './ads-rewarded.js?v=57.7.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.8.0';
+import {FREE_BADGES,BADGE_ORDER,badgeCost,initialRewards,normalizeRewards,isBadgeUnlocked,badgeProgress,applyCompletedBadgeVideo,rewardsStorageKey} from './rewards.js?v=57.8.0';
+import {RewardedVideoProvider} from './ads-rewarded.js?v=57.8.0';
+import {TURN_RULES,normalizeTurnRule,completedTurnsForPlayer,turnMoveAllowance,nextTurnCounts} from './turn-modes.js?v=57.8.0';
 
 // v57.4.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.7.0-beta.1';
+const VERSION='57.8.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -210,7 +211,8 @@ function renderLevels(){
 // Academia táctica: siete retos visuales de respuesta corta, sin cobro ni anuncios.
 // La lectura es opcional y puede abrirse durante la partida sin reiniciarla.
 const ACADEMY_LESSONS=[
- {title:'El dado galáctico',text:'Cuando sea tu turno, pulsa el dado central. El número es aleatorio entre 1 y 6 y determina cuántas conexiones puedes intentar.',question:'¿Qué debes hacer antes de dibujar?',answers:['Lanzar el dado','Tocar cualquier línea'],correct:0,art:'dice'},
+ {title:'Dos modos: Galáctico y Ascenso',text:'En GALÁCTICO, lanzas el dado para obtener entre una y seis conexiones. En ASCENSO, el primer turno de cada jugador permite una conexión; su segundo turno dos, luego tres y así sucesivamente. Ambas modalidades funcionan en 3D y AR.',question:'En Ascenso, ¿cuántas conexiones tiene cada jugador en su tercer turno?',answers:['3 conexiones','Un dado de 1 a 6'],correct:0,art:'line'},
+  {title:'El dado galáctico',text:'Cuando sea tu turno, pulsa el dado central. El número es aleatorio entre 1 y 6 y determina cuántas conexiones puedes intentar.',question:'¿Qué debes hacer antes de dibujar?',answers:['Lanzar el dado','Tocar cualquier línea'],correct:0,art:'dice'},
  {title:'Une dos puntos',text:'Toca un nodo y después otro. Puedes conectar puntos en distintos ejes y alturas. La distancia por sí sola no prohíbe la línea.',question:'¿Pueden conectarse dos nodos lejanos si no hay barrera?',answers:['Sí, si la trayectoria está libre','No, solo nodos próximos'],correct:0,art:'line'},
  {title:'Las líneas son barreras',text:'Una línea existente no puede ser atravesada físicamente por otra en 3D. Se pueden crear varias conexiones desde un vértice compartido.',question:'¿Puedes cruzar una línea colocada en el mismo lugar?',answers:['Sí, siempre','No, hay una barrera'],correct:1,art:'cross'},
  {title:'Conquista el triángulo',text:'Tres conexiones que cierran una cara triangular válida colorean un territorio con tu insignia. Cada triángulo aporta 10 puntos a su conquistador.',question:'¿Qué completa un territorio y da puntos?',answers:['Cerrar un triángulo','Crear una única línea'],correct:0,art:'triangle'},
@@ -521,6 +523,30 @@ function edgeError(a,b,s){
 }
 const el=id=>document.getElementById(id);
 let mode='none', myPlayer=0, host=false, room='', connected=false, peer=null,conn=null,game=null;
+let selectedRuleMode=localStorage.getItem('3line57_turn_rule')==='ascenso'?'ascenso':'random';
+function renderTurnRuleChooser(){
+ const asc=selectedRuleMode==='ascenso';
+ el('ruleRandomBtn').classList.toggle('rule-current',!asc);
+ el('ruleAscendBtn').classList.toggle('rule-current',asc);
+ el('ruleRandomBtn').setAttribute('aria-pressed',String(!asc));
+ el('ruleAscendBtn').setAttribute('aria-pressed',String(asc));
+ el('ruleDescription').textContent=asc?
+   'Ascenso: cada jugador empieza con 1 conexión; en su segundo turno tiene 2, después 3, 4… sin lanzar dados.':
+   'Galáctico: el dado genera aleatoriamente entre 1 y 6 conexiones en cada turno.';
+}
+function chooseTurnRule(rule){
+ if(mode==='pvp'&&game?.status==='play'){notify('No se puede cambiar la modalidad con una sala en curso.');return;}
+ selectedRuleMode=normalizeTurnRule(rule);
+ try{localStorage.setItem('3line57_turn_rule',selectedRuleMode);}catch{}
+ renderTurnRuleChooser();
+}
+function setBadgeGalleryExpanded(expanded){
+ const group=el('badges'),btn=el('toggleBadgesBtn');
+ group.classList.toggle('expanded',Boolean(expanded));
+ btn.setAttribute('aria-expanded',String(Boolean(expanded)));
+ btn.textContent=expanded?'‹ OCULTAR INSIGNIAS ESPECIALES':'••• VER INSIGNIAS ESPECIALES ›';
+}
+
 let reconnectTimer=null,pendingSyncTimer=null,reconnectAttempts=0;
 let renderer,scene,camera,orbit,board,staticGroup,linesGroup,triGroup,nodes=[],raycaster=new THREE.Raycaster();
 let selected=-1, pointerStart=null, cpuTimer=null, joinTimer=null, scanner=null,toastTimer=null;
@@ -612,6 +638,7 @@ function newState(){
  const seed=rand(0x7fffffff),level=tutorial?1:selectedLevel;
  awardRecorded=false;
  return {schema:2,version:0,status:'play',turn:0,rolled:false,moves:0,dice:0,turns:0,
+ ruleMode:tutorial?'random':normalizeTurnRule(selectedRuleMode),turnCountByPlayer:[0,0],
  lines:[],tris:[],scores:[0,0],winner:null,blocked:[],seed,level,
  players:[profilePacket(),{name:tutorial?'TUTOR BOT':'NEXUS BOT',color:'#ff2d7a',badge:'⚡'}],
  points:levelPoints(level,seed),maxTurns:LEVELS[level-1].count*2};
@@ -657,6 +684,7 @@ function eligibleCount(s){
   return count;
 }
 function endTurn(){
+ game.turnCountByPlayer=nextTurnCounts(game,game.turn);
  game.moves=0;game.rolled=false;game.turns++;
  game.blocked=blockedNodes(game);
  if(game.turns>=game.maxTurns||eligibleCount(game)===0){
@@ -669,7 +697,9 @@ function applyAction(type,data,player){
   if(game.rolled)return false;
   const candidates=eligibleCount(game);
   if(candidates===0){endTurn();}else{
-   game.rolled=true;game.dice=1+rand(6);game.moves=Math.min(game.dice,candidates);
+   const rule=normalizeTurnRule(game.ruleMode);
+   const allotment=turnMoveAllowance(game,player,rule==='random'?1+rand(6):null);
+   game.rolled=true;game.dice=allotment;game.moves=Math.min(allotment,candidates);
    if(player===1)game.botMovedThisTurn=false;
   }
  }else if(type==='LINE'){
@@ -719,16 +749,22 @@ function refresh(){
  el('namePlayer2').textContent=(game.players?.[1]?.name||(mode==='tutorial'?'TUTOR BOT':'IA BOT')).slice(0,12).toUpperCase();
  el('roomDisplay').textContent=room?'SALA '+room:(mode==='cpu'?'VS CPU':'TUTORIAL');
  el('turnDisplay').textContent=game.status==='end'?'FIN DE PARTIDA':'TURNO JUGADOR '+(game.turn+1);
- el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':!game.rolled?'TOCA EL DADO':game.moves+' CONEXIONES';
+ el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':!game.rolled?(normalizeTurnRule(game.ruleMode)==='ascenso'?'ACTIVA TU TURNO':'TOCA EL DADO'):game.moves+' CONEXIONES';
+ const asc=normalizeTurnRule(game.ruleMode)==='ascenso';
  const diceNumber=Number(game.dice)||0;
- el('diceResult').textContent=diceNumber?String(diceNumber):'TIRAR';
+ const allocation=completedTurnsForPlayer(game,game.turn)+1;
+ el('diceResult').textContent=diceNumber?String(diceNumber):asc?'+'+allocation:'TIRAR';
+ el('diceBtn').classList.toggle('ascenso-core',asc);
+ el('diceBtn').title=asc?'Activar conexiones de este turno: '+allocation:'Lanzar dado aleatorio de seis caras';
+ el('diceBtn').setAttribute('aria-label',el('diceBtn').title);
+ el('matchRuleDisplay').textContent=asc?'↗ MODO ASCENSO · TURNO '+(allocation):'⚄ MODO GALÁCTICO';
  el('levelTag').textContent='NIVEL '+game.level+' · '+POINTS.length+' NODOS';
  const yourTurn=game.turn===myPlayer&&game.status==='play'&&(mode!=='pvp'||connected);
  el('diceBtn').disabled=!yourTurn||game.rolled;el('passBtn').disabled=!yourTurn||!game.rolled;
  el('leaveBtn').disabled=false;
  el('selectedLabel').textContent=game.status==='end'?'Partida finalizada':
   !yourTurn?(mode==='tutorial'?'El BOT está jugando, espera un momento…':'Espera el turno del rival'):
-  !game.rolled?'Pulsa el dado del centro para lanzar':selected<0?'Selecciona el primer nodo':'Nodo '+(selected+1)+' seleccionado. Elige otro.';
+  !game.rolled?(asc?'Pulsa el núcleo central para activar '+allocation+' conexiones':'Pulsa el dado del centro para lanzar'):selected<0?'Selecciona el primer nodo':'Nodo '+(selected+1)+' seleccionado. Elige otro.';
  for(let i=0;i<nodes.length;i++){
   const isSelected=i===selected,blocked=(game.blocked||[]).includes(i);
   nodes[i].material.color.setHex(blocked?0x5b7181:isSelected?0xffd231:0x68dcff);
@@ -787,7 +823,7 @@ function hostConnection(c){
  c.on('error',()=>networkStatus('ERROR DE CONEXIÓN'));
 }
 function showHostRoom(){
-  screen('waiting');el('roomCode').textContent=room;el('qr').innerHTML='';
+  screen('waiting');el('roomCode').textContent=room;el('roomRuleNote').textContent=selectedRuleMode==='ascenso'?'↗ ASCENSO · 1, 2, 3… POR JUGADOR':'⚄ GALÁCTICO · DADO ALEATORIO';el('qr').innerHTML='';
   if(typeof QRCode!=='undefined')new QRCode(el('qr'),{text:linkUrl(),width:164,height:164,correctLevel:QRCode.CorrectLevel.M});
   else el('qr').textContent='Comparte el código mostrado';
   el('waitingNote').textContent='Preparando la sala…';
@@ -1320,6 +1356,11 @@ function bind(){
  document.addEventListener('pointerup',onARPointerUp,true);
  document.addEventListener('pointercancel',e=>{arPointers.delete(e.pointerId);arPointerStart=null;},true);
  document.addEventListener('beforexrselect',e=>{if(arSession&&isARControl(e.target))e.preventDefault();});
+ renderTurnRuleChooser();
+ setBadgeGalleryExpanded(false);
+ el('ruleRandomBtn').addEventListener('click',()=>chooseTurnRule('random'));
+ el('ruleAscendBtn').addEventListener('click',()=>chooseTurnRule('ascenso'));
+ el('toggleBadgesBtn').addEventListener('click',()=>setBadgeGalleryExpanded(!el('badges').classList.contains('expanded')));
  el('createBtn').addEventListener('click',createRoom);
  el('cpuBtn').addEventListener('click',()=>showCpu(false));
  el('tutorialBtn').addEventListener('click',()=>{selectedLevel=1;renderLevels();showCpu(true);});
