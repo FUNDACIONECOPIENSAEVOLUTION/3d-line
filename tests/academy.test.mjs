@@ -24,8 +24,8 @@ vm.createContext(context);
 vm.runInContext(js.slice(start,end)+
  '\nglobalThis.api={get lessons(){return ACADEMY_LESSONS;},get index(){return academyIndex;},openAcademy,closeAcademy,answerAcademy,nextAcademy,renderAcademy,startAcademyPractice};',context);
 const api=context.api;
-test('manual dispone siete ejercicios con dos respuestas cada uno',()=>{
- assert.equal(api.lessons.length,7);
+test('manual dispone ocho ejercicios con dos respuestas cada uno',()=>{
+ assert.equal(api.lessons.length,8);
  for(const lesson of api.lessons){
   assert.equal(lesson.answers.length,2);
   assert.ok([0,1].includes(lesson.correct));
@@ -36,7 +36,7 @@ test('no deja avanzar antes de responder y guía con feedback',()=>{
  api.openAcademy();
  assert.equal(api.index,0);
  assert.equal(context.el('academyNextBtn').disabled,true);
- api.answerAcademy(1); // respuesta equivocada del dado
+ api.answerAcademy(1); // respuesta equivocada del primer ejercicio
  assert.match(context.el('academyFeedback').textContent,/INTENTA OTRA VEZ/);
  assert.equal(context.el('academyNextBtn').disabled,true);
  api.answerAcademy(0);

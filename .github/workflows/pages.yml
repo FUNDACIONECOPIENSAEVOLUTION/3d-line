@@ -21,7 +21,7 @@ jobs:
       - name: Preparar archivos públicos
         run: |
           mkdir -p site
-          cp index.html game.js auth.js rewards.js ads-rewarded.js ads-config.json styles.css version.json README.md auth-config.json site/
+          cp index.html game.js auth.js rewards.js turn-modes.js ads-rewarded.js ads-config.json styles.css version.json README.md auth-config.json site/
           touch site/.nojekyll
       - name: Configurar Pages
         uses: actions/configure-pages@v5
