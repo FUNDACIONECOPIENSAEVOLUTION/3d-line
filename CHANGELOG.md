@@ -1,5 +1,15 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.7.0-beta.1 — 2026-10-15
+
+- Las cinco primeras insignias (◆ ⚡ ★ ✦ ☣) son gratuitas; se bloquearon las once nuevas con icono de candado y coste progresivo de 1 a 11 videos por insignia, con contador individual por usuario.
+- Se guardan desbloqueos cosméticos localmente bajo UID sin interferir con niveles o partida PvP. Las recompensas no son monedas reales y aún requieren backend confiable/Firestore para seguridad multi-dispositivo.
+- El módulo `ads-rewarded.js` usa Google H5 Games Ad Placement API; solo otorga recompensas con `adViewed`, nunca con anuncios no disponibles, cancelados o sin callback real. `ads-config.json` permanece sin publisher hasta aprobación.
+- El resultado del nivel contra BOT incorpora reinicio directo sin volver al menú. Se habilita con video voluntario al activar anuncios reales; durante la beta sin proveedor, se permite gratis.
+- Corregido el sistema de +20 monedas para guardarlas en el perfil del jugador solo después de un video real.
+- Añadidos tests del estado independiente por insignia, eventos de anuncios y modo beta sin publicidad falsa.
+- Documentado el camino Android APK de pruebas y AAB Play Store, TWA WebXR, Firebase, AdMob y requisitos de firma: todavía NO hay APK ni AAB publicado.
+
 ## 57.6.1-beta.1 — 2026-10-15
 
 - Aviso integrado al juego al volver del bloqueo del teléfono si Android terminó la sesión WebXR, para indicar la necesidad de activar AR y volver a fijar tablero.
