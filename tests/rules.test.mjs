@@ -8,7 +8,7 @@ if(start<0||end<0)throw new Error('No se encontró el motor geométrico');
 const minimal = js.slice(start,end)+`
 const linkKey=(a,b)=>[a,b].sort((x,y)=>x-y).join('-');
 const distance=(a,b)=>POINTS[a].distanceTo(POINTS[b]);
-globalThis.testAPI={LEVELS,levelPoints,segmentsCross,pointInsideTriangle,blockedNodes,crossesOwnedTriangle,edgeError,segmentDistance3,segmentIntersectsFace3D,closedTriangleShells,
+globalThis.testAPI={LEVELS,levelPoints,segmentsCross,pointInsideTriangle,blockedNodes,pointCoveredByFace3D,crossesOwnedTriangle,edgeError,segmentDistance3,segmentIntersectsFace3D,closedTriangleShells,
 setPoints(p){POINTS=p.map(q=>new THREE.Vector3(...q))}};
 `;
 class Vector3{
@@ -87,7 +87,7 @@ test('la longitud por sí sola no impide conexiones',()=>{
 test('bloquea nodos encerrados, aun cuando están cerca',()=>{
  api.setPoints([[0,0,0],[1,0,1],[0,0,1],[1,0,0]]);
  const s={lines:[],tris:[],blocked:[0],level:10};
- assert.match(api.edgeError(0,1,s),/volumen completamente cerrado/);
+ assert.match(api.edgeError(0,1,s),/Nodo bloqueado/);
 });
 
 test('cuatro caras coplanares no constituyen una caja cerrada',()=>{
@@ -95,4 +95,28 @@ test('cuatro caras coplanares no constituyen una caja cerrada',()=>{
  const tris=[{a:0,b:1,c:2},{a:0,b:1,c:3},{a:0,b:2,c:3},{a:1,b:2,c:3}];
  assert.equal(api.closedTriangleShells(tris).length,0);
  assert.equal(api.blockedNodes({tris,lines:[],blocked:[]}).length,0);
+});
+
+test('cara conquistada atraviesa punto coplanar: queda bloqueado, vértices propios libres',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[.45,0,.4]]);
+ const faces=[{a:0,b:1,c:2,owner:0}];
+ assert.equal(api.pointCoveredByFace3D(3,faces[0]),true);
+ assert.deepEqual(Array.from(api.blockedNodes({tris:faces,lines:[]})),[3]);
+ for(const i of [0,1,2])assert.equal(api.pointCoveredByFace3D(i,faces[0]),false);
+});
+test('nodo por encima o debajo de cara no se bloquea por proyección 2D',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[.45,.3,.4],[.45,-.3,.4]]);
+ const state={tris:[{a:0,b:1,c:2}],lines:[]};
+ assert.deepEqual(Array.from(api.blockedNodes(state)),[]);
+});
+test('cara adicional puede cubrir la esquina de otro triángulo',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[.5,0,.5],[-1,0,-1],[3,0,-1],[0,0,3]]);
+ const base={a:0,b:1,c:2},other={a:4,b:5,c:6};
+ assert.equal(api.pointCoveredByFace3D(0,base),false);
+ assert.equal(api.pointCoveredByFace3D(0,other),true);
+ assert.ok(api.blockedNodes({tris:[base,other],lines:[]}).includes(0));
+});
+test('un nodo sobre el borde de cara, sin ser vértice, se bloquea',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[1,0,0]]);
+ assert.equal(api.pointCoveredByFace3D(3,{a:0,b:1,c:2}),true);
 });
