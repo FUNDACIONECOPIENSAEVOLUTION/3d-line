@@ -18,3 +18,57 @@ body.xr-active{background:transparent}body.xr-active .arena{background:transpare
 .diagOK{color:#49ffab}.diagWarn{color:#ffd475}
 .diagRow b{display:block;color:#eaf8ff;font-size:12px}
 .diagRow small{display:block;color:#9cbbca;font-size:10px;margin-top:3px;line-height:1.4}
+
+/* 3 LINE-AR v57 · estética de videojuego cyber-retro */
+:root{--cyan:#00eaff;--green:#50ff65;--gold:#ffd231;--pink:#ff2d7a;--violet:#b35aff;--bg:#020813;--border:#214d6a}
+body{background:#020813;min-height:100dvh}
+#bg-canvas{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:-1}
+#app{max-width:1280px}
+.gamer-menu{max-width:420px;padding:17px 20px 20px;margin:12px auto 26px;background:linear-gradient(155deg,#07192bef,#050d19f8);border:1px solid #13577c;box-shadow:0 0 33px #00eaff12,inset 0 0 0 1px #071526}
+.brand-banner{display:flex;align-items:center;gap:11px;margin:3px auto 12px;text-align:left}
+.brand-banner img{width:58px;height:58px;filter:drop-shadow(0 0 12px #00eaff99);object-fit:contain}
+.brand-banner h1{font-size:31px;line-height:1;margin:0;letter-spacing:-.075em}
+.brand-banner h1 span{color:var(--cyan)}
+.brand-banner p{margin:5px 0 0;color:#92bfd2;letter-spacing:.2em;font-size:9px}
+.player-profile{border:1px solid #27546d;background:linear-gradient(130deg,#0c1c31,#080d17);border-radius:14px;padding:13px;margin-bottom:12px}
+.player-profile-top{display:flex;align-items:center;text-align:left;gap:9px;border-bottom:1px solid #26394d;padding-bottom:11px;margin-bottom:11px}
+.avatar{border:1px solid var(--cyan);box-shadow:0 0 13px #00eaff44;min-width:44px;height:44px;display:grid;place-items:center;font-size:26px;color:var(--cyan);border-radius:9px}
+.agent{min-width:0;flex:1}.agent small{font-size:9px;color:#a2c6d7;display:block;letter-spacing:.12em}
+.agent strong{font-size:16px;display:block;white-space:nowrap;max-width:145px;overflow:hidden;text-overflow:ellipsis}
+.rank{text-align:right;display:grid;gap:4px;font:10px monospace;color:#a0b9cc}.rank b{color:var(--green);font-size:13px}
+.player-custom{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0}
+.player-custom>span{font-size:10px;letter-spacing:.08em;font-weight:800;color:#a2b6ca}
+.color-choices,.badge-choices{display:flex;gap:8px;justify-content:end;flex-wrap:wrap}
+.swatch{width:28px;height:28px;min-height:28px;border-radius:50%;padding:0;background:var(--pick);border:2px solid #172f40;box-shadow:0 0 4px var(--pick)}
+.swatch.current{border:2px solid white;box-shadow:0 0 15px var(--pick);transform:scale(1.1)}
+.badge-choices button{padding:2px;min-height:27px;width:29px;font-size:18px;background:none;border:1px solid transparent;color:#7f9cae}
+.badge-choices button.current{color:var(--cyan);border-color:#236584;box-shadow:0 0 9px #00eaff44}
+.account-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:5px}
+.account-controls button{font-size:10px;padding:8px 5px;min-height:37px}
+.gamer-actions{gap:8px}
+.gamer-actions button{font-size:11px;letter-spacing:.06em}
+.gamer-actions .laser-green,button.laser-green{border-color:var(--green);color:var(--green);box-shadow:inset 0 0 8px #50ff6515,0 0 12px #50ff6520}
+.gamer-actions .laser-pink{border-color:var(--pink);color:var(--pink);box-shadow:0 0 12px #ff2d7a22}
+.gamer-actions .laser-gold{border-color:var(--gold);color:var(--gold)}
+.gamer-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.gamer-grid button{font-size:10px;padding:9px 2px}
+.level-panel{border:1px solid #17405a;border-radius:13px;background:#071524;padding:10px;margin-top:12px}
+.level-heading{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:5px}
+.level-heading b{font-size:10px;letter-spacing:.12em;color:var(--cyan)}
+.level-heading small{font-size:9px;color:#82afc3}
+.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
+.level-grid button{border-color:#23516d;background:#071a2b;color:#a2d3e7;padding:7px 2px;min-height:33px;font-size:12px}
+.level-grid button.active{border-color:var(--cyan);background:#0a3447;color:#fff;box-shadow:0 0 12px #00eaff52}
+.level-grid button.locked:after{content:'●';display:block;font-size:5px;color:var(--gold)}
+.level-panel p{font-size:10px;margin:7px 0 0}
+.menu .fineprint{margin:8px auto;line-height:1.45}
+.dice-object{border-color:var(--cyan);background:linear-gradient(145deg,#173f55,#071c2c);box-shadow:0 0 22px #00eaff55,inset 0 0 16px #00eaff22;color:var(--cyan)}
+.die-icon{font-size:31px;vertical-align:middle;display:inline-block;line-height:1;margin-right:8px}
+#diceResult{font-size:11px;color:#f1fbff}
+.level-tag{color:var(--gold)!important;font-size:9px!important;margin-top:5px}
+.tutorial-hint{padding:10px 14px;color:#d5ffff;border:1px solid #27547c;background:#0a2034;border-radius:12px;font-size:12px;text-align:center}
+.game-header{background:linear-gradient(135deg,#081b2cf2,#0a1524f2)}
+.arena{border:1px solid #194669;background:radial-gradient(circle at 50% 55%,#062036,#030915 80%)}
+.arenaLabel{color:#8edff1}
+body.xr-active #bg-canvas{display:none}
+@media(max-width:600px){.gamer-menu{margin-top:5px}.toolbar button{flex:1 1 92px}.die-icon{font-size:27px}.account-controls button{font-size:9px}}
