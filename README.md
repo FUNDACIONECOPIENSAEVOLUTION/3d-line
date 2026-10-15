@@ -1,8 +1,20 @@
-# 3 LINE-AR — V57.0.0 beta 3
+# 3 LINE-AR — V57.1.0 beta 4
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
 Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC por código o QR, IA rival y realidad aumentada experimental.
+
+## V57.1: inicio de sesión, tutorial y desbloqueo
+
+Al abrir se muestra primero una pantalla de acceso. El usuario puede iniciar sesión con Google mediante Firebase Authentication (configuración pública original V51.2) o como invitado. El sistema usa `browserLocalPersistence` para recordar la sesión en el mismo navegador, hasta que el usuario cierre sesión, borre datos o Firebase invalide su acceso. En caso de indisponibilidad de Firebase, se ofrece invitado local con aviso.
+
+**Para verificar Google login**: en Firebase Console, proyecto `ar-3lilne`, ve a **Authentication → Settings → Authorized domains** y comprueba que `fundacionecopiensaevolution.github.io` esté autorizado. Asegura que **Google** y **Anonymous** estén habilitados en **Sign-in method**. Estos son pasos administrativos en Firebase que no se pueden confirmar desde un archivo HTML ni garantizar a priori. La interfaz indica cualquier rechazo de Google; no convierte automáticamente un error de Google en acceso autenticado.
+
+El tutorial tiene un BOT automático como jugador 2. El dado galáctico centrado entre puntuaciones tira aleatoriamente 1 a 6. Si se acaban los enlaces disponibles antes que las tiradas, se termina el turno automáticamente. En AR puedes modificar la escala mediante el control vertical o un gesto de pinza con dos dedos.
+
+Solo se muestra **el nivel desbloqueado**; al ganar al BOT, el siguiente nivel queda disponible y se guarda localmente para ese perfil/dispositivo. La progresión aún no se sincroniza en varios teléfonos: Firebase recupera la sesión, pero no almacena el progreso hasta implementar una base de datos con reglas adecuadas.
+
+Cuando la Fundación obtenga aprobación de Google H5 Games Ads y un identificador válido, el juego tiene preparado un anuncio intersticial en la pausa **entre niveles**. Mientras no haya anuncios aprobados, la beta permite avanzar sin ver publicidad y nunca simula que se ha cobrado por mostrarla. Los anuncios recompensados son voluntarios y separados de la progresión principal.
 
 ## V57: cambios jugables
 
@@ -33,7 +45,7 @@ El modo AR y el modo 3D pueden mostrar una partida compartida, pero **todavía n
 
 ## Google, guardado y monetización
 
-`auth-config.json` trae `clientId` vacío. Para habilitar Google Identity hay que crear un Client ID de aplicación web en Google Cloud y autorizar el origen `https://fundacionecopiensaevolution.github.io`. La identificación visual disponible una vez configurado el Client ID **no es una sesión verificable por sí misma**: hay que validar el token en un backend o usar un proveedor de autenticación verificada (Firebase, etc.) antes de proteger rankings, premios o progreso multi-dispositivo.
+`auth-config.json` trae `clientId` vacío. Para habilitar Google Identity hay que crear un Client ID de aplicación web en Google Cloud y autorizar el origen `https://fundacionecopiensaevolution.github.io`. La nueva sesión Firebase es una identidad autenticada por Firebase; para proteger recompensas, ranking y progreso en la nube aún hacen falta reglas de acceso y validación de operaciones: hay que validar el token en un backend o usar un proveedor de autenticación verificada (Firebase, etc.) antes de proteger rankings, premios o progreso multi-dispositivo.
 
 No es necesario ni apropiado conectar Google Drive personal como backend de las partidas. No se solicita ninguna contraseña.
 
@@ -41,7 +53,7 @@ El anuncio recompensado permanece desactivado hasta contar con ID publicitario r
 
 ## Calidad, versión y despliegue
 
-- La versión en cabecera es **V57.0.0** y la versión interna es **57.0.0-beta.1**.
+- La versión en cabecera es **V57.1.0** y la versión interna es **57.1.0-beta.1**.
 - Cada cambio debe actualizar `version.json`, `CHANGELOG.md` y las etiquetas de recursos del HTML.
 - Las pruebas automáticas de CI están en `tests/static.test.mjs` y `tests/rules.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
