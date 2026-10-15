@@ -202,7 +202,7 @@ test('Galáctico y Ascenso se seleccionan antes de PvP o CPU y se ven durante el
 test('insignias compactas se expanden sin mostrar dieciséis botones de golpe',()=>{
  assert.match(html,/id="toggleBadgesBtn"/);
  assert.match(js,/function setBadgeGalleryExpanded/);
- assert.match(css,/\.badge-choices:not\(\.expanded\) \[data-badge\]:nth-child\(n\+6\)/);
+ assert.match(css,/#badges:not\(\.expanded\) \[data-badge\]:nth-child\(n\+6\)/);
  assert.match(css,/overflow-x:auto/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
