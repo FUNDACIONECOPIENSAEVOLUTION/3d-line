@@ -44,6 +44,7 @@
 <div class="account-controls"><button id="googleBtn" class="subtle">G CONECTAR GOOGLE</button><button id="guestBtn" class="subtle">JUGAR COMO INVITADO</button></div>
 <p id="googleNote" class="fineprint">Google requiere configurar el ID de cliente y verificar las credenciales. El modo invitado funciona con Firebase anónimo o local, y persiste en este dispositivo.</p>
 <div class="actions gamer-actions">
+  <button id="academyBtn" class="laser-gold">📖 ACADEMIA · REGLAS Y EJERCICIOS</button>
   <button id="tutorialBtn" class="primary">🎓 TUTORIAL: NIVEL 1 · 5 PUNTOS</button>
   <button id="createBtn" class="laser-green">▣ CREAR SALA (QR)</button>
   <div class="joinrow"><input id="joinCode" maxlength="6" inputmode="text" autocomplete="off" placeholder="CÓDIGO DE 6 CARACTERES" aria-label="Código de sala"><button id="joinBtn">UNIRME</button></div>
@@ -88,7 +89,7 @@
 </div>
 </div>
 <div class="toolbar panel">
-<button id="passBtn">PASAR</button><button id="resetViewBtn">CENTRAR 3D</button><button id="arBtn">◎ ACTIVAR AR</button><button id="scaleDownBtn">− ESCALA</button><button id="scaleUpBtn">+ ESCALA</button><button id="placeBtn" class="primary hidden">📍 FIJAR TABLERO</button><button id="exitArBtn" class="hidden">SALIR AR</button><button id="leaveBtn" class="danger">ABANDONAR</button>
+<button id="academyGameBtn" type="button">📖 REGLAS</button><button id="passBtn">PASAR</button><button id="resetViewBtn">CENTRAR 3D</button><button id="arBtn">◎ ACTIVAR AR</button><button id="scaleDownBtn">− ESCALA</button><button id="scaleUpBtn">+ ESCALA</button><button id="placeBtn" class="primary hidden">📍 FIJAR TABLERO</button><button id="exitArBtn" class="hidden">SALIR AR</button><button id="leaveBtn" class="danger">ABANDONAR</button>
 </div>
 </section>
 <section id="results" class="panel menu hidden"><p class="eyebrow">PARTIDA TERMINADA</p><h2 id="resultTitle">RESULTADO</h2><p id="resultSummary" class="intro"></p><div id="levelWinNotice" class="muted"></div><div class="actions"><button id="continueBtn" class="primary hidden">SIGUIENTE NIVEL</button><button id="homeBtn" class="subtle">VOLVER AL MENÚ</button></div></section>
@@ -111,5 +112,25 @@
   </div>
 </div>
 <div id="diagnostics" class="scanOverlay hidden"><div class="scanPanel diagnosticsPanel"><h2>Diagnóstico de 3 LINE-AR</h2><p class="muted">Comprobación local para celular o computador. No envía información a terceros.</p><div id="diagResults" class="diagResults" aria-live="polite"></div><div class="actions"><button id="diagCopyBtn" class="primary">COPIAR INFORME</button><button id="diagCloseBtn">CERRAR</button></div></div></div>
+<section id="academyOverlay" class="academy-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="academyTitle">
+ <div class="academy-panel">
+  <div class="academy-kicker">3 LINE-AR · ACADEMIA TÁCTICA</div>
+  <div class="academy-progress"><span id="academyStep">EJERCICIO 1 / 6</span><span id="academyStars">★☆☆☆☆☆</span></div>
+  <div class="academy-topbar"><h2 id="academyTitle">REGLAS DEL JUEGO</h2><button id="academyCloseBtn" type="button" aria-label="Cerrar academia">×</button></div>
+  <div id="academyExample" class="academy-example" aria-label="Diagrama ilustrativo de la regla"></div>
+  <p id="academyDescription" class="academy-description"></p>
+  <p id="academyQuestion" class="academy-question"></p>
+  <div class="academy-answers">
+    <button id="academyChoiceA" type="button"></button>
+    <button id="academyChoiceB" type="button"></button>
+  </div>
+  <p id="academyFeedback" class="academy-feedback" aria-live="polite">Selecciona la respuesta correcta para continuar.</p>
+  <div class="academy-actions">
+    <button id="academyPrevBtn" type="button">← ANTERIOR</button>
+    <button id="academyNextBtn" class="primary" type="button" disabled>SIGUIENTE →</button>
+  </div>
+  <button id="academyPracticeBtn" class="academy-practice" type="button">🎮 PRACTICAR EL NIVEL 1 CON EL BOT</button>
+ </div>
+</section>
 <div id="scanner" class="scanOverlay hidden"><div class="scanPanel"><h2>Escanear código QR</h2><div id="qr-reader"></div><button id="closeScanBtn">CERRAR CÁMARA</button></div></div>
 </body></html>
