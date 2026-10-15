@@ -87,5 +87,5 @@ test('la longitud por sí sola no impide conexiones',()=>{
 test('bloquea nodos encerrados, aun cuando están cerca',()=>{
  api.setPoints([[0,0,0],[1,0,1],[0,0,1],[1,0,0]]);
  const s={lines:[],tris:[],blocked:[0],level:10};
- assert.match(api.edgeError(0,1,s),/zona cerrada/);
+ assert.match(api.edgeError(0,1,s),/volumen completamente cerrado/);
 });
