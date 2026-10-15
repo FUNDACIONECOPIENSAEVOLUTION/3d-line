@@ -1,5 +1,20 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.0.0-beta.1 — 2026-10-15
+
+- Se reconstruyó el menú retro-cyber en azul, verde, rosa y dorado, basado en el estilo V51.4 mostrado por el usuario.
+- Selector persistente de color de láser, insignia y avatar local.
+- Diez niveles de juego; nivel 1 es tutorial con 5 nodos, niveles 2-4 composición guiada y niveles 5-10 distribución aleatoria creada por el anfitrión.
+- Dado visual integrado en el HUD que usa `crypto.getRandomValues` para un resultado de 1 a 6 movimientos, sin patrón secuencial intencional.
+- Eliminación del cubo envolvente; únicamente base holográfica, postes y nodos flotantes.
+- Se impiden conexiones que cruzan líneas y que atraviesan nodos (proyección XZ); los nodos que quedan dentro de un triángulo cerrado se bloquean.
+- Triángulos con color de zona e insignia del jugador.
+- PvP conserva salas de 6 caracteres, QR y estado autoritativo del anfitrión con nodos y niveles sincronizados.
+- WebXR permite que la sesión intente los espacios de referencia `local`, `local-floor`, `viewer` antes de iniciar el renderer; detección de superficies opcional y holograma flotante degradado. Esto **no equivale** a anclaje compartido.
+- Google Identity se dejó preparado detrás de `auth-config.json`, sin credenciales. Google verificable en backend, guardado entre dispositivos y publicidad pagada siguen pendientes.
+- El código queda preparado en rama para pasar tests de integración y publicación.
+
+
 ## 56.1.0-beta.2 — 2026-10-15
 
 - Diagnóstico de compatibilidad dentro de la interfaz: WebGL2, WebRTC, PeerJS, cámara, HTTPS y WebXR.
