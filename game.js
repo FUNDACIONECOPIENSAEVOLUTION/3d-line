@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// v56.0.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v56.1.0-beta.2 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='56.0.0-beta.1';
+const VERSION='56.1.0-beta.2';
 const PEER_PREFIX='3line-beta56-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -342,12 +342,49 @@ function setAds(){
       adDismissed:()=>notify('Anuncio cerrado; no se otorgan monedas.'),adBreakDone:()=>{}});
   });
 }
+// Diagnóstico local (no solicita permisos ni comunica datos a la red).
+let diagnosticText='';
+async function showDiagnostics(){
+  const layer=el('diagnostics'),box=el('diagResults');
+  layer.classList.remove('hidden');box.replaceChildren();
+  const check=(name,ok,note)=>{
+    const node=document.createElement('div');node.className='diagRow';
+    const icon=document.createElement('span');icon.className=ok?'diagOK':'diagWarn';
+    icon.textContent=ok?'✓':'!';
+    const detail=document.createElement('div');
+    const title=document.createElement('b');title.textContent=name;
+    const info=document.createElement('small');info.textContent=note;
+    detail.append(title,info);node.append(icon,detail);box.appendChild(node);
+    diagnosticText+=name+': '+(ok?'OK':'LIMITADO')+' — '+note+'\n';
+  };
+  diagnosticText='3 LINE-AR '+VERSION+' | Diagnóstico local\n';
+  diagnosticText+='Sistema: '+navigator.userAgent+'\n';
+  diagnosticText+='Fecha: '+new Date().toISOString()+'\n';
+  check('HTTPS / contexto seguro',window.isSecureContext,'La cámara y WebXR requieren HTTPS (o localhost).');
+  check('Motor WebGL',Boolean(document.createElement('canvas').getContext('webgl2')),'Necesario para renderizar el tablero 3D.');
+  check('WebRTC',typeof RTCPeerConnection!=='undefined','API del navegador para PvP; esto no prueba conectividad entre redes.');
+  check('Señalización PeerJS',typeof window.Peer!=='undefined','El servidor de señalización externo aún debe estar accesible.');
+  check('Acceso posible a cámara',Boolean(navigator.mediaDevices?.getUserMedia),'No significa que se hayan concedido permisos.');
+  check('Internet (indicador)',navigator.onLine!==false,'navigator.onLine no garantiza acceso a servicios externos.');
+  if(navigator.xr?.isSessionSupported){
+    try{
+      const supported=await navigator.xr.isSessionSupported('immersive-ar');
+      check('WebXR immersive-ar',supported,supported?'Disponible en el navegador; se probará al activar AR.':'Este dispositivo debe utilizar el modo 3D.');
+    }catch(e){check('WebXR immersive-ar',false,'No pudo consultarse: '+(e.message||String(e)));}
+  }else check('WebXR immersive-ar',false,'No está disponible en este navegador; puedes jugar en 3D.');
+  diagnosticText+='Estado de conexión en la partida: '+el('connection').textContent+'\n';
+  diagnosticText+='Aviso: compartir este informe revela tipo de dispositivo y navegador, nunca contraseñas.\n';
+}
+
 function bind(){
   el('createBtn').addEventListener('click',createRoom);
   el('cpuBtn').addEventListener('click',showCpu);
   el('joinBtn').addEventListener('click',()=>joinRoom(el('joinCode').value));
   el('joinCode').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom(el('joinCode').value);});
   el('scanBtn').addEventListener('click',startScanner);
+  el('diagnoseBtn').addEventListener('click',showDiagnostics);
+  el('diagCloseBtn').addEventListener('click',()=>el('diagnostics').classList.add('hidden'));
+  el('diagCopyBtn').addEventListener('click',()=>copyText(diagnosticText));
   el('closeScanBtn').addEventListener('click',stopScanner);
   el('copyBtn').addEventListener('click',()=>copyText(linkUrl()));
   el('cancelBtn').addEventListener('click',home);
