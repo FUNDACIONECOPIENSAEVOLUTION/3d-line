@@ -301,3 +301,37 @@ body.xr-active .academy-overlay{z-index:130}
  #results .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  #results .actions button{white-space:normal;min-width:0;font-size:11px;padding:9px 6px}
 }
+
+/* V57.8: selector de modalidad y galería de insignias compacta. */
+.game-rule-picker{border:1px solid #26627d;border-radius:13px;background:linear-gradient(135deg,#071c2c,#0e2535);padding:11px;margin:14px 0 12px}
+.game-rule-title{color:#93e8fc;font-size:10px;letter-spacing:.14em;font-weight:900;text-align:center;margin-bottom:9px}
+.rule-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rule-choice{min-width:0;display:grid;gap:4px;align-content:center;min-height:61px;border:1px solid #285672;color:#bdd6e4;background:#081c29;border-radius:11px;padding:9px 6px;box-shadow:inset 0 0 10px #0d719a13;text-align:center;transition:box-shadow .18s,transform .18s,border-color .18s}
+.rule-choice strong{font-size:clamp(11px,3vw,14px);line-height:1.3}
+.rule-choice small{font-size:clamp(9px,2.1vw,11px);line-height:1.35;color:#8aacc1}
+.rule-choice.rule-current{border-color:#00eaff;color:#6efbff;background:linear-gradient(140deg,#0d354b,#092038);box-shadow:0 0 13px #00eaff5c,inset 0 0 16px #03e8ff22;animation:ruleSelectGlow 3s ease-in-out infinite alternate}
+.rule-description{text-align:center;color:#a2d2e6;font-size:10px;line-height:1.45;padding:7px 0 0;min-height:30px}
+.galaxy-dice.ascenso-core{border-color:#52ff93;color:#62ffbb;box-shadow:0 0 16px #52ff9366,inset 0 0 20px #42ffaa45}
+.galaxy-dice.ascenso-core svg{filter:drop-shadow(0 0 8px #52ff93);animation:ascensoCore 6s linear infinite}
+.mode-live-label{font-size:9px!important;letter-spacing:.08em;color:#8fffc0!important}
+@keyframes ruleSelectGlow{from{box-shadow:0 0 7px #00eaff25}to{box-shadow:0 0 18px #00eaff6a}}
+@keyframes ascensoCore{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.player-custom:has(#badges){display:grid;grid-template-columns:66px minmax(0,1fr);align-items:center;gap:6px}
+.player-custom:has(#badges)>span{grid-column:1;align-self:center}
+.player-custom:has(#badges) #badges{grid-column:2;grid-row:1;min-width:0;max-width:100%;display:flex;flex-wrap:nowrap;gap:5px;align-items:center;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#1bdafa #08243b;padding:6px 3px 11px;scroll-snap-type:x proximity}
+.player-custom:has(#badges) #badges button{flex:0 0 38px;width:38px;height:38px;min-width:38px;scroll-snap-align:start}
+.player-custom:has(#badges) #badges:not(.expanded) [data-badge]:nth-child(n+6){display:none}
+.player-custom:has(#badges) .badge-more{grid-column:2;justify-self:start;border:1px solid #247fa2;color:#88eafb;background:#071e2c;padding:5px 10px;border-radius:18px;min-height:29px;font-size:10px;font-weight:800;letter-spacing:.03em}
+.player-custom:has(#badges) .badge-progress-note{grid-column:1/-1;margin:4px 0 0;font-size:10px}
+.badge-choices.expanded{animation:badgeExpand .25s ease-out}
+@keyframes badgeExpand{from{opacity:.4;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:420px){
+ .game-rule-picker{padding:8px 7px}
+ .rule-choice{min-height:56px;padding:7px 4px}
+ .player-custom:has(#badges){grid-template-columns:57px minmax(0,1fr);gap:4px}
+ .player-custom:has(#badges) #badges button{flex-basis:36px;width:36px;min-width:36px;height:36px}
+ .player-custom:has(#badges) .badge-more{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .rule-choice.rule-current,.galaxy-dice.ascenso-core svg,.badge-choices.expanded{animation:none}
+}
