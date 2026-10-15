@@ -112,16 +112,27 @@ function cleanup(){
   if(peer){try{peer.destroy();}catch{}peer=null;}
   room='';mode='none';host=false;networkStatus('SIN CONECTAR');
 }
-function newState(){return {schema:1,version:0,status:'play',turn:0,rolled:false,moves:0,turns:0,lines:[],tris:[],scores:[0,0],winner:null};}
+function newState(){
+ const seed=rand(0x7fffffff),level=tutorial?1:selectedLevel;
+ awardRecorded=false;
+ return {schema:2,version:0,status:'play',turn:0,rolled:false,moves:0,dice:0,turns:0,
+ lines:[],tris:[],scores:[0,0],winner:null,blocked:[],seed,level,
+ players:[profilePacket(),{name:'RIVAL',color:'#ff2d7a',badge:'★'}],
+ points:levelPoints(level,seed),maxTurns:LEVELS[level-1].count*2};
+}
 function enterGame(){
   screen('game');selected=-1;
   initialize3D();rebuildBoard();refresh();
   notify('Partida iniciada. Lanza el dado cuando sea tu turno.');
 }
-function setState(s){if(!s||s.schema!==1||!Array.isArray(s.lines)||!Array.isArray(s.scores)||!Array.isArray(s.tris))return;game=s;
-  if(!el('game').classList.contains('hidden')){rebuildBoard();refresh();}
-  else if(s.status==='play')enterGame();
-  if(s.status==='end')finishGame();
+function setState(state){
+ if(!state||state.schema!==2||!Array.isArray(state.points)||!Array.isArray(state.lines)||!Array.isArray(state.tris)||!Array.isArray(state.scores))return;
+ const previous=game?.version;
+ game=state;POINTS=state.points.map(p=>new THREE.Vector3(...p));
+ if(!el('game').classList.contains('hidden')){
+   rebuildBoard();refresh();
+ }else if(state.status==='play')enterGame();
+ if(state.status==='end'&&previous!==state.version)finishGame();
 }
 function broadcast(){if(mode==='pvp'&&host&&conn?.open){try{conn.send({type:'STATE',state:game});}catch{notify('No se pudo enviar el estado');}}}
 function action(type,data={}){
@@ -130,18 +141,17 @@ function action(type,data={}){
   applyAction(type,data,0);
 }
 function foundTriangles(a,b,lines,existing){
-  const result=[],known=new Set(existing.map(t=>[t.a,t.b,t.c].sort((x,y)=>x-y).join('-')));
-  for(let c=0;c<POINTS.length;c++){
-    if(c===a||c===b)continue;
-    if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(a,c)))continue;
-    if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(b,c)))continue;
-    const k=[a,b,c].sort((x,y)=>x-y).join('-');
-    if(known.has(k))continue;
-    const area=new THREE.Vector3().crossVectors(POINTS[b].clone().sub(POINTS[a]),POINTS[c].clone().sub(POINTS[a])).length()/2;
-    if(area<.09)continue;
-    known.add(k);result.push({a,b,c,owner:game.turn});
-  }
-  return result;
+ const result=[],known=new Set(existing.map(t=>[t.a,t.b,t.c].sort((x,y)=>x-y).join('-')));
+ for(let c=0;c<POINTS.length;c++){
+   if(c===a||c===b)continue;
+   if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(a,c)))continue;
+   if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(b,c)))continue;
+   const k=[a,b,c].sort((x,y)=>x-y).join('-');if(known.has(k))continue;
+   const A=xy(a),B=xy(b),C=xy(c);
+   if(Math.abs(area(A,B,C))<.085)continue;
+   known.add(k);result.push({a,b,c,owner:game.turn});
+ }
+ return result;
 }
 function eligibleCount(s){
   let count=0;
@@ -149,93 +159,103 @@ function eligibleCount(s){
   return count;
 }
 function endTurn(){
-  game.moves=0;game.rolled=false;game.turns++;
-  if(game.turns>=MAX_TURNS||eligibleCount(game)===0){
-    game.status='end';game.winner=game.scores[0]===game.scores[1]?-1:(game.scores[0]>game.scores[1]?0:1);
-  }else game.turn=1-game.turn;
+ game.moves=0;game.rolled=false;game.turns++;
+ game.blocked=blockedNodes(game);
+ if(game.turns>=game.maxTurns||eligibleCount(game)===0){
+   game.status='end';game.winner=game.scores[0]===game.scores[1]?-1:(game.scores[0]>game.scores[1]?0:1);
+ }else game.turn=1-game.turn;
 }
 function applyAction(type,data,player){
-  if(!game||game.status!=='play'||game.turn!==player)return false;
-  if(type==='ROLL'){
-    if(game.rolled)return false;
-    game.rolled=true;game.moves=1+rand(3);
-  }else if(type==='LINE'){
-    if(!game.rolled||game.moves<1||!validEdge(data.a,data.b,game))return false;
-    const {a,b}=data;game.lines.push({a,b,owner:player});
-    const newTris=foundTriangles(a,b,game.lines,game.tris);
-    game.tris.push(...newTris);game.scores[player]+=newTris.length*10;
-    game.moves--;
-    if(game.moves===0)endTurn();
-  }else if(type==='PASS'){
-    if(!game.rolled)return false;
-    endTurn();
-  }else if(type==='SURRENDER'){
-    game.status='end';game.winner=1-player;
-  }else return false;
-  game.version++;
-  setState(game);broadcast();
-  if(mode==='cpu')scheduleCpu();
-  return true;
+ if(!game||game.status!=='play'||game.turn!==player)return false;
+ if(type==='ROLL'){
+   if(game.rolled)return false;
+   game.rolled=true;game.dice=1+rand(6);game.moves=Math.min(game.dice,Math.max(1,eligibleCount(game)));
+ }else if(type==='LINE'){
+   if(!game.rolled||game.moves<1)return false;
+   const {a,b}=data;
+   if(!validEdge(a,b,game)){if(player===myPlayer)notify(edgeError(a,b,game));return false;}
+   game.lines.push({a,b,owner:player});
+   const newTris=foundTriangles(a,b,game.lines,game.tris);
+   game.tris.push(...newTris);game.scores[player]+=newTris.length*10;
+   game.blocked=blockedNodes(game);game.moves--;
+   if(game.moves===0)endTurn();
+ }else if(type==='PASS'){if(!game.rolled)return false;endTurn();}
+ else if(type==='SURRENDER'){game.status='end';game.winner=1-player;}
+ else return false;
+ game.version++;setState(game);broadcast();
+ if(mode==='cpu'||mode==='tutorial')scheduleCpu();
+ return true;
 }
 function scheduleCpu(){
-  clearTimeout(cpuTimer);
-  if(mode!=='cpu'||!game||game.status!=='play'||game.turn!==1)return;
-  cpuTimer=setTimeout(()=>{
-    if(!game||game.status!=='play'||game.turn!==1)return;
-    if(!game.rolled){applyAction('ROLL',{},1);return;}
-    let best=null,bestValue=-Infinity;
-    for(let a=0;a<POINTS.length;a++)for(let b=a+1;b<POINTS.length;b++){
-      if(!validEdge(a,b,game))continue;
-      const future=[...game.lines,{a,b,owner:1}];
-      const triangles=foundTriangles(a,b,future,game.tris).length;
-      const v=triangles*100+(1-distance(a,b))*2+Math.random()*.2;
-      if(v>bestValue){bestValue=v;best={a,b};}
-    }
-    if(best)applyAction('LINE',best,1);
-    else applyAction('PASS',{},1);
-  },480);
+ clearTimeout(cpuTimer);
+ if(!['cpu','tutorial'].includes(mode)||!game||game.status!=='play'||game.turn!==1)return;
+ cpuTimer=setTimeout(()=>{
+  if(!game||game.status!=='play'||game.turn!==1)return;
+  if(!game.rolled){applyAction('ROLL',{},1);return;}
+  if(mode==='tutorial'){applyAction('PASS',{},1);return;}
+  let best=null,bestValue=-Infinity;
+  for(let a=0;a<POINTS.length;a++)for(let b=a+1;b<POINTS.length;b++){
+    if(!validEdge(a,b,game))continue;
+    const future=[...game.lines,{a,b,owner:1}];
+    const triangles=foundTriangles(a,b,future,game.tris).length;
+    const score=triangles*100-distance(a,b)+Math.random()*.12;
+    if(score>bestValue){bestValue=score;best={a,b};}
+  }
+  if(best)applyAction('LINE',best,1);
+  else applyAction('PASS',{},1);
+ },mode==='tutorial'?850:480);
 }
 function refresh(){
-  if(!game)return;
-  el('score0').textContent=game.scores[0];el('score1').textContent=game.scores[1];
-  el('roomDisplay').textContent=room?'SALA '+room:(mode==='cpu'?'ENTRENAMIENTO VS CPU':'PARTIDA');
-  el('turnDisplay').textContent=game.status==='end'?'FIN DE PARTIDA':('TURNO JUGADOR '+(game.turn+1));
-  el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':(!game.rolled?'LANZAR DADO':game.moves+' CONEXIONES');
-  const yourTurn=game.turn===myPlayer&&game.status==='play'&&(mode!=='pvp'||connected);
-  el('diceBtn').disabled=!yourTurn||game.rolled;
-  el('passBtn').disabled=!yourTurn||!game.rolled;
-  el('leaveBtn').disabled=false;
-  el('selectedLabel').textContent=game.status==='end'?'Partida finalizada':!yourTurn?'Espera el turno de tu rival':!game.rolled?'Lanza el dado para conseguir conexiones':selected<0?'Selecciona el primer nodo para unir':'Nodo '+(selected+1)+' elegido. Selecciona un segundo nodo.';
-  for(let i=0;i<nodes.length;i++){
-    const highlighted=i===selected;
-    nodes[i].material.color.setHex(highlighted?0xfbd66e:0x68dcff);
-    nodes[i].scale.setScalar(highlighted?1.55:1);
-  }
+ if(!game)return;
+ el('score0').textContent=game.scores[0];el('score1').textContent=game.scores[1];
+ el('roomDisplay').textContent=room?'SALA '+room:(mode==='cpu'?'VS CPU':'TUTORIAL');
+ el('turnDisplay').textContent=game.status==='end'?'FIN DE PARTIDA':'TURNO JUGADOR '+(game.turn+1);
+ el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':!game.rolled?'LANZA EL DADO':game.moves+' CONEXIONES';
+ el('diceResult').textContent=game.rolled?('RESULTADO '+game.dice):'DADO 1–6';
+ el('levelTag').textContent='NIVEL '+game.level+' · '+POINTS.length+' NODOS';
+ const yourTurn=game.turn===myPlayer&&game.status==='play'&&(mode!=='pvp'||connected);
+ el('diceBtn').disabled=!yourTurn||game.rolled;el('passBtn').disabled=!yourTurn||!game.rolled;
+ el('leaveBtn').disabled=false;
+ el('selectedLabel').textContent=game.status==='end'?'Partida finalizada':!yourTurn?'Espera el turno de tu rival':!game.rolled?'Lanza el dado para conseguir conexiones':selected<0?'Selecciona el primer nodo para unir':'Nodo '+(selected+1)+' elegido. Selecciona otro.';
+ for(let i=0;i<nodes.length;i++){
+  const selectedNow=i===selected,blocked=(game.blocked||[]).includes(i);
+  nodes[i].material.color.setHex(blocked?0x5b7181:selectedNow?0xffd231:0x68dcff);
+  nodes[i].scale.setScalar(selectedNow?1.4:1);
+ }
+ tutorials();
 }
 function finishGame(){
-  if(!game)return;
-  const result=game.winner===-1?'EMPATE':('GANA JUGADOR '+(game.winner+1));
-  el('resultTitle').textContent=result;
-  el('resultSummary').textContent='Puntos: jugador 1 '+game.scores[0]+' · jugador 2 '+game.scores[1]+'. Conexiones completadas: '+game.lines.length+'.';
-  if(arSession)arSession.end().catch(()=>{});
-  screen('results');
+ if(!game)return;
+ awardResult();
+ const result=game.winner===-1?'EMPATE':('GANA JUGADOR '+(game.winner+1));
+ el('resultTitle').textContent=result;
+ el('resultSummary').textContent='Nivel '+game.level+' · Puntos: '+game.scores[0]+' vs '+game.scores[1]+'. Triángulos: '+game.tris.length+'.';
+ if(arSession)arSession.end().catch(()=>{});
+ screen('results');
 }
-function showCpu(){cleanup();mode='cpu';host=true;connected=true;myPlayer=0;networkStatus('MODO CPU',true);setState(newState());}
+function showCpu(teach=false){
+ cleanup();tutorial=!!teach;mode=teach?'tutorial':'cpu';host=true;connected=true;myPlayer=0;
+ networkStatus(teach?'TUTORIAL':'MODO CPU',true);setState(newState());scheduleCpu();
+}
 function hostConnection(c){
-  if(conn?.open){c.on('open',()=>{c.send({type:'ERROR',message:'La sala ya está ocupada'});c.close();});return;}
-  conn=c;
-  c.on('data',m=>{
-    if(!m||typeof m!=='object')return;
-    if(m.type==='HELLO'){
-      connected=true;networkStatus('RIVAL CONECTADO',true);
-      if(!game)game=newState();
-      setState(game);broadcast();
-    }else if(m.type==='ACTION'&&connected&&game&&game.status==='play'){
-      applyAction(m.action,m.data||{},1);
+ if(conn?.open){c.on('open',()=>{c.send({type:'ERROR',message:'La sala está ocupada'});c.close();});return;}
+ conn=c;
+ c.on('data',m=>{
+  if(!m||typeof m!=='object')return;
+  if(m.type==='HELLO'){
+    connected=true;networkStatus('RIVAL CONECTADO',true);
+    if(!game)game=newState();
+    if(m.profile&&typeof m.profile==='object'){
+      const p=m.profile;
+      game.players[1]={name:String(p.name||'RIVAL').slice(0,30),color:/^#[0-9a-fA-F]{6}$/.test(p.color)?p.color:'#ff2d7a',badge:['◆','⚡','★','✦','☣'].includes(p.badge)?p.badge:'★'};
     }
-  });
-  c.on('close',()=>{if(conn===c){conn=null;connected=false;networkStatus('RIVAL DESCONECTADO');refresh();notify('Rival desconectado. Puede volver con el mismo código.');}});
-  c.on('error',()=>networkStatus('ERROR DE CONEXIÓN'));
+    setState(game);broadcast();
+  }else if(m.type==='ACTION'&&connected&&game&&game.status==='play'){
+    applyAction(m.action,m.data||{},1);
+  }
+ });
+ c.on('close',()=>{if(conn===c){conn=null;connected=false;networkStatus('RIVAL DESCONECTADO');refresh();notify('Rival desconectado. Puede volver con el mismo código.');}});
+ c.on('error',()=>networkStatus('ERROR DE CONEXIÓN'));
 }
 function showHostRoom(){
   screen('waiting');el('roomCode').textContent=room;el('qr').innerHTML='';
@@ -263,7 +283,7 @@ function joinRoom(codeInput){
     peer=new Peer(undefined,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
     peer.on('open',()=>{
       conn=peer.connect(PEER_PREFIX+code,{reliable:true,serialization:'json'});
-      conn.on('open',()=>{connected=true;networkStatus('CONECTADO',true);conn.send({type:'HELLO',version:VERSION});});
+      conn.on('open',()=>{connected=true;networkStatus('CONECTADO',true);conn.send({type:'HELLO',version:VERSION,profile:profilePacket()});});
       conn.on('data',m=>{
         if(m?.type==='STATE'&&m.state){clearTimeout(joinTimer);el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';setState(m.state);}
         else if(m?.type==='ERROR'){notify(m.message);home();}
