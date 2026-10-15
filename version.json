@@ -1,10 +1,10 @@
 {
   "name": "3 LINE-AR",
-  "version": "57.6.0-beta.1",
+  "version": "57.6.1-beta.1",
   "buildDate": "2026-10-15",
-  "status": "triangular-face-node-occlusion-and-academy-beta-test-in-progress",
+  "status": "published-app-awaiting-manual-xr-reentry-validation",
   "network": "PeerJS WebRTC con SYNC_REQUEST al volver del segundo plano y reconexión al código actual manteniendo partida",
-  "ar": "dos modos: tocar nodos en pantalla y apuntar con cámara + confirmar (también evento XR select); sin hand-tracking garantizado",
+  "ar": "AR táctil y por mira con selección XR; si el sistema cierra la sesión WebXR por suspensión, se avisa que debe reactivarse manualmente",
   "monetization": "disabled without approved publisher ID",
   "levels": 10,
   "accounts": "Firebase Authentication SDK apunta a d-line-g, web app confirmada y dominio autorizado por captura; verificar proveedor Google y login en dispositivos",

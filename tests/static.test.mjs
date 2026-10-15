@@ -7,9 +7,9 @@ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const auth=fs.readFileSync(new URL('../auth.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 57',()=>{
-  assert.match(html,/V57\.6\.0/);
-  assert.match(html,/game\.js\?v=57\.6\.0/);
-  assert.match(js,/const VERSION='57\.6\.0-beta\.1'/);
+  assert.match(html,/V57\.6\.1/);
+  assert.match(html,/game\.js\?v=57\.6\.1/);
+  assert.match(js,/const VERSION='57\.6\.1-beta\.1'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
@@ -93,7 +93,7 @@ test('HUD gamer, tutorial BOT, escala AR y progresión',()=>{
 });
 
 test('cambio de proyecto Firebase y cache-busting de auth.js',()=>{
- assert.match(js,/from '\.\/auth\.js\?v=57\.6\.0'/);
+ assert.match(js,/from '\.\/auth\.js\?v=57\.6\.1'/);
  assert.match(auth,/appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef"/);
  assert.match(auth,/browserLocalPersistence/);
  assert.match(auth,/onAuthStateChanged/);
@@ -151,4 +151,12 @@ test('Regla de superficie atravesando punto distinto de vértices',()=>{
  assert.match(js,/function pointCoveredByFace3D\(/);
  assert.match(js,/face\.a,face\.b,face\.c/);
  assert.match(js,/const covered=tris\.some\(face=>pointCoveredByFace3D/);
+});
+
+test('al volver del bloqueo, WebXR avisa si hay que reactivar AR sin salir de la partida',()=>{
+ assert.match(js,/let arWasActiveWhenHidden=false/);
+ assert.match(js,/function remindARAfterSleep/);
+ assert.match(js,/document\.visibilityState==='hidden' && arSession/);
+ assert.match(js,/restoreNetworkAfterPause\(\)/);
+ assert.match(js,/Pulsa ACTIVAR AR/);
 });

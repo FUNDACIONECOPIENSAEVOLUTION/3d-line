@@ -1,5 +1,11 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.6.1-beta.1 — 2026-10-15
+
+- Aviso integrado al juego al volver del bloqueo del teléfono si Android terminó la sesión WebXR, para indicar la necesidad de activar AR y volver a fijar tablero.
+- La resincronización de la partida sigue independiente de la sesión de cámara; no se puede restaurar automáticamente una sesión WebXR cerrada sin gesto del usuario.
+- Test automático para el retorno de AR desde segundo plano y nueva versión para evitar caché.
+
 ## 57.6.0-beta.1 — 2026-10-15
 
 - Se añadió bloqueo de nodos cuando una cara triangular conquistada los atraviesa físicamente en el espacio XYZ, incluso sin volumen cerrado.
