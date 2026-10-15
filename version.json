@@ -1,9 +1,11 @@
 {
   "name": "3 LINE-AR",
-  "version": "56.1.0-beta.2",
+  "version": "57.0.0-beta.1",
   "buildDate": "2026-10-15",
-  "status": "technical-beta-with-diagnostics",
+  "status": "public-beta-tests-pending",
   "network": "PeerJS WebRTC",
-  "ar": "WebXR local hit-test, no shared anchors",
-  "monetization": "inactive pending approval"
+  "ar": "XR referenceSpace fallback + optional surface hit-test; no shared anchors",
+  "monetization": "disabled without approved publisher ID",
+  "levels": 10,
+  "accounts": "Google Identity prepared; requires Client ID and verified backend"
 }

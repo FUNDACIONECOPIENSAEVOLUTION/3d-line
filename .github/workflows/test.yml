@@ -16,4 +16,4 @@ jobs:
         with:
           node-version: '22'
       - name: Pruebas de integridad, sintaxis y UI
-        run: node --test tests/static.test.mjs
+        run: node --test tests/*.test.mjs
