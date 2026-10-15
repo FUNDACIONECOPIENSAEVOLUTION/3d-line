@@ -1,5 +1,14 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.8.0-beta.1 — 2026-10-15
+
+- Nuevo selector previo a la partida con **MODO GALÁCTICO** (dado 1–6, modo original) y **MODO ASCENSO** (1, 2, 3… conexiones en el turno propio de cada jugador, sin azar).
+- El estado de la modalidad viaja con la sala autoritativa PvP y aparece en la pantalla de espera, cabecera y motor BOT. Turnos independientes por jugador, incluida compatibilidad con estados antiguos sin el campo de modo.
+- Progresión por **doble victoria**: vencer el nivel en Galáctico y Ascenso antes de habilitar el siguiente, manteniendo intactos los niveles desbloqueados previamente. Resultado ofrece pasar al modo pendiente.
+- Las cinco primeras insignias se muestran en el menú de forma compacta; otras once aparecen al expandir **••• VER INSIGNIAS ESPECIALES** en una galería horizontal desplazable sin alterar las reglas de videos.
+- Añadidos efectos suaves al núcleo Ascenso y a las tarjetas de modalidad, con respeto a `prefers-reduced-motion`.
+- Guía oficial para crear AdSense, solicitar H5 Games Ads y abrir AdMob, con URLs y requisitos de identidad y aprobación: no se crearon cuentas ni se habilitaron ingresos.
+
 ## 57.7.0-beta.1 — 2026-10-15
 
 - Las cinco primeras insignias (◆ ⚡ ★ ✦ ☣) son gratuitas; se bloquearon las once nuevas con icono de candado y coste progresivo de 1 a 11 videos por insignia, con contador individual por usuario.
