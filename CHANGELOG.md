@@ -1,5 +1,15 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.3.0-beta.1 — 2026-10-15
+
+- Corregida selección de nodos dentro de realidad aumentada WebXR. El motor anterior pasaba una `ArrayCamera` a `Raycaster.setFromCamera`, que requiere una cámara de perspectiva u ortográfica individual.
+- La nueva selección AR acepta pantalla táctil por `document` en el DOM overlay y eventos nativos `XRSession.select`; proyecta la posición mundial de cada nodo con las cámaras reales de XR, aumenta el área de toque y evita jugadas duplicadas.
+- Los toques en botones, controles de escala y paneles no deben provocar jugadas detrás de la interfaz; el gesto de pinza tampoco debe colocar líneas.
+- Reglas ajustadas: una línea sin triángulo coloreado no constituye pared, por lo que se puede cruzar; **ya no existe límite de distancia**. Una zona triangular cerrada y pintada sí bloquea la conexión que atraviesa su proyección al plano XZ.
+- Se mantienen prohibidas las conexiones duplicadas, las que atraviesan nodos intermedios y la selección de nodos encerrados por una zona conquistada.
+- Añadidas pruebas para escoger puntos AR mediante las cámaras de WebXR y las reglas de cruce de triángulos.
+- Sigue pendiente verificar físicamente el toque AR en el celular y el modo PvP completo en dos dispositivos; las pruebas de GitHub no simulan una sesión XR real.
+
 ## 57.2.0-beta.1 — 2026-10-15
 
 - Cambiada la aplicación Firebase Auth usada por el juego de `ar-3lilne` a la aplicación WEB del proyecto confirmado por el usuario **`d-line-g`**. Configuración pública exacta copiada de su pantalla Firebase.

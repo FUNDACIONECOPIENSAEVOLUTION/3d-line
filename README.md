@@ -1,8 +1,18 @@
-# 3 LINE-AR — V57.2.0 beta 5
+# 3 LINE-AR — V57.3.0 beta 6
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
 Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC por código o QR, IA rival y realidad aumentada experimental.
+
+## V57.3: selección de nodos AR y paredes de zonas conquistadas
+
+El usuario pudo jugar desde PC en 3D contra un celular en AR y vio las líneas sincronizadas, pero no pudo tocar nodos desde AR. En la versión anterior `Raycaster.setFromCamera` recibía `renderer.xr.getCamera()`, una `ArrayCamera`, que no es la cámara perspectiva requerida por el raycaster. La V57.3 usa las cámaras perspectiva internas, toca la proyección del nodo sobre la pantalla y habilita tanto eventos de puntero del DOM overlay como `XRSession.select`. Amplía la tolerancia táctil para esferas pequeñas, pero evita pulsaciones accidentales sobre controles y acciones duplicadas.
+
+**Para comprobarlo:** 1) abre una sala en el PC, 2) entra desde celular, 3) toca **ACTIVAR AR** y fija el tablero, 4) espera tu turno y toca el dado del HUD, 5) toca dos nodos sucesivos: deberían resaltarse y sincronizarse en el PC. Si no funciona, informa si cambia el rótulo «Nodo seleccionado», modelo de celular, navegador y captura.
+
+**Reglas actualizadas:** los segmentos o líneas sin área triangular completada **no** bloquean cruzar por encima. No se aplica límite de distancia entre nodos. En cuanto tres líneas cierran un triángulo y aparece su sombreado, ese territorio impide conectar puntos a través de su interior en la proyección XZ; también se bloquean los nodos encerrados. Siguen prohibidas líneas duplicadas y líneas que pasan directamente por un nodo intermedio. Las reglas aún usan geometría plana XZ para territorios; no equivalen a colisión tridimensional exacta.
+
+No cambió Firebase `d-line-g` ni el modelo de cuenta, el funcionamiento de la sala o la monetización. La selección WebXR requiere **pruebas físicas en teléfono** antes de considerarse totalmente validada.
 
 ## V57.2: Firebase del juego conectado al proyecto correcto
 
@@ -33,7 +43,7 @@ Cuando la Fundación obtenga aprobación de Google H5 Games Ads y un identificad
 - **10 niveles iniciales**: 5, 6, 7, 9, 9, 12, 16, 20, 25 y 30 nodos. Desde nivel 5 los nodos se ubican aleatoriamente con una semilla controlada por el anfitrión para que ambos móviles vean el mismo tablero.
 - **Dado de seis caras (1–6 conexiones)** con aleatoriedad derivada de crypto.getRandomValues; no sigue una secuencia fija.
 - **Solo base holográfica inferior**, postes y nodos flotantes, sin cubo 3D cerrado.
-- Las reglas impiden que una conexión proyectada al suelo (plano XZ) atraviese otras conexiones ya realizadas, y que atraviese nodos intermedios. Al cerrar un triángulo, se bloquean los nodos interiores y se colorea el área y la insignia de su dueño. Se trata de un bloqueo **2D proyectado**, no todavía de detección volumétrica exacta de paredes 3D.
+- Las reglas permiten cruzar líneas abiertas, pero impiden atravesar territorios de triángulos ya conquistados (proyección XZ) y nodos intermedios. Al cerrar un triángulo, se bloquean los nodos interiores y se colorea el área y la insignia de su dueño. Se trata de un bloqueo **2D proyectado**, no todavía de detección volumétrica exacta de paredes 3D.
 - El anfitrión conserva autoridad sobre el dado, las reglas, los turnos, la puntuación, los puntos y el nivel en partidas PvP.
 
 ## Para probar en dos dispositivos
@@ -65,9 +75,9 @@ La publicidad H5 Games Ads necesita aprobación e ID auténtico. No se habilitar
 
 ## Calidad, versión y despliegue
 
-- La versión en cabecera es **V57.2.0** y la versión interna es **57.2.0-beta.1**.
+- La versión en cabecera es **V57.3.0** y la versión interna es **57.3.0-beta.1**.
 - Cada cambio debe actualizar `version.json`, `CHANGELOG.md` y las etiquetas de recursos del HTML.
-- Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs` y `tests/tutorial.test.mjs`.
+- Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs`, `tests/tutorial.test.mjs` y `tests/ar-picking.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
 
 ## AWS

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.2.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.3.0';
 
-// v57.2.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v57.3.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.2.0-beta.1';
+const VERSION='57.3.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -176,14 +176,26 @@ function nearSegment(p,a,b){
  const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
  return Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t);
 }
+// Las líneas sueltas NO son paredes. Solo la zona de un triángulo ya conquistado
+// (s.tris) impide nuevas conexiones que atraviesen su superficie proyectada XZ.
+// El análisis XZ coincide con las reglas actuales de encapsulamiento de nodos.
+function crossesOwnedTriangle(a,b,t){
+ const A=xy(a),B=xy(b),T=[xy(t.a),xy(t.b),xy(t.c)];
+ // Cualquier cruce estricto del límite de una zona pintada bloquea el camino.
+ for(let i=0;i<3;i++)if(segmentsCross(A,B,T[i],T[(i+1)%3]))return true;
+ // Una diagonal con extremos en los bordes puede atravesar el interior
+ // sin cruzar estrictamente otro borde; el punto medio detecta ese caso.
+ const midpoint={x:(A.x+B.x)/2,y:(A.y+B.y)/2};
+ return pointInsideTriangle(midpoint,T[0],T[1],T[2]);
+}
 function edgeError(a,b,s){
  if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=POINTS.length||b>=POINTS.length||a===b)return 'Puntos inválidos.';
  if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo quedó dentro de una zona cerrada.';
  if(s.lines.some(x=>linkKey(x.a,x.b)===linkKey(a,b)))return 'Esta línea ya existe.';
- if(distance(a,b)>(LEVELS[(s.level||1)-1]?.range||2))return 'Conexión demasiado larga.';
+ // La distancia no limita el juego; únicamente las zonas coloreadas impiden cruzar.
  const A=xy(a),B=xy(b);
  for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&nearSegment(xy(i),A,B)<.075)return 'La línea atraviesa otro nodo.';
- for(const l of s.lines)if(![a,b].includes(l.a)&&![a,b].includes(l.b)&&segmentsCross(A,B,xy(l.a),xy(l.b)))return 'No puedes atravesar una pared o línea.';
+ for(const triangle of s.tris)if(crossesOwnedTriangle(a,b,triangle))return 'No puedes atravesar un triángulo ya conquistado.';
  return null;
 }
 const el=id=>document.getElementById(id);
@@ -499,21 +511,102 @@ function rebuildBoard(){
   linesGroup.add(lineMesh(l.a,l.b,color));
  }
 }
-function pickNode(e){
- if(!game||game.status!=='play'||game.turn!==myPlayer||!game.rolled||!game.moves)return;
- if(mode==='pvp'&&!connected)return;
- const rect=renderer.domElement.getBoundingClientRect();
- const mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
- raycaster.setFromCamera(mouse,renderer.xr.isPresenting?renderer.xr.getCamera():camera);
- const hits=raycaster.intersectObjects(nodes,false);if(!hits.length)return;
- const id=hits[0].object.userData.nodeId;
- if((game.blocked||[]).includes(id)){notify('Este punto ya está encerrado y no se puede usar.');return;}
- if(selected===-1){selected=id;refresh();return;}
- if(selected===id){selected=-1;refresh();return;}
- const a=selected;selected=-1;
- if(!validEdge(a,id,game)){notify(edgeError(a,id,game)||'No se puede construir esa línea.');refresh();return;}
- action('LINE',{a,b:id});refresh();
+// En AR los toques pertenecen al DOM overlay o XRSession; no a la ArrayCamera.
+let arPointerStart=null,lastARNodePick=0;
+const arPointers=new Set();
+function canSelectNode(){
+ return Boolean(game&&game.status==='play'&&game.turn===myPlayer&&game.rolled&&game.moves&&(mode!=='pvp'||connected));
 }
+function selectNodeById(id){
+ if(!canSelectNode()||!Number.isInteger(id))return false;
+ if((game.blocked||[]).includes(id)){notify('Este punto pertenece a una zona ya conquistada.');return false;}
+ if(selected===-1){selected=id;refresh();return true;}
+ if(selected===id){selected=-1;refresh();return true;}
+ const a=selected;selected=-1;
+ if(!validEdge(a,id,game)){notify(edgeError(a,id,game)||'Conexión bloqueada');refresh();return false;}
+ action('LINE',{a,b:id});refresh();return true;
+}
+function xrViewCameras(){
+ const xrCamera=renderer?.xr?.getCamera();
+ return xrCamera?.cameras?.filter(c=>c.isPerspectiveCamera)||[];
+}
+function closestXRNodeOnScreen(clientX,clientY){
+ if(!arSession||!arPlaced||!board?.visible)return -1;
+ const width=window.innerWidth,height=window.innerHeight;
+ if(width<=0||height<=0)return -1;
+ const views=xrViewCameras();if(!views.length)return -1;
+ board.updateWorldMatrix(true,true);
+ const pos=new THREE.Vector3(),ndc=new THREE.Vector3();
+ let nearest=-1,nearDist=Infinity;
+ for(let i=0;i<nodes.length;i++){
+  nodes[i].getWorldPosition(pos);
+  for(const view of views){
+   ndc.copy(pos).project(view);
+   if(ndc.z< -1||ndc.z>1)continue;
+   const x=(ndc.x+1)*width/2,y=(1-ndc.y)*height/2;
+   const d=Math.hypot(clientX-x,clientY-y);
+   if(d<nearDist){nearDist=d;nearest=i;}
+  }
+ }
+ // Facilitar el toque: las esferas AR físicas son de pocos centímetros.
+ return nearDist<=Math.max(32,Math.min(52,width*.12))?nearest:-1;
+}
+function pickNode(e){
+ if(arSession||!canSelectNode())return;
+ const rect=renderer.domElement.getBoundingClientRect();if(!rect.width||!rect.height)return;
+ const mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+ raycaster.setFromCamera(mouse,camera);
+ const hits=raycaster.intersectObjects(nodes,false);
+ if(hits.length)selectNodeById(hits[0].object.userData.nodeId);
+}
+function isARControl(target){
+ return Boolean(target?.closest?.('button,input,select,textarea,a,label,.game-header,.toolbar,.ar-size-control,.selected,.arenaLabel,.tutorial-hint,.overlay'));
+}
+function pickNodeInAR(clientX,clientY){
+ if(!arPlaced||!canSelectNode()||Date.now()-lastARNodePick<330)return false;
+ const id=closestXRNodeOnScreen(clientX,clientY);
+ if(id<0)return false;
+ const ok=selectNodeById(id);if(ok)lastARNodePick=Date.now();return ok;
+}
+function onARPointerDown(e){
+ if(!arSession||!arPlaced||isARControl(e.target))return;
+ arPointers.add(e.pointerId);
+ if(arPointers.size===1)arPointerStart={id:e.pointerId,x:e.clientX,y:e.clientY};
+ else arPointerStart=null;
+}
+function onARPointerUp(e){
+ if(!arSession)return;
+ arPointers.delete(e.pointerId);
+ const start=arPointerStart;arPointerStart=null;
+ if(!start||arPointers.size||start.id!==e.pointerId||isARControl(e.target))return;
+ if(Math.hypot(e.clientX-start.x,e.clientY-start.y)>20)return;
+ pickNodeInAR(e.clientX,e.clientY);
+}
+function onARXRSelect(e){
+ if(!arSession||!arPlaced||!canSelectNode()||Date.now()-lastARNodePick<330)return;
+ try{
+  const ref=renderer.xr.getReferenceSpace(),raySpace=e.inputSource?.targetRaySpace;
+  if(!ref||!raySpace)return;
+  const pose=e.frame.getPose(raySpace,ref);if(!pose)return;
+  const transform=pose.transform;
+  const origin=new THREE.Vector3(transform.position.x,transform.position.y,transform.position.z);
+  const q=new THREE.Quaternion(transform.orientation.x,transform.orientation.y,transform.orientation.z,transform.orientation.w);
+  const direction=new THREE.Vector3(0,0,-1).applyQuaternion(q).normalize();
+  const ray=new THREE.Ray(origin,direction);
+  board.updateWorldMatrix(true,true);
+  const world=new THREE.Vector3();
+  let closest=-1,min=Infinity;
+  const radius=Math.max(.055,board.scale.x*.19);
+  for(let i=0;i<nodes.length;i++){
+   nodes[i].getWorldPosition(world);
+   if(world.clone().sub(origin).dot(direction)<0)continue;
+   const distance=Math.sqrt(ray.distanceSqToPoint(world));
+   if(distance<radius&&distance<min){closest=i;min=distance;}
+  }
+  if(closest>=0&&selectNodeById(closest))lastARNodePick=Date.now();
+ }catch(err){console.debug('AR select sin pose válida:',err);}
+}
+
 function resetView(){
  if(!camera||arSession){notify('En AR puedes ajustar el tamaño con ESCALA.');return;}
  camera.position.set(2.85,3.15,4.1);orbit.target.set(0,.42,0);orbit.update();
@@ -536,8 +629,9 @@ async function startAR(){
   const session=await navigator.xr.requestSession('immersive-ar',{optionalFeatures:['hit-test','dom-overlay','local-floor','bounded-floor'],domOverlay:{root:document.body}});
   arSession=session;arPlaced=false;lastHit=null;scene.background=null;orbit.enabled=false;
   board.visible=false;document.body.classList.add('xr-active');el('arSizeControl').classList.remove('hidden');syncARSlider();el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
+  session.addEventListener('select',onARXRSelect);
   session.addEventListener('end',()=>{
-   arSession=null;arPlaced=false;lastHit=null;
+   arSession=null;arPlaced=false;lastHit=null;arPointerStart=null;arPointers.clear();
    if(hitSource){try{hitSource.cancel();}catch{}hitSource=null;}
    scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');el('arSizeControl').classList.add('hidden');
    el('placeBtn').classList.add('hidden');el('exitArBtn').classList.add('hidden');el('arBtn').classList.remove('hidden');
@@ -560,7 +654,7 @@ async function startAR(){
   }catch{
    hitSource=null;board.visible=true;arPlaced=true;board.position.set(0,-.25,-1.2);board.scale.setScalar(.26);syncARSlider();
    el('placeBtn').classList.add('hidden');
-   notify('AR en modo holograma sin seguimiento de suelo. Puedes ajustar la escala; no es un ancla fija.');
+   notify('Holograma AR activado. Lanza el dado y toca dos nodos; este modo no fija el suelo.');
   }
  }catch(e){notify('AR no disponible: '+(e.message||'equipo incompatible'));if(arSession)try{await arSession.end();}catch{}}
 }
@@ -570,7 +664,7 @@ function placeAR(){
  board.position.copy(p);board.quaternion.copy(q);board.scale.setScalar(.26);
  board.visible=true;arPlaced=true;syncARSlider();if(reticle)reticle.visible=false;
  el('placeBtn').classList.add('hidden');
- notify('Tablero fijado localmente. Los dos móviles deben alinear la posición manualmente; aún no hay anclas compartidas.');
+ notify('Tablero fijado: lanza el dado cuando sea tu turno y toca dos nodos. La ubicación AR sigue siendo local.');
 }
 async function stopScanner(){
   el('scanner').classList.add('hidden');
@@ -683,6 +777,10 @@ function enablePinchScale(){
 }
 
 function bind(){
+ document.addEventListener('pointerdown',onARPointerDown,true);
+ document.addEventListener('pointerup',onARPointerUp,true);
+ document.addEventListener('pointercancel',e=>{arPointers.delete(e.pointerId);arPointerStart=null;},true);
+ document.addEventListener('beforexrselect',e=>{if(arSession&&isARControl(e.target))e.preventDefault();});
  el('createBtn').addEventListener('click',createRoom);
  el('cpuBtn').addEventListener('click',()=>showCpu(false));
  el('tutorialBtn').addEventListener('click',()=>{selectedLevel=1;renderLevels();showCpu(true);});

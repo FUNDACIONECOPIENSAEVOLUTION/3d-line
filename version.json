@@ -1,14 +1,15 @@
 {
   "name": "3 LINE-AR",
-  "version": "57.2.0-beta.1",
+  "version": "57.3.0-beta.1",
   "buildDate": "2026-10-15",
-  "status": "firebase-d-line-g-web-sdk-configured-auth-validation-pending",
+  "status": "ar-node-input-and-colored-walls-beta-awaiting-mobile-validation",
   "network": "PeerJS WebRTC",
-  "ar": "webxr fallback + vertical scaling slider and touch pinch; local-only spatial anchoring",
+  "ar": "WebXR AR selección con cámaras perspectiva por vista, captura de toques DOM overlay y XR select; verificar en celular; ancla local",
   "monetization": "disabled without approved publisher ID",
   "levels": 10,
   "accounts": "Firebase Authentication SDK apunta a d-line-g, web app confirmada y dominio autorizado por captura; verificar proveedor Google y login en dispositivos",
   "progression": "one visible unlocked level; local per-account completion; H5 interstitial between levels only with approved publisher",
   "firestore": "sin conexión activa; verificar base/edición, reglas y habilitación antes de guardar progreso",
-  "migration": "Firebase auth UIDs del proyecto antiguo no migrados; progreso previo local vinculado a UID anterior podría no aparecer en la nueva sesión"
+  "migration": "Firebase auth UIDs del proyecto antiguo no migrados; progreso previo local vinculado a UID anterior podría no aparecer en la nueva sesión",
+  "game_rules": "sin límite de distancia ni bloqueo por líneas sueltas; los triángulos coloreados bloquean cruces en proyección XZ"
 }
