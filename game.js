@@ -267,6 +267,7 @@ function applyAction(type,data,player){
   const candidates=eligibleCount(game);
   if(candidates===0){endTurn();}else{
    game.rolled=true;game.dice=1+rand(6);game.moves=Math.min(game.dice,candidates);
+   if(player===1)game.botMovedThisTurn=false;
   }
  }else if(type==='LINE'){
   if(!game.rolled||game.moves<1)return false;
@@ -276,6 +277,7 @@ function applyAction(type,data,player){
   const triangles=foundTriangles(a,b,game.lines,game.tris);
   game.tris.push(...triangles);game.scores[player]+=triangles.length*10;
   game.blocked=blockedNodes(game);game.moves--;
+  if(player===1)game.botMovedThisTurn=true;
   // No congelar tutorial si el dado otorga más líneas que las que quedan disponibles.
   if(game.moves===0||eligibleCount(game)===0)endTurn();
  }else if(type==='PASS'){
@@ -295,7 +297,7 @@ function scheduleCpu(){
  cpuTimer=setTimeout(()=>{
   if(!game||game.version!==stateVersion||game.status!=='play'||game.turn!==1)return;
   if(!game.rolled){applyAction('ROLL',{},1);return;}
-  if(mode==='tutorial' && game.moves<game.dice){applyAction('PASS',{},1);return;}
+  if(mode==='tutorial' && game.botMovedThisTurn){applyAction('PASS',{},1);return;}
   let best=null,bestValue=-Infinity;
   for(let a=0;a<POINTS.length;a++)for(let b=a+1;b<POINTS.length;b++){
    if(!validEdge(a,b,game))continue;
