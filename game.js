@@ -139,11 +139,109 @@ function renderLevels(){
  el('tutorialBtn').textContent=accessible===1?'🎓 NIVEL 1 · APRENDER CON BOT':'🎓 REPASAR TUTORIAL';
  el('cpuBtn').textContent='⚡ JUGAR NIVEL '+accessible+' CONTRA BOT';
 }
+// Academia táctica: siete retos visuales de respuesta corta, sin cobro ni anuncios.
+// La lectura es opcional y puede abrirse durante la partida sin reiniciarla.
+const ACADEMY_LESSONS=[
+ {title:'El dado galáctico',text:'Cuando sea tu turno, pulsa el dado central. El número es aleatorio entre 1 y 6 y determina cuántas conexiones puedes intentar.',question:'¿Qué debes hacer antes de dibujar?',answers:['Lanzar el dado','Tocar cualquier línea'],correct:0,art:'dice'},
+ {title:'Une dos puntos',text:'Toca un nodo y después otro. Puedes conectar puntos en distintos ejes y alturas. La distancia por sí sola no prohíbe la línea.',question:'¿Pueden conectarse dos nodos lejanos si no hay barrera?',answers:['Sí, si la trayectoria está libre','No, solo nodos próximos'],correct:0,art:'line'},
+ {title:'Las líneas son barreras',text:'Una línea existente no puede ser atravesada físicamente por otra en 3D. Se pueden crear varias conexiones desde un vértice compartido.',question:'¿Puedes cruzar una línea colocada en el mismo lugar?',answers:['Sí, siempre','No, hay una barrera'],correct:1,art:'cross'},
+ {title:'Conquista el triángulo',text:'Tres conexiones que cierran una cara triangular válida colorean un territorio con tu insignia. Cada triángulo aporta 10 puntos a su conquistador.',question:'¿Qué completa un territorio y da puntos?',answers:['Cerrar un triángulo','Crear una única línea'],correct:0,art:'triangle'},
+ {title:'Un nodo elevado está libre',text:'El tablero existe en tres dimensiones. Un triángulo sombreado debajo de un nodo no lo bloquea mientras la superficie no pase físicamente por él.',question:'¿El triángulo inferior bloquea al nodo flotante superior?',answers:['No, permanece disponible','Sí, aunque esté muy arriba'],correct:0,art:'above'},
+ {title:'Caras que cubren nodos',text:'Si una cara triangular conquistada pasa por un nodo que NO es uno de sus tres vértices, ese nodo queda bloqueado. Sus vértices siguen utilizables; una cara distinta sí podría cubrirlos.',question:'¿Qué ocurre con un nodo interior atravesado por el sombreado?',answers:['Queda bloqueado','Puede conectarse siempre'],correct:0,art:'covered'},
+ {title:'Cerramiento tridimensional',text:'Un conjunto de triángulos puede formar un volumen cerrado (laterales, arriba y abajo). Los puntos estrictamente dentro del volumen quedan bloqueados, aunque ninguna cara pase exactamente por ellos.',question:'¿Cuándo queda atrapado un punto interior en el espacio?',answers:['Con una sola cara inferior','Cuando se cierra el volumen 3D'],correct:1,art:'shell'}
+];
+const academyCircle=(x,y,color='#5ceaff',radius=6)=>
+ '<circle cx="'+x+'" cy="'+y+'" r="'+radius+'" fill="'+color+'" stroke="#e0ffff" stroke-width="1.5"/>';
+function academyArt(type){
+ const edge=(x1,y1,x2,y2,color='#42e8ff',width=4)=>
+  '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+color+'" stroke-width="'+width+'" stroke-linecap="round"/>';
+ const a=academyCircle(75,120),b=academyCircle(240,120),c=academyCircle(160,31,'#f9df67');
+ const triangle='<polygon points="75,120 240,120 160,31" fill="#ee3986" fill-opacity=".35" stroke="#ff3b97" stroke-width="4"/>';
+ const dice='<polygon points="120,35 200,35 233,70 200,120 120,120 87,70" fill="#073652" stroke="#50ebff" stroke-width="4"/>'+
+  '<text x="160" y="91" font-size="57" font-weight="bold" text-anchor="middle" fill="#a3ffff">6</text>';
+ let drawing='';
+ if(type==='dice')drawing=dice;
+ if(type==='line')drawing=edge(75,120,240,50)+academyCircle(75,120)+academyCircle(240,50);
+ if(type==='cross')drawing=edge(70,40,244,128,'#fb528a',6)+edge(70,128,244,40,'#43eaff',6)+
+  '<circle cx="157" cy="84" r="19" stroke="#ffdc5f" stroke-width="3" fill="#4f111f"/>'+
+  '<text x="157" y="92" font-size="27" text-anchor="middle" fill="#ffdc5f">×</text>';
+ if(type==='triangle')drawing=triangle+a+b+c+academyCircle(160,80,'#ffc744',10);
+ if(type==='above')drawing=triangle+a+b+c+edge(160,79,160,16,'#ade8ff',2)+academyCircle(160,12,'#6cfb85',9);
+ if(type==='covered')drawing=triangle+a+b+c+academyCircle(160,86,'#ffcd5e',9)+
+  '<circle cx="160" cy="86" r="19" fill="none" stroke="#ffd856" stroke-dasharray="4 4" stroke-width="2"/>';
+ if(type==='shell')drawing='<polygon points="82,124 235,124 158,20" fill="#ec3370" fill-opacity=".25" stroke="#ff3b92" stroke-width="3"/>'+
+  edge(158,20,155,151,'#6adfff',3)+edge(155,151,82,124,'#6adfff',3)+edge(155,151,235,124,'#6adfff',3)+
+  academyCircle(82,124)+academyCircle(235,124)+academyCircle(158,20)+academyCircle(155,151)+
+  academyCircle(155,95,'#ffe56d',9);
+ return '<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
+  '<rect width="320" height="170" rx="15" fill="#031727"/>'+
+  '<path d="M5 145H315M5 105H315M5 65H315M5 25H315" stroke="#1b4559" stroke-width="1"/>'+
+  drawing+'</svg>';
+}
+let academyIndex=0,academySolved=new Set();
+function openAcademy(){
+ academyIndex=0;
+ try{
+  const saved=JSON.parse(localStorage.getItem('3line57_academy_'+(currentAccount?.uid||'guest'))||'[]');
+  academySolved=new Set(saved.filter(v=>Number.isInteger(v)&&v>=0&&v<ACADEMY_LESSONS.length));
+ }catch{academySolved=new Set();}
+ el('academyOverlay').classList.remove('hidden');
+ renderAcademy();
+}
+function closeAcademy(){el('academyOverlay').classList.add('hidden');}
+function renderAcademy(){
+ const lesson=ACADEMY_LESSONS[academyIndex],solved=academySolved.has(academyIndex);
+ el('academyStep').textContent='EJERCICIO '+(academyIndex+1)+' / '+ACADEMY_LESSONS.length;
+ el('academyStars').textContent=ACADEMY_LESSONS.map((_,i)=>academySolved.has(i)?'★':'☆').join('');
+ el('academyTitle').textContent=lesson.title;
+ el('academyDescription').textContent=lesson.text;
+ el('academyQuestion').textContent=lesson.question;
+ el('academyExample').innerHTML=academyArt(lesson.art); // arte estático interno, sin entrada de usuario
+ el('academyChoiceA').textContent='A · '+lesson.answers[0];
+ el('academyChoiceB').textContent='B · '+lesson.answers[1];
+ el('academyChoiceA').disabled=solved;el('academyChoiceB').disabled=solved;
+ el('academyFeedback').textContent=solved?'✓ EJERCICIO SUPERADO. Puedes continuar.':'Escoge la respuesta correcta para desbloquear la explicación siguiente.';
+ el('academyFeedback').classList.toggle('academy-correct',solved);
+ el('academyPrevBtn').disabled=academyIndex===0;
+ el('academyNextBtn').disabled=!solved;
+ el('academyNextBtn').textContent=academyIndex===ACADEMY_LESSONS.length-1?'TERMINAR ACADEMIA':'SIGUIENTE →';
+}
+function answerAcademy(option){
+ const lesson=ACADEMY_LESSONS[academyIndex];
+ if(academySolved.has(academyIndex))return;
+ if(option!==lesson.correct){
+  el('academyFeedback').textContent='✕ INTENTA OTRA VEZ · Revisa el diagrama y la regla.';
+  el('academyFeedback').classList.remove('academy-correct');return;
+ }
+ academySolved.add(academyIndex);
+ try{localStorage.setItem('3line57_academy_'+(currentAccount?.uid||'guest'),JSON.stringify([...academySolved]));}catch{}
+ renderAcademy();
+}
+function nextAcademy(){
+ if(!academySolved.has(academyIndex))return;
+ if(academyIndex===ACADEMY_LESSONS.length-1){
+  closeAcademy();notify('¡Academia completada! Practica lo aprendido contra el BOT.');return;
+ }
+ academyIndex++;renderAcademy();
+}
+function startAcademyPractice(){
+ closeAcademy();
+ if(!el('game').classList.contains('hidden')){notify('Puedes continuar esta partida y practicar las reglas.');return;}
+ showCpu(true);
+}
 function tutorials(){
- const h=document.getElementById('tutorialHint');if(!h)return;
- h.classList.toggle('hidden',!tutorial||!game||game.status!=='play');
- if(!tutorial||!game)return;
- h.textContent=!game.rolled?'PASO 1 · Pulsa el dado luminoso de arriba.':selected<0?'PASO 2 · Toca un nodo. A continuación toca otro para construir una línea.':'PASO 3 · Escoge un segundo nodo. Cierra tres líneas para formar tu primer triángulo.';
+ const h=el('tutorialHint');if(!h)return;
+ const active=Boolean(tutorial&&game&&game.status==='play');
+ h.classList.toggle('hidden',!active);
+ if(!active)return;
+ const ownLines=game.lines.filter(l=>l.owner===0).length;
+ const ownTriangles=game.tris.filter(t=>t.owner===0).length;
+ if(ownTriangles>0)h.textContent='✓ RETO 3/3 SUPERADO · ¡Has conquistado un triángulo! Sus tres esquinas pueden seguir jugando.';
+ else if(ownLines>=1)h.textContent='RETO 3/3 · Cierra un triángulo: une tres pares de nodos, sin cruzar líneas existentes.';
+ else if(game.turn!==0)h.textContent='EL BOT ESTÁ JUGANDO · Observa su jugada y espera tu turno.';
+ else if(!game.rolled)h.textContent='RETO 1/3 · Pulsa el dado galáctico para obtener entre 1 y 6 conexiones.';
+ else if(selected<0)h.textContent='RETO 2/3 · Toca el primer nodo. Después elige otro para construir tu línea.';
+ else h.textContent='RETO 2/3 · Nodo '+(selected+1)+' elegido. Selecciona el segundo nodo.';
 }
 function awardResult(){
  if(!game||game.status!=='end'||awardRecorded)return false;
@@ -872,7 +970,7 @@ function selectAimedNode(){
  return didSelect;
 }
 function isARControl(target){
- return Boolean(target?.closest?.('button,input,select,textarea,a,label,.game-header,.toolbar,.ar-size-control,.selected,.arenaLabel,.tutorial-hint,.overlay,.ar-selection-modes,.ar-aim-crosshair'));
+ return Boolean(target?.closest?.('button,input,select,textarea,a,label,.game-header,.toolbar,.ar-size-control,.selected,.arenaLabel,.tutorial-hint,.overlay,.ar-selection-modes,.ar-aim-crosshair,.academy-overlay'));
 }
 function pickNodeInAR(clientX,clientY){
  if(!arPlaced||!canSelectNode()||Date.now()-lastARNodePick<330)return false;
@@ -1094,6 +1192,7 @@ function bind(){
  el('gameDialogCancel').addEventListener('click',()=>closeGameDialog(false));
  el('gameDialog').addEventListener('pointerdown',e=>{if(e.target===el('gameDialog'))closeGameDialog(false);});
  document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!el('academyOverlay').classList.contains('hidden')){e.preventDefault();closeAcademy();return;}
   if(el('gameDialog').classList.contains('hidden'))return;
   if(e.key==='Escape'){e.preventDefault();closeGameDialog(false);}
  });
@@ -1109,6 +1208,15 @@ function bind(){
  el('createBtn').addEventListener('click',createRoom);
  el('cpuBtn').addEventListener('click',()=>showCpu(false));
  el('tutorialBtn').addEventListener('click',()=>{selectedLevel=1;renderLevels();showCpu(true);});
+ el('academyBtn').addEventListener('click',openAcademy);
+ el('academyGameBtn').addEventListener('click',openAcademy);
+ el('academyCloseBtn').addEventListener('click',closeAcademy);
+ el('academyChoiceA').addEventListener('click',()=>answerAcademy(0));
+ el('academyChoiceB').addEventListener('click',()=>answerAcademy(1));
+ el('academyPrevBtn').addEventListener('click',()=>{if(academyIndex>0){academyIndex--;renderAcademy();}});
+ el('academyNextBtn').addEventListener('click',nextAcademy);
+ el('academyPracticeBtn').addEventListener('click',startAcademyPractice);
+ el('academyOverlay').addEventListener('pointerdown',e=>{if(e.target===el('academyOverlay'))closeAcademy();});
  el('joinBtn').addEventListener('click',()=>joinRoom(el('joinCode').value));
  el('joinCode').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom(el('joinCode').value);});
  el('scanBtn').addEventListener('click',startScanner);
