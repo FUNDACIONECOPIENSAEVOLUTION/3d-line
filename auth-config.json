@@ -1,4 +1,5 @@
 {
-  "clientId": "",
-  "note": "Configura un ID de cliente OAuth 2.0 de Google autorizado para https://fundacionecopiensaevolution.github.io. Se requiere backend para verificar ID tokens antes de confiar en autenticación o guardar progreso remoto."
+  "deprecated": true,
+  "comment": "No utilizado. Firebase Authentication se inicializa mediante auth.js con el proyecto d-line-g. No se necesita configurar un segundo Client ID en este archivo.",
+  "clientId": ""
 }

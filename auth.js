@@ -1,12 +1,15 @@
-// V57.1.0 · Firebase Auth utilizado originalmente en la edición V51.2.
+// V57.2.0 · Firebase Auth del proyecto d-line-g (app web registrada por la fundación).
 // Las claves "apiKey" y "appId" del SDK web son identificadores públicos,
 // NO credenciales administrativas. Firestore y la identidad deben protegerse
 // con reglas de seguridad y validación en servidor antes de lanzar economía online.
 const firebaseConfig={
- apiKey:"AIzaSyBbPYnUPaO-kzWWStS8013SOvdTSuK3KP4",
- authDomain:"ar-3lilne.firebaseapp.com",
- projectId:"ar-3lilne",
- appId:"1:382966716480:web:ee244825bb34bc35c667a5"
+ apiKey:"AIzaSyAzpvvChREJF1e6JMbQX9P7BwINeNHTZos",
+ authDomain:"d-line-g.firebaseapp.com",
+ projectId:"d-line-g",
+ storageBucket:"d-line-g.firebasestorage.app",
+ messagingSenderId:"1078189274558",
+ appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef",
+ measurementId:"G-DVYCR4L9WE"
 };
 let sdk=null,auth=null,ready=false;
 let listener=null;
@@ -31,7 +34,7 @@ export async function initializeAccountAuth(onUser,onError){
         email:user.email||null,
         provider:user.isAnonymous?'anonymous':'google',
         photoURL:user.photoURL||null,
-        verified:true
+        verified:!user.isAnonymous && user.emailVerified === true
       });
     }else onUser(null);
   },error=>onError?.(error));

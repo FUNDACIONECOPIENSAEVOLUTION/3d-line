@@ -1,5 +1,14 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.2.0-beta.1 — 2026-10-15
+
+- Cambiada la aplicación Firebase Auth usada por el juego de `ar-3lilne` a la aplicación WEB del proyecto confirmado por el usuario **`d-line-g`**. Configuración pública exacta copiada de su pantalla Firebase.
+- Conservados los proveedores Google y Anonymous, `onAuthStateChanged`, `browserLocalPersistence`, modo invitado local de contingencia y toda la lógica de juego V57.1.
+- Se evita la caché antigua del módulo de autenticación con versión `auth.js?v=57.2.0`; retirado el script Google Identity externo que la app no utilizaba.
+- La captura confirma autorización de `fundacionecopiensaevolution.github.io` y registro de una app web, pero aún deben verificarse Google como proveedor activo, Firestore y un inicio de sesión real.
+- No se migraron jugadores ni perfiles de `ar-3lilne`: los identificadores UID pueden variar y el progreso local anterior puede no aparecer con una nueva cuenta.
+- No se alteró la geometría, PvP, tutorial BOT, AR experimental, niveles ni monetización desactivada.
+
 ## 57.1.0-beta.1 — 2026-10-15
 
 - Recuperado el acceso previo al menú de la edición V51.2, con Google Firebase Auth, invitado anónimo y persistencia de sesión mediante `browserLocalPersistence`. El acceso sigue en modo invitado local cuando Firebase falla, con aviso explícito.
