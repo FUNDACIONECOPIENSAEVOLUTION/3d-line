@@ -1,4 +1,4 @@
-# 3 LINE-AR — V56.0.0 beta 1
+# 3 LINE-AR — V56.1.0 beta 2
 
 Juego 3D de estrategia por turnos, desarrollado para Fundación Ecopiensa Evolution.
 
@@ -15,6 +15,10 @@ Juego 3D de estrategia por turnos, desarrollado para Fundación Ecopiensa Evolut
 7. Desde la partida pulsa «ACTIVAR AR» solo en Android y navegador compatible (WebXR immersive-ar, hit-test y dom-overlay). Apunta a una superficie y pulsa «FIJAR TABLERO».
 
 **Importante sobre AR compartida:** el tablero permanece fijado en el sistema de coordenadas local que rastrea cada teléfono. La versión actual **no comparte anclas espaciales**; dos celulares deberán calibrar orientación y posición manualmente, y pueden ver tableros en sitios ligeramente distintos. El QR identifica solamente la SALA, no una posición física. Para una verdadera AR compartida se requiere un sistema de referencia visual compartido y/o spatial anchors compatibles, con pruebas físicas y gestión de deriva. En Safari/iPhone la experiencia WebXR immersive-ar habitualmente no está disponible; el juego conserva 3D.
+
+## Diagnóstico de celulares y computadores
+
+En el menú principal pulsa **DIAGNÓSTICO DEL DISPOSITIVO**. Se comprueban API WebGL, WebRTC, PeerJS, cámara y WebXR sin pedir autorización de la cámara. **COPIAR INFORME** produce un diagnóstico que se puede compartir para identificar problemas. Ten en cuenta que WebRTC y PeerJS en el dispositivo no garantizan que la conexión con el rival funcione: hay que probar con dos equipos en redes reales.
 
 ## Arquitectura y limitaciones
 
