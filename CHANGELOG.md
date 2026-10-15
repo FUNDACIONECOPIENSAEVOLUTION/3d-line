@@ -1,5 +1,14 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.4.0-beta.1 — 2026-10-15
+
+- Se aplican conjuntamente las dos barreras: una línea ya dibujada impide que otra línea posterior la cruce; un triángulo cerrado, sombreado y conquistado impide atravesar su territorio. Los enlaces desde un nodo común continúan permitidos; no se restaura el límite de distancia entre nodos.
+- Dos maneras de jugar en AR: **TOCAR PUNTO**, que utiliza la posición proyectada y el dedo sobre la pantalla; y **APUNTAR EN AR**, que muestra una mira al centro de la cámara y un botón para confirmar la selección. Los eventos nativos `XRSession.select` siguen habilitados para dispositivos compatibles.
+- Añadidas 11 insignias adicionales (16 en total): escudo, corona, dragón, águila, robot, alien, fuego, hielo, espadas, equilibrio y torre, además de las cinco existentes. Se comparten como parte del perfil PvP y se dibujan dentro de cada triángulo conquistado.
+- Adaptación móvil mediante grillas flexibles, límites de ancho, alturas y dimensiones de controles, `safe-area-inset`, variantes para anchos 420/350 px y modo horizontal compacto.
+- La modalidad APUNTAR es selección por **dirección de la cámara + confirmación**. No constituye seguimiento real de la mano o detección del dedo flotando en el espacio, que requeriría soporte WebXR hand tracking especializado.
+- Conservados Firebase `d-line-g`, tutorial con bot, niveles y salas multijugador.
+
 ## 57.3.0-beta.1 — 2026-10-15
 
 - Corregida selección de nodos dentro de realidad aumentada WebXR. El motor anterior pasaba una `ArrayCamera` a `Raycaster.setFromCamera`, que requiere una cámara de perspectiva u ortográfica individual.
