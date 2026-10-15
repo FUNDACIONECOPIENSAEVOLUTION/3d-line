@@ -1,5 +1,13 @@
 # Registro de versiones — 3 LINE-AR
 
+## 56.1.0-beta.2 — 2026-10-15
+
+- Diagnóstico de compatibilidad dentro de la interfaz: WebGL2, WebRTC, PeerJS, cámara, HTTPS y WebXR.
+- Opción para copiar informe de cada teléfono o computador sin solicitar acceso a cámara ni activar AR.
+- Los tests estáticos verifican que el nuevo panel y sus funciones están presentes.
+- Sigue pendiente activar GitHub Pages en la configuración del repositorio para disponer del enlace público.
+
+
 ## 56.0.0-beta.1 — 2026-10-15
 
 - Nueva interfaz separada de CSS y JavaScript, adaptable a Android y PC.
