@@ -230,3 +230,49 @@ body.xr-active #viewport{width:100vw;height:100dvh}
  .game-dialog-panel{padding:14px 10px}
  .game-dialog-actions button{font-size:10px}
 }
+
+/* V57.6: Academia táctica, manual gamer y preguntas visuales en móviles. */
+.academy-overlay{
+ position:fixed;inset:0;z-index:128;padding:calc(10px + env(safe-area-inset-top,0px))
+  10px calc(10px + env(safe-area-inset-bottom,0px));
+ background:#010915e9;backdrop-filter:blur(7px);
+ display:grid;place-items:center;overflow:auto;
+}
+.academy-panel{
+ width:min(520px,100%);max-width:100%;max-height:calc(100dvh - 20px);
+ overflow:auto;border:1px solid #2ce5ff;border-radius:18px;
+ background:linear-gradient(155deg,#0e2d43,#06101e 72%);
+ box-shadow:0 0 30px #00eaff36,0 18px 90px #000b;
+ padding:clamp(11px,3vw,20px);color:#effaff;text-align:center;
+}
+.academy-kicker{font-size:9px;font-weight:900;letter-spacing:.18em;color:#45edff}
+.academy-progress{display:flex;justify-content:space-between;gap:8px;margin-top:10px;color:#ffe38a;font-size:11px;font-weight:800}
+.academy-progress #academyStars{letter-spacing:.08em;color:#ffd94e}
+.academy-topbar{display:grid;grid-template-columns:minmax(0,1fr) 39px;align-items:center;gap:6px}
+.academy-topbar h2{font-size:clamp(17px,4.8vw,26px);text-align:left;line-height:1.2;margin:9px 0;color:#e5faff}
+.academy-topbar button{padding:3px;font-size:25px;min-height:35px;height:35px;line-height:1}
+.academy-example{border:1px solid #26546a;border-radius:14px;background:#031727;overflow:hidden;margin:4px 0 11px;max-height:215px}
+.academy-example svg{display:block;width:100%;max-height:195px;object-fit:contain}
+.academy-description{font-size:clamp(11px,2.9vw,14px);color:#c4e0ee;line-height:1.5;margin:9px 2px}
+.academy-question{font-size:clamp(12px,3vw,15px);font-weight:800;margin:13px 0 8px;color:#f4f7ff}
+.academy-answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.academy-answers button{font-size:clamp(10px,2.5vw,12px);white-space:normal;overflow-wrap:anywhere;min-height:54px;padding:7px}
+.academy-feedback{font-size:11px;min-height:21px;color:#ffe08e;margin:9px 0;line-height:1.3}
+.academy-feedback.academy-correct{color:#75ffb3}
+.academy-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 8px}
+.academy-actions button{min-height:41px;font-size:11px;padding:7px}
+.academy-practice{width:100%;border-color:#6ef7af;color:#caffdc;background:#0a422e;padding:9px 5px;min-height:43px;font-size:11px}
+body.xr-active .academy-overlay{z-index:130}
+@media(max-width:360px){
+ .academy-panel{padding:10px}
+ .academy-example svg{max-height:155px}
+ .academy-answers button{min-height:44px}
+ .academy-progress{font-size:10px}
+}
+@media(max-height:620px) and (orientation:landscape){
+ .academy-overlay{display:block;padding:4px 10px}
+ .academy-panel{margin:auto;max-height:calc(100dvh - 8px)}
+ .academy-example{max-height:100px}
+ .academy-example svg{max-height:96px}
+ .academy-description{font-size:11px}
+}
