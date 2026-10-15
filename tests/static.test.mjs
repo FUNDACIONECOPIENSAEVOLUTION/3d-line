@@ -6,9 +6,9 @@ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 56',()=>{
-  assert.match(html,/V56\.0\.0/);
-  assert.match(html,/game\.js\?v=56\.0\.0/);
-  assert.match(js,/const VERSION='56\.0\.0-beta\.1'/);
+  assert.match(html,/V56\.1\.0/);
+  assert.match(html,/game\.js\?v=56\.1\.0/);
+  assert.match(js,/const VERSION='56\.1\.0-beta\.2'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
