@@ -1,5 +1,15 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.6.0-beta.1 — 2026-10-15
+
+- Se añadió bloqueo de nodos cuando una cara triangular conquistada los atraviesa físicamente en el espacio XYZ, incluso sin volumen cerrado.
+- Las tres esquinas del propio triángulo siguen jugables; otra cara independiente puede bloquear una de esas esquinas si la atraviesa.
+- Un nodo por encima o debajo de una cara no queda bloqueado solo por su sombra sobre el suelo; persiste el bloqueo de nodos dentro de un volumen sellado en 3D.
+- Nueva Academia táctica integrada en menú y HUD con siete ejercicios ilustrados y preguntas con corrección inmediata, progreso local por cuenta y opción de practicar nivel 1 con BOT.
+- Tutorial jugable mejorado con tres retos progresivos: dado, primera conexión y conquistar un triángulo.
+- Nuevas pruebas geométricas para cara interior/borde, punto elevado, vértices propios y cara adicional; pruebas de academia y dimensiones de pantalla.
+- Se mantienen Firebase d-line-g, diseño cyber/neón, 16 insignias y recuperación PvP tras suspensión. Sigue pendiente validación física AR+PC.
+
 ## 57.5.0-beta.1 — 2026-10-15
 
 - Motor de intersecciones XYZ (líneas-líneas, segmento-cara triangular y nodos en segmentos). Un triángulo es una pared de superficie sin volumen, así que los nodos encima de su proyección siguen habilitados.

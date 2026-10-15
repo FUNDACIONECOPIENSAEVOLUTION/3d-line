@@ -7,9 +7,9 @@ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const auth=fs.readFileSync(new URL('../auth.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 57',()=>{
-  assert.match(html,/V57\.5\.0/);
-  assert.match(html,/game\.js\?v=57\.5\.0/);
-  assert.match(js,/const VERSION='57\.5\.0-beta\.1'/);
+  assert.match(html,/V57\.6\.0/);
+  assert.match(html,/game\.js\?v=57\.6\.0/);
+  assert.match(js,/const VERSION='57\.6\.0-beta\.1'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
@@ -93,7 +93,7 @@ test('HUD gamer, tutorial BOT, escala AR y progresión',()=>{
 });
 
 test('cambio de proyecto Firebase y cache-busting de auth.js',()=>{
- assert.match(js,/from '\.\/auth\.js\?v=57\.5\.0'/);
+ assert.match(js,/from '\.\/auth\.js\?v=57\.6\.0'/);
  assert.match(auth,/appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef"/);
  assert.match(auth,/browserLocalPersistence/);
  assert.match(auth,/onAuthStateChanged/);
@@ -133,4 +133,22 @@ test('reconexión tras suspensión solicita estado de la misma sala',()=>{
  assert.match(js,/visibilitychange/);
  assert.match(js,/pageshow/);
  assert.match(js,/joinRoom\(code,true\)/);
+});
+
+test('Academia de reglas y tutorial visible en menú y durante la partida',()=>{
+ for(const id of ['academyBtn','academyGameBtn','academyOverlay','academyExample','academyChoiceA','academyChoiceB',
+  'academyCloseBtn','academyNextBtn','academyPrevBtn','academyPracticeBtn','academyFeedback','academyStars']){
+   assert.ok(html.includes('id="'+id+'"'),id);
+ }
+ assert.match(js,/const ACADEMY_LESSONS=\[/);
+ assert.match(js,/function openAcademy\(/);
+ assert.match(js,/function answerAcademy\(/);
+ assert.match(js,/function startAcademyPractice\(/);
+ assert.match(js,/RETO 3\/3/);
+ assert.match(css,/\.academy-overlay/);
+});
+test('Regla de superficie atravesando punto distinto de vértices',()=>{
+ assert.match(js,/function pointCoveredByFace3D\(/);
+ assert.match(js,/face\.a,face\.b,face\.c/);
+ assert.match(js,/const covered=tris\.some\(face=>pointCoveredByFace3D/);
 });

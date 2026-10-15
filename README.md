@@ -1,8 +1,23 @@
-# 3 LINE-AR — V57.5.0 beta 8
+# 3 LINE-AR — V57.6.0 beta 9
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
 Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC por código o QR, IA rival y realidad aumentada experimental.
+
+## V57.6: bloqueo por cara y Academia táctica interactiva
+
+La regla de captura distingue tres situaciones:
+1. **Punto atravesado por superficie:** una cara triangular sombreada bloquea cualquier punto que se encuentre físicamente dentro de su superficie (incluido el borde) si ese punto no pertenece a sus tres vértices.
+2. **Vértices del propio triángulo:** siguen disponibles para nuevas conexiones y triángulos. La excepción deja de aplicar si **otra** cara triangular cubre físicamente ese vértice como punto no perteneciente a sus tres esquinas.
+3. **Altura y volumen:** un nodo por encima o debajo de una cara permanece libre si la superficie no lo toca. Los nodos estrictamente dentro de un volumen 3D completamente sellado también quedan bloqueados.
+
+Las caras triangulares y las líneas son barreras físicas 3D para nuevos segmentos; ya no se bloquea únicamente por la proyección del suelo.
+
+**Reglamento interactivo:** desde el menú principal pulsa **ACADEMIA · REGLAS Y EJERCICIOS**, o desde una partida pulsa **REGLAS**. Se enseñan siete ejercicios ilustrados y con dos respuestas posibles: dado, líneas, cruces prohibidos, conquistar triángulos, altura, puntos atravesados por la cara y volúmenes cerrados. Puedes regresar, corregir una respuesta equivocada, cerrar y reabrir la academia. Se recuerda qué ejercicios acertaste en este navegador.
+
+**Nivel 1 con BOT:** pulsando **PRACTICAR EL NIVEL 1 CON EL BOT**, o el botón del tutorial, tendrás una partida de cinco nodos. Las instrucciones del entrenamiento cambian desde tirar el dado y crear la primera línea hasta intentar conquistar un triángulo. El BOT juega automáticamente. No se bloquean niveles posteriores por preguntas académicas, y la academia no cobra ni exige ver publicidad.
+
+**Prueba con dos dispositivos:** verifica que un nodo coplanar atravesado por una cara quede gris/bloqueado; que sus tres vértices conserven el color y puedan hacer nuevas conexiones, salvo cobertura por otra cara; que un nodo elevado permanezca libre; y que al suspender el celular se reciba el estado actualizado desde el PC.
 
 ## V57.5: colisiones tridimensionales, recuperación tras bloqueo y mensajes de videojuego
 
@@ -99,7 +114,7 @@ La publicidad H5 Games Ads necesita aprobación e ID auténtico. No se habilitar
 
 ## Calidad, versión y despliegue
 
-- La versión en cabecera es **V57.5.0** y la versión interna es **57.5.0-beta.1**.
+- La versión en cabecera es **V57.6.0** y la versión interna es **57.6.0-beta.1**.
 - Cada cambio debe actualizar `version.json`, `CHANGELOG.md` y las etiquetas de recursos del HTML.
 - Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs`, `tests/tutorial.test.mjs` y `tests/ar-picking.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
