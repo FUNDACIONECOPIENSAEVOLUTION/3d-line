@@ -290,14 +290,37 @@ function pointInsideClosedShell(p,shell){
  }
  return insideVotes>=2;
 }
+function pointCoveredByFace3D(index,face){
+ // Una superficie tiene espesor numérico de tolerancia, pero no atrapa
+ // puntos que estén a distinta altura ni puntos de sus tres esquinas.
+ if([face.a,face.b,face.c].includes(index))return false;
+ const point=POINTS[index],A=POINTS[face.a],B=POINTS[face.b],C=POINTS[face.c];
+ const normal=triangleNormal(A,B,C);
+ const len=Math.sqrt(normSq3(normal));
+ if(len<1e-9)return false;
+ const signed=dot3(sub3(point,A),normal)/len;
+ if(Math.abs(signed)>.025)return false;
+ const projected=projectedTriangleFace(face);
+ const [p,a,b,c]=[point,A,B,C].map(projected);
+ const total=area(a,b,c);if(Math.abs(total)<1e-9)return false;
+ const u=area(a,b,p)/total,v=area(b,c,p)/total,w=area(c,a,p)/total;
+ // En el borde de una cara también queda cubierto, excepto los vértices del
+ // triángulo. Una cara independiente sí puede cubrir el vértice de otra.
+ const epsilon=1e-5;
+ return u>=-epsilon&&v>=-epsilon&&w>=-epsilon&&u<=1+epsilon&&v<=1+epsilon&&w<=1+epsilon;
+}
 function blockedNodes(s){
- const closed=closedTriangleShells(s.tris||[]);
- if(!closed.length)return [];
+ const tris=s.tris||[],closed=closedTriangleShells(tris);
  const blocked=[];
  for(let i=0;i<POINTS.length;i++){
-  // Las esquinas de la malla cerrada son jugables; solamente se bloquean
-  // los nodos estrictamente EN EL INTERIOR de un sólido completamente sellado.
-  if(closed.some(shell=>!shell.some(t=>[t.a,t.b,t.c].includes(i))&&pointInsideClosedShell(POINTS[i],shell)))blocked.push(i);
+  // REGLA 1: una superficie triangular conquistada cubre realmente ese punto
+  // (interior o borde de cara), pero no sus tres vértices.
+  const covered=tris.some(face=>pointCoveredByFace3D(i,face));
+  // REGLA 2: una envolvente 3D totalmente sellada bloquea los puntos interiores,
+  // preservando vértices propios salvo que otra cara independiente los cubra.
+  const enclosed=closed.some(shell=>
+   !shell.some(t=>[t.a,t.b,t.c].includes(i)) && pointInsideClosedShell(POINTS[i],shell));
+  if(covered||enclosed)blocked.push(i);
  }
  return blocked;
 }
@@ -317,7 +340,7 @@ function nearSegment(p,a,b){
 function crossesOwnedTriangle(a,b,t){return segmentIntersectsFace3D(a,b,t);}
 function edgeError(a,b,s){
  if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=POINTS.length||b>=POINTS.length||a===b)return 'Puntos inválidos.';
- if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo está encerrado en un volumen completamente cerrado.';
+ if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Nodo bloqueado: una cara conquistada lo atraviesa o quedó encerrado en 3D.';
  if(s.lines.some(l=>linkKey(l.a,l.b)===linkKey(a,b)))return 'Esta línea ya está construida.';
  const A=POINTS[a],B=POINTS[b];
  for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&pointSegmentDistance3(POINTS[i],A,B)<.055)return 'La conexión atravesaría otro nodo.';
@@ -773,7 +796,7 @@ function canSelectNode(){
 }
 function selectNodeById(id){
  if(!canSelectNode()||!Number.isInteger(id))return false;
- if((game.blocked||[]).includes(id)){notify('Este punto pertenece a una zona ya conquistada.');return false;}
+ if((game.blocked||[]).includes(id)){notify('Nodo bloqueado: una zona conquistada lo atraviesa o está encerrado.');return false;}
  if(selected===-1){selected=id;refresh();return true;}
  if(selected===id){selected=-1;refresh();return true;}
  const a=selected;selected=-1;
