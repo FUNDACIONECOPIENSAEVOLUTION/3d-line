@@ -13,5 +13,5 @@
   "migration": "Firebase auth UIDs del proyecto antiguo no migrados; progreso previo local vinculado a UID anterior podría no aparecer en la nueva sesión",
   "game_rules": "líneas previas y triángulos conquistados bloquean cruces proyectados XZ; extremos comunes permitidos, sin límite distancia",
   "badges": "16 insignias disponibles para perfil y triángulos",
-  "mobile": "CSS 320px-430px, safe-area y paisaje; prueba responsive automatizada pendiente"
+  "mobile": "Chromium comprobado en 320x568, 360x640, 390x844, 430x932, 740x380 y 1280x720; pruebas físicas de interacción pendientes"
 }
