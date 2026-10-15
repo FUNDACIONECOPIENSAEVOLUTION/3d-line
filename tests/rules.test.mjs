@@ -8,7 +8,7 @@ if(start<0||end<0)throw new Error('No se encontró el motor geométrico');
 const minimal = js.slice(start,end)+`
 const linkKey=(a,b)=>[a,b].sort((x,y)=>x-y).join('-');
 const distance=(a,b)=>POINTS[a].distanceTo(POINTS[b]);
-globalThis.testAPI={LEVELS,levelPoints,segmentsCross,pointInsideTriangle,blockedNodes,edgeError,
+globalThis.testAPI={LEVELS,levelPoints,segmentsCross,pointInsideTriangle,blockedNodes,crossesOwnedTriangle,edgeError,
 setPoints(p){POINTS=p.map(q=>new THREE.Vector3(...q))}};
 `;
 class Vector3{
@@ -39,10 +39,21 @@ test('triángulo encierra nodos interiores pero no sus vértices',()=>{
  const s={tris:[{a:0,b:1,c:2}],lines:[],blocked:[],level:1};
  assert.equal(JSON.stringify(api.blockedNodes(s)),JSON.stringify([3]));
 });
-test('impide atravesar una línea existente y reutilizar nodos encerrados',()=>{
+test('una línea sin zona conquistada permite cruces y conexiones largas',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[-.6,0,.8],[1.6,0,.8]]);
+ const s={lines:[{a:0,b:1},{a:1,b:2},{a:0,b:2}],tris:[],blocked:[],level:1};
+ assert.equal(api.edgeError(3,4,s),null, 'un cruce con líneas sin pintar está permitido');
+ api.setPoints([[0,0,0],[20,0,0]]);
+ assert.equal(api.edgeError(0,1,{lines:[],tris:[],blocked:[],level:1}),null,
+  'no hay límite de distancia mientras no cruce un territorio');
+});
+test('el interior coloreado bloquea cruzar el triángulo cerrado',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[-.6,0,.8],[1.6,0,.8]]);
+ const s={lines:[{a:0,b:1},{a:1,b:2},{a:0,b:2}],tris:[{a:0,b:1,c:2,owner:0}],blocked:[],level:1};
+ assert.match(api.edgeError(3,4,s),/triángulo ya conquistado/);
+});
+test('bloquea nodos encerrados, aun cuando están cerca',()=>{
  api.setPoints([[0,0,0],[1,0,1],[0,0,1],[1,0,0]]);
- let s={lines:[{a:0,b:1}],tris:[],blocked:[],level:10};
- assert.match(api.edgeError(2,3,s),/pared o línea/);
- s={lines:[],tris:[],blocked:[0],level:10};
+ const s={lines:[],tris:[],blocked:[0],level:10};
  assert.match(api.edgeError(0,1,s),/zona cerrada/);
 });
