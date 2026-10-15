@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#06101c">
-<title>3 LINE-AR | v56.0.0 beta</title>
+<title>3 LINE-AR | v56.1.0 beta</title>
 <meta name="description" content="3 LINE-AR: conecta nodos, conquista triángulos y juega 3D o AR con amigos.">
 <link rel="icon" href="https://raw.githubusercontent.com/instructorandradedcc/3-line-AR/main/3line-ar-logo.png">
-<link rel="stylesheet" href="./styles.css?v=56.0.0">
+<link rel="stylesheet" href="./styles.css?v=56.1.0">
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js" defer></script>
 <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js" defer></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="./game.js?v=56.0.0"></script>
+<script type="module" src="./game.js?v=56.1.0"></script>
 </head>
 <body>
 <div id="app">
 <header class="topbar">
 <div class="brand"><img src="https://raw.githubusercontent.com/instructorandradedcc/3-line-AR/main/3line-ar-logo.png" alt="3 LINE-AR"><div><b>3 LINE<span>-AR</span></b><small>TACTICAL NEXUS</small></div></div>
-<div class="topright"><span class="version">V56.0.0 · BETA 1</span><span id="connection" class="connection">SIN CONECTAR</span></div>
+<div class="topright"><span class="version">V56.1.0 · BETA 2</span><span id="connection" class="connection">SIN CONECTAR</span></div>
 </header>
 <main>
 <section id="menu" class="panel menu">
@@ -26,7 +26,7 @@
 <h1>Un universo. <em>Dos jugadores.</em></h1>
 <p class="intro">Conecta nodos en 3D, forma triángulos para ganar puntos y desafía a un amigo desde su celular o computador. Ambos ven el mismo tablero lógico y los mismos turnos.</p>
 <div class="featuregrid"><div>⬡ <b>Tablero 3D</b><small>Mouse y táctil</small></div><div>◎ <b>Realidad aumentada</b><small>Android compatible</small></div><div>⇄ <b>PvP en vivo</b><small>Código y QR</small></div></div>
-<div class="actions"><button id="createBtn" class="primary">◈ CREAR PARTIDA PvP</button><button id="cpuBtn">⚡ JUGAR CONTRA CPU</button><div class="joinrow"><input id="joinCode" maxlength="6" inputmode="text" autocomplete="off" placeholder="CÓDIGO DE 6 CARACTERES" aria-label="Código de sala"><button id="joinBtn">UNIRME</button></div><button id="scanBtn" class="subtle">▣ ESCANEAR QR DE INVITACIÓN</button></div>
+<div class="actions"><button id="createBtn" class="primary">◈ CREAR PARTIDA PvP</button><button id="cpuBtn">⚡ JUGAR CONTRA CPU</button><div class="joinrow"><input id="joinCode" maxlength="6" inputmode="text" autocomplete="off" placeholder="CÓDIGO DE 6 CARACTERES" aria-label="Código de sala"><button id="joinBtn">UNIRME</button></div><button id="scanBtn" class="subtle">▣ ESCANEAR QR DE INVITACIÓN</button><button id="diagnoseBtn" class="subtle">⚙ DIAGNÓSTICO DEL DISPOSITIVO</button></div>
 <p class="fineprint">La conexión PvP utiliza WebRTC. Algunos firewalls o redes móviles pueden impedirla. No necesitas una cuenta ni pagar.</p>
 </section>
 <section id="waiting" class="panel waiting hidden">
@@ -49,8 +49,9 @@
 <section id="results" class="panel menu hidden"><p class="eyebrow">PARTIDA TERMINADA</p><h2 id="resultTitle">RESULTADO</h2><p id="resultSummary" class="intro"></p><button id="homeBtn" class="primary">VOLVER AL MENÚ</button></section>
 <section id="monetization" class="panel monetize"><div><b>🎁 RECOMPENSAS</b><p>Monedas: <strong id="coins">0</strong> · Anuncios recompensados solo cuando exista aprobación de Google H5 Games Ads.</p></div><button id="rewardBtn" disabled>ANUNCIOS NO ACTIVADOS</button></section>
 </main>
-<footer>3 LINE-AR · FUNDACIÓN ECOPIENSA EVOLUTION · BETA V56.0.0 · <a href="./README.md">Ayuda y limitaciones</a></footer>
+<footer>3 LINE-AR · FUNDACIÓN ECOPIENSA EVOLUTION · BETA V56.1.0 · <a href="./README.md">Ayuda y limitaciones</a></footer>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="diagnostics" class="scanOverlay hidden"><div class="scanPanel diagnosticsPanel"><h2>Diagnóstico de 3 LINE-AR</h2><p class="muted">Comprobación local para celular o computador. No envía información a terceros.</p><div id="diagResults" class="diagResults" aria-live="polite"></div><div class="actions"><button id="diagCopyBtn" class="primary">COPIAR INFORME</button><button id="diagCloseBtn">CERRAR</button></div></div></div>
 <div id="scanner" class="scanOverlay hidden"><div class="scanPanel"><h2>Escanear código QR</h2><div id="qr-reader"></div><button id="closeScanBtn">CERRAR CÁMARA</button></div></div>
 </body></html>
