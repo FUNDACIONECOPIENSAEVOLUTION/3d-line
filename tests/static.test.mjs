@@ -7,9 +7,9 @@ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const auth=fs.readFileSync(new URL('../auth.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 57',()=>{
-  assert.match(html,/V57\.1\.0/);
-  assert.match(html,/game\.js\?v=57\.1\.0/);
-  assert.match(js,/const VERSION='57\.1\.0-beta\.1'/);
+  assert.match(html,/V57\.2\.0/);
+  assert.match(html,/game\.js\?v=57\.2\.0/);
+  assert.match(js,/const VERSION='57\.2\.0-beta\.1'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
@@ -57,6 +57,9 @@ test('Google no afirma acceso real sin configurar cliente y servidor',()=>{
  assert.match(js,/initializeAccountAuth/);
  assert.match(auth,/browserLocalPersistence/);
  assert.match(auth,/GoogleAuthProvider/);
+ assert.match(auth,/projectId:"d-line-g"/);
+ assert.match(auth,/authDomain:"d-line-g.firebaseapp.com"/);
+ assert.doesNotMatch(auth,/ar-3lilne/);
  assert.match(html,/Google requiere configurar el ID de cliente/);
 });
 
@@ -80,4 +83,12 @@ test('HUD gamer, tutorial BOT, escala AR y progresión',()=>{
  assert.match(js,/eligibleCount\(game\)===0\)endTurn\(\)/);
  assert.match(js,/localStorage\.setItem\('3line57_unlocked_'/);
  assert.match(js,/type:'next',name:'level-completed'/);
+});
+
+test('cambio de proyecto Firebase y cache-busting de auth.js',()=>{
+ assert.match(js,/from '\.\/auth\.js\?v=57\.2\.0'/);
+ assert.match(auth,/appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef"/);
+ assert.match(auth,/browserLocalPersistence/);
+ assert.match(auth,/onAuthStateChanged/);
+ assert.doesNotMatch(html,/accounts\.google\.com\/gsi\/client/);
 });
