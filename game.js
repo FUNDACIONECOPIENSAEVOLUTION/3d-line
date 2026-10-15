@@ -176,14 +176,26 @@ function nearSegment(p,a,b){
  const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
  return Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t);
 }
+// Las líneas sueltas NO son paredes. Solo la zona de un triángulo ya conquistado
+// (s.tris) impide nuevas conexiones que atraviesen su superficie proyectada XZ.
+// El análisis XZ coincide con las reglas actuales de encapsulamiento de nodos.
+function crossesOwnedTriangle(a,b,t){
+ const A=xy(a),B=xy(b),T=[xy(t.a),xy(t.b),xy(t.c)];
+ // Cualquier cruce estricto del límite de una zona pintada bloquea el camino.
+ for(let i=0;i<3;i++)if(segmentsCross(A,B,T[i],T[(i+1)%3]))return true;
+ // Una diagonal con extremos en los bordes puede atravesar el interior
+ // sin cruzar estrictamente otro borde; el punto medio detecta ese caso.
+ const midpoint={x:(A.x+B.x)/2,y:(A.y+B.y)/2};
+ return pointInsideTriangle(midpoint,T[0],T[1],T[2]);
+}
 function edgeError(a,b,s){
  if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=POINTS.length||b>=POINTS.length||a===b)return 'Puntos inválidos.';
  if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo quedó dentro de una zona cerrada.';
  if(s.lines.some(x=>linkKey(x.a,x.b)===linkKey(a,b)))return 'Esta línea ya existe.';
- if(distance(a,b)>(LEVELS[(s.level||1)-1]?.range||2))return 'Conexión demasiado larga.';
+ // La distancia no limita el juego; únicamente las zonas coloreadas impiden cruzar.
  const A=xy(a),B=xy(b);
  for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&nearSegment(xy(i),A,B)<.075)return 'La línea atraviesa otro nodo.';
- for(const l of s.lines)if(![a,b].includes(l.a)&&![a,b].includes(l.b)&&segmentsCross(A,B,xy(l.a),xy(l.b)))return 'No puedes atravesar una pared o línea.';
+ for(const triangle of s.tris)if(crossesOwnedTriangle(a,b,triangle))return 'No puedes atravesar un triángulo ya conquistado.';
  return null;
 }
 const el=id=>document.getElementById(id);
