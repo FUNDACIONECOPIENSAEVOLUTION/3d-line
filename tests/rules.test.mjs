@@ -94,7 +94,8 @@ test('cuatro caras coplanares no constituyen una caja cerrada',()=>{
  api.setPoints([[0,0,0],[2,0,0],[1,0,2],[1,0,.7],[.9,1,.3]]);
  const tris=[{a:0,b:1,c:2},{a:0,b:1,c:3},{a:0,b:2,c:3},{a:1,b:2,c:3}];
  assert.equal(api.closedTriangleShells(tris).length,0);
- assert.equal(api.blockedNodes({tris,lines:[],blocked:[]}).length,0);
+ // No hay volumen, pero el nodo 3 está atravesado por el área de la cara 0.
+ assert.deepEqual(Array.from(api.blockedNodes({tris,lines:[],blocked:[]})),[3]);
 });
 
 test('cara conquistada atraviesa punto coplanar: queda bloqueado, vértices propios libres',()=>{
