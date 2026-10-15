@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.3.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.4.0';
 
-// v57.3.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v57.4.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.3.0-beta.1';
+const VERSION='57.4.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -584,9 +584,10 @@ function setARSelectionMode(next){
 function updateARAim(){
  if(!arSession||!arPlaced||arSelectionMode!=='aim')return;
  const id=closestXRNodeOnScreen(window.innerWidth/2,window.innerHeight/2);
+ // El turno puede cambiar aunque el objetivo siga siendo el mismo.
+ el('arAimSelectBtn').disabled=id<0||!canSelectNode();
  if(id===arAimedNode)return;
  arAimedNode=id;
- el('arAimSelectBtn').disabled=id<0||!canSelectNode();
  const target=el('arAimText');
  target.textContent=id>=0?'OBJETIVO: NODO '+(id+1)+' · pulsa SELECCIONAR':'Mueve el celular hasta alinear la cruz con un nodo.';
  el('arAimCrosshair').classList.toggle('ar-aim-target',id>=0);
