@@ -186,3 +186,47 @@ body.xr-active #viewport{width:100vw;height:100dvh}
  body.xr-active .selected{bottom:calc(69px + env(safe-area-inset-bottom,0px));font-size:9px}
  body.xr-active #arSizeControl{top:54%;right:3px}
 }
+
+/* V57.5: avisos y confirmaciones gamer, por encima de WebXR DOM overlay. */
+.game-toast,#toast{
+ background:linear-gradient(135deg,#0a2b42f7,#071522f8)!important;
+ color:#d7faff!important;border:1px solid #21e7ff!important;
+ box-shadow:0 0 26px #00eaff55,inset 0 0 14px #00eaff22,0 12px 36px #000b!important;
+ border-radius:15px!important;font-weight:800;letter-spacing:.015em;
+ z-index:91!important;padding:12px 16px!important;
+ max-width:min(440px,calc(100vw - 22px))!important;
+}
+.game-dialog-overlay{
+ position:fixed;inset:0;z-index:120;
+ display:grid;place-items:center;padding:16px;
+ background:#01050bca;backdrop-filter:blur(6px);
+}
+.game-dialog-panel{
+ width:min(100%,430px);max-height:calc(100dvh - 30px);overflow:auto;
+ text-align:center;border-radius:22px;border:1px solid #36e8ff;
+ background:radial-gradient(circle at 50% 0,#123a53,#071322 72%);
+ box-shadow:0 0 45px #00eaff48,0 25px 90px #000d;
+ padding:20px 16px;color:#e9faff;
+}
+.game-dialog-symbol{
+ width:63px;height:63px;margin:0 auto 9px;display:grid;place-items:center;
+ border:2px solid #00eaff;border-radius:15px;
+ color:#5ff7ff;font-size:41px;line-height:1;
+ text-shadow:0 0 18px #00eaff;
+ box-shadow:0 0 20px #00eaff44,inset 0 0 20px #00eaff19;
+}
+.game-dialog-kicker{font-size:10px;color:#5eeaff;letter-spacing:.17em;font-weight:900}
+.game-dialog-panel h2{font-size:clamp(18px,5vw,27px);letter-spacing:.025em;margin:12px 0 8px;color:#f4fdff}
+.game-dialog-panel p{color:#a9d4e7;font-size:clamp(12px,3.3vw,14px);line-height:1.55;margin:5px auto 18px}
+.game-dialog-panel textarea{
+ display:block;width:100%;text-align:left;text-transform:none;color:#e1ffff;
+ background:#03121e;border:1px solid #26789b;padding:11px;
+ font-size:12px;min-height:77px;resize:vertical;word-break:break-all;margin-bottom:13px
+}
+.game-dialog-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.game-dialog-actions button:only-child{grid-column:1/-1}
+.game-dialog-actions button{min-height:44px;font-size:11px;padding:10px 6px;white-space:normal}
+@media(max-width:360px){
+ .game-dialog-panel{padding:14px 10px}
+ .game-dialog-actions button{font-size:10px}
+}
