@@ -27,6 +27,12 @@ En resultados contra el BOT o en tutorial, aparecerá **REINTENTAR NIVEL** sin v
 
 **Importante:** no convertir la repetición de niveles en un anuncio obligatorio. El anuncio recompensado se ofrece a elección del jugador y hay ruta alternativa para repetir gratis desde el menú.
 
+## Sitio de desarrollador gratis para AdMob
+
+La infraestructura de `d-line-g.web.app` se encuentra preparada en `firebase-admob-site/`. Este sitio Firebase Hosting solo mostrará una presentación del desarrollador y, cuando exista un **Publisher ID de AdMob real**, el archivo `app-ads.txt` requerido para verificar vendedores autorizados. No altera el juego de GitHub Pages.
+
+Guía: [FIREBASE_HOSTING_ADMOB.md](./FIREBASE_HOSTING_ADMOB.md). El despliegue es manual y con confirmación para evitar sobrescribir otro sitio de Firebase Hosting. Google Play debe incluir el dominio del desarrollador y la aplicación debe estar publicada para la verificación final de AdMob. No se ha desplegado todavía.
+
 ## Android: APK de pruebas y AAB para Google Play
 
 No basta con cambiar la extensión de HTML a APK.
