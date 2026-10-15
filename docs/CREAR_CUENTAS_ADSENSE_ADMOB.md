@@ -6,12 +6,14 @@ Actualizado: 15/10/2026. El juego web está en GitHub Pages y la monetización s
 
 1. Abre **https://adsense.google.com/start/** e inicia sesión con la cuenta de Google que administrará los ingresos.
 2. Completa la información del editor y el país de residencia real (Colombia, si corresponde), tipo de titular (persona u organización) y datos de contacto. **No compartas aquí** datos bancarios, documentos personales ni contraseñas.
-3. Indica la web: https://fundacionecopiensaevolution.github.io/3d-line/ . Google puede requerir verificar el dominio completo, no solo la subruta del repositorio. Si el dominio GitHub Pages no puede verificarse/ser aceptado, evalúa un dominio propio que controles.
+3. La dirección pública del juego es https://fundacionecopiensaevolution.github.io/3d-line/ , **pero no escribas la ruta /3d-line/ en el campo Sitio de AdSense**: Google exige un dominio sin ruta ni parámetros. El dominio actual pertenece a GitHub Pages y los subdominios normales no asociados a socios alojados pueden no ser admitidos en el registro; si AdSense no acepta este dominio, registra primero un dominio propio que controle la Fundación y apúntalo al juego antes de solicitar aprobación. No inventes un dominio ni marques otro sitio que no controles.
 4. Completa la verificación y espera la revisión. Una cuenta creada **no equivale a cuenta aprobada** y no permite mostrar anuncios hasta aprobación.
 
 Fuentes:
 - https://support.google.com/adsense/answer/7402253?hl=es
 - https://support.google.com/adsense/answer/7584263?hl=es-419
+- https://support.google.com/adsense/answer/2784438?hl=en (la URL debe ser dominio sin subruta)
+- https://support.google.com/adsense/answer/91205?hl=es (debes demostrar propiedad y poder editar su código)
 
 ## Paso 2 — Solicitar H5 Games Ads para el juego HTML5
 
