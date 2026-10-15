@@ -89,3 +89,10 @@ test('bloquea nodos encerrados, aun cuando están cerca',()=>{
  const s={lines:[],tris:[],blocked:[0],level:10};
  assert.match(api.edgeError(0,1,s),/volumen completamente cerrado/);
 });
+
+test('cuatro caras coplanares no constituyen una caja cerrada',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[1,0,2],[1,0,.7],[.9,1,.3]]);
+ const tris=[{a:0,b:1,c:2},{a:0,b:1,c:3},{a:0,b:2,c:3},{a:1,b:2,c:3}];
+ assert.equal(api.closedTriangleShells(tris).length,0);
+ assert.equal(api.blockedNodes({tris,lines:[],blocked:[]}).length,0);
+});
