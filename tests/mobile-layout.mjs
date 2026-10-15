@@ -56,9 +56,28 @@ for(const vp of viewports){
    return r.left< -1||r.right>innerWidth+1||r.top< -1||r.bottom>innerHeight+1;
   });
  });
- if(menu.length||ar.length||frame.length){
+ await page.evaluate(()=>{
+  document.getElementById('academyOverlay').classList.remove('hidden');
+  document.getElementById('academyDescription').textContent=
+   'Prueba de reglas tácticas: un nodo tridimensional queda bloqueado cuando una cara conquistada pasa por su posición, salvo las tres esquinas de la propia cara. Se mantiene el acceso desde la pantalla móvil.';
+  document.getElementById('academyQuestion').textContent='¿Puedo seguir usando una esquina del triángulo para otra jugada?';
+  document.getElementById('academyChoiceA').textContent='A · Sí, salvo que otra cara pase por la esquina';
+  document.getElementById('academyChoiceB').textContent='B · No, todas las esquinas quedan bloqueadas';
+ });
+ const academy=await page.evaluate(()=>{
+  return [...document.querySelectorAll('.academy-panel,.academy-answers button,.academy-actions button,.academy-practice')]
+   .filter(el=>{
+    const r=el.getBoundingClientRect(),style=getComputedStyle(el);
+    return style.display!=='none'&&(r.left < -1||r.right>innerWidth+1);
+   }).map(el=>({id:el.id,name:el.tagName,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right}));
+ });
+ const academyFrame=await page.evaluate(()=>{
+  const r=document.querySelector('.academy-panel').getBoundingClientRect();
+  return r.left< -1||r.right>innerWidth+1||r.top< -1||r.bottom>innerHeight+1;
+ });
+ if(menu.length||ar.length||frame.length||academy.length||academyFrame){
   failures++;
-  console.error('ERROR',vp.label,menu,ar,frame);
+  console.error('ERROR',vp.label,menu,ar,frame,academy,academyFrame);
  }else console.log('OK',vp.label,vp.width+'x'+vp.height);
  await page.close();
 }
