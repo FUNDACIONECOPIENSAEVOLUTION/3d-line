@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.6.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.6.1';
 
 // v57.4.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.6.0-beta.1';
+const VERSION='57.6.1-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -1047,6 +1047,7 @@ async function startAR(){
    scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');el('arSelectionModes').classList.add('hidden');el('arAimCrosshair').classList.add('hidden');arAimedNode=-1;el('arSizeControl').classList.add('hidden');
    el('placeBtn').classList.add('hidden');el('exitArBtn').classList.add('hidden');el('arBtn').classList.remove('hidden');
    if(reticle)reticle.visible=false;board.visible=true;resetBoard();orbit.enabled=true;resize3D();
+   if(document.visibilityState==='visible')remindARAfterSleep();
   });
   if(!reticle){reticle=new THREE.Mesh(new THREE.RingGeometry(.065,.083,40).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0x00ffbb,side:THREE.DoubleSide}));reticle.matrixAutoUpdate=false;scene.add(reticle);}
   reticle.visible=false;
@@ -1165,6 +1166,13 @@ async function showDiagnostics(){
 }
 
 let pendingJoinCode='';
+let arWasActiveWhenHidden=false;
+function remindARAfterSleep(){
+ if(arWasActiveWhenHidden && !arSession && game?.status==='play'){
+  arWasActiveWhenHidden=false;
+  notify('⬡ AR PAUSADA: tu partida continúa. Pulsa ACTIVAR AR y fija de nuevo el tablero para seguir jugando.');
+ }
+}
 
 let pinchDistance=0,pinchScaleStart=0;
 function syncARSlider(){
@@ -1198,7 +1206,14 @@ function bind(){
  });
  // En dispositivos móviles la suspensión de pantalla puede interrumpir WebRTC.
  // Al regresar se solicita snapshot completo sin reiniciar la partida ni nivel.
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')restoreNetworkAfterPause();});
+ document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden' && arSession) arWasActiveWhenHidden=true;
+  if(document.visibilityState==='visible'){
+   restoreNetworkAfterPause();
+   if(arSession)arWasActiveWhenHidden=false;
+   else remindARAfterSleep();
+  }
+ });
  window.addEventListener('pageshow',()=>{if(mode==='pvp')restoreNetworkAfterPause();});
  window.addEventListener('online',()=>{if(mode==='pvp')restoreNetworkAfterPause();});
  document.addEventListener('pointerdown',onARPointerDown,true);
