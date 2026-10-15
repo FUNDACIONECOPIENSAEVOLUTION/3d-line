@@ -1,11 +1,11 @@
 {
   "name": "3 LINE-AR",
-  "version": "57.6.1-beta.1",
+  "version": "57.7.0-beta.1",
   "buildDate": "2026-10-15",
-  "status": "published-app-awaiting-manual-xr-reentry-validation",
+  "status": "rewarded-ads-integration-ready-awaiting-real-publisher-approval",
   "network": "PeerJS WebRTC con SYNC_REQUEST al volver del segundo plano y reconexión al código actual manteniendo partida",
   "ar": "AR táctil y por mira con selección XR; si el sistema cierra la sesión WebXR por suspensión, se avisa que debe reactivarse manualmente",
-  "monetization": "disabled without approved publisher ID",
+  "monetization": "5 free badges; 11 badges require 1..11 real adViewed callbacks individually; rewarded restart on completed ad; beta free restart without publisher; no ad revenue yet",
   "levels": 10,
   "accounts": "Firebase Authentication SDK apunta a d-line-g, web app confirmada y dominio autorizado por captura; verificar proveedor Google y login en dispositivos",
   "progression": "one visible unlocked level; local per-account completion; H5 interstitial between levels only with approved publisher",
@@ -15,5 +15,7 @@
   "badges": "16 insignias disponibles para perfil y triángulos",
   "mobile": "Chromium comprobado en 320x568, 360x640, 390x844, 430x932, 740x380 y 1280x720; pruebas físicas de interacción pendientes",
   "ui": "avisos neón, diálogo de confirmación integrado, copia manual sin prompt del navegador",
-  "tutorial": "7 ejercicios interactivos con preguntas, ejemplos visuales; guía de 3 retos jugables en nivel 1 con BOT"
+  "tutorial": "7 ejercicios interactivos con preguntas, ejemplos visuales; guía de 3 retos jugables en nivel 1 con BOT",
+  "rewards_security": "progress local per Firebase UID/device, not yet protected by trusted backend; Firestore confirmation + consent pending",
+  "android": "APK/AAB not yet built; TWA Chrome/WebXR feasibility + package signing and AdMob planned"
 }
