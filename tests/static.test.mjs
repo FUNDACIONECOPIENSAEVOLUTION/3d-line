@@ -7,9 +7,9 @@ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const auth=fs.readFileSync(new URL('../auth.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 57',()=>{
-  assert.match(html,/V57\.7\.0/);
-  assert.match(html,/game\.js\?v=57\.7\.0/);
-  assert.match(js,/const VERSION='57\.7\.0-beta\.1'/);
+  assert.match(html,/V57\.8\.0/);
+  assert.match(html,/game\.js\?v=57\.8\.0/);
+  assert.match(js,/const VERSION='57\.8\.0-beta\.1'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
@@ -99,7 +99,7 @@ test('HUD gamer, tutorial BOT, escala AR y progresión',()=>{
 });
 
 test('cambio de proyecto Firebase y cache-busting de auth.js',()=>{
- assert.match(js,/from '\.\/auth\.js\?v=57\.7\.0'/);
+ assert.match(js,/from '\.\/auth\.js\?v=57\.8\.0'/);
  assert.match(auth,/appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef"/);
  assert.match(auth,/browserLocalPersistence/);
  assert.match(auth,/onAuthStateChanged/);
@@ -184,4 +184,25 @@ test('reintento contra BOT desde resultado y beta funcional sin anuncios',()=>{
  assert.match(js,/retryCurrentSoloRound\(\);notify\('Nivel reiniciado gratuitamente/);
  assert.match(js,/mode==='tutorial'/);
  assert.match(css,/\.reward-retry/);
+});
+
+test('Galáctico y Ascenso se seleccionan antes de PvP o CPU y se ven durante el juego',()=>{
+ const rules=fs.readFileSync(new URL('../turn-modes.js',import.meta.url),'utf8');
+ assert.match(rules,/function turnMoveAllowance/);
+ assert.match(rules,/function nextTurnCounts/);
+ for(const id of ['ruleRandomBtn','ruleAscendBtn','ruleDescription','matchRuleDisplay','roomRuleNote'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(js,/ruleMode:tutorial\?'random':normalizeTurnRule\(selectedRuleMode\)/);
+ assert.match(js,/turnCountByPlayer:\[0,0\]/);
+ assert.match(js,/game\.turnCountByPlayer=nextTurnCounts\(game,game\.turn\)/);
+ assert.match(js,/turnMoveAllowance\(game,player/);
+ assert.match(js,/completedBothRules\(game\.level\)/);
+ assert.match(css,/\.rule-choice\.rule-current/);
+});
+test('insignias compactas se expanden sin mostrar dieciséis botones de golpe',()=>{
+ assert.match(html,/id="toggleBadgesBtn"/);
+ assert.match(js,/function setBadgeGalleryExpanded/);
+ assert.match(css,/\.badge-choices:not\(\.expanded\) \[data-badge\]:nth-child\(n\+6\)/);
+ assert.match(css,/overflow-x:auto/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
 });
