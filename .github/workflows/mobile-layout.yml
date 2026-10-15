@@ -1,0 +1,30 @@
+name: Verificar interfaz móvil
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'styles.css'
+      - 'tests/mobile-layout.mjs'
+      - '.github/workflows/mobile-layout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  responsive-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegador de pruebas
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Comprobar dimensiones y botones en teléfonos
+        run: node tests/mobile-layout.mjs
