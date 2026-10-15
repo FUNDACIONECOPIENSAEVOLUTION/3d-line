@@ -7,9 +7,9 @@ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const auth=fs.readFileSync(new URL('../auth.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 57',()=>{
-  assert.match(html,/V57\.6\.1/);
-  assert.match(html,/game\.js\?v=57\.6\.1/);
-  assert.match(js,/const VERSION='57\.6\.1-beta\.1'/);
+  assert.match(html,/V57\.7\.0/);
+  assert.match(html,/game\.js\?v=57\.7\.0/);
+  assert.match(js,/const VERSION='57\.7\.0-beta\.1'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
@@ -24,12 +24,18 @@ test('controles PvP, QR, 3D, CPU y AR están presentes',()=>{
   for(const id of ['tutorialBtn','levelsBtn','levelGrid','googleBtn','profileName','diceResult','scaleUpBtn','createBtn','joinCode','joinBtn','scanBtn','cpuBtn','viewport','diceBtn','arBtn','placeBtn','roomCode','diagnoseBtn','diagCopyBtn','diagResults'])assert.ok(html.includes('id="'+id+'"'),id);
   for(const term of ["'HELLO'","'ACTION'","'STATE'","foundTriangles","validEdge","requestHitTestSource","new Peer"])assert.ok(js.includes(term),term);
 });
-test('no anuncia ingresos simulados ni concede monedas sin evento adViewed',()=>{
-  assert.equal(js.includes('ca-pub-0000000000000000'),false);
-  assert.match(js,/adViewed:/);
-  assert.match(js,/const PUBLISHER_ID='';/);
-  assert.match(html,/rewardBtn" disabled/);
+test('anuncios reales se configuran por archivo, nunca con un publisher ficticio',()=>{
+ const ads=fs.readFileSync(new URL('../ads-rewarded.js',import.meta.url),'utf8');
+ const config=JSON.parse(fs.readFileSync(new URL('../ads-config.json',import.meta.url),'utf8'));
+ assert.equal(js.includes('ca-pub-0000000000000000'),false);
+ assert.match(ads,/adViewed:/);
+ assert.match(ads,/adDismissed:/);
+ assert.match(ads,/adBreakDone:/);
+ assert.equal(config.h5PublisherId,'');
+ assert.match(js,/rewardedAds\.watch/);
+ assert.match(html,/rewardBtn" disabled/);
 });
+
 test('los estilos CSS se incluyeron y hay indicadores de pantalla',()=>{
   assert.match(css,/\.menu\{/);
   assert.match(css,/\.arena\{/);
@@ -93,7 +99,7 @@ test('HUD gamer, tutorial BOT, escala AR y progresión',()=>{
 });
 
 test('cambio de proyecto Firebase y cache-busting de auth.js',()=>{
- assert.match(js,/from '\.\/auth\.js\?v=57\.6\.1'/);
+ assert.match(js,/from '\.\/auth\.js\?v=57\.7\.0'/);
  assert.match(auth,/appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef"/);
  assert.match(auth,/browserLocalPersistence/);
  assert.match(auth,/onAuthStateChanged/);
@@ -159,4 +165,23 @@ test('al volver del bloqueo, WebXR avisa si hay que reactivar AR sin salir de la
  assert.match(js,/document\.visibilityState==='hidden' && arSession/);
  assert.match(js,/restoreNetworkAfterPause\(\)/);
  assert.match(js,/Pulsa ACTIVAR AR/);
+});
+
+test('cinco insignias gratis y todas las demás con desbloqueo progresivo',()=>{
+ const rules=fs.readFileSync(new URL('../rewards.js',import.meta.url),'utf8');
+ assert.match(rules,/export const FREE_BADGES=\['◆','⚡','★','✦','☣'\]/);
+ assert.match(rules,/export function applyCompletedBadgeVideo/);
+ assert.match(js,/function chooseBadge/);
+ assert.match(js,/function saveCosmetics/);
+ assert.match(js,/function loadCosmetics/);
+ assert.match(html,/id="badgeProgressNote"/);
+ assert.match(css,/\.locked-badge/);
+});
+test('reintento contra BOT desde resultado y beta funcional sin anuncios',()=>{
+ for(const id of ['restartLevelBtn','restartAdHint'])assert.ok(html.includes('id="'+id+'"'));
+ assert.match(js,/function retryCurrentSoloRound/);
+ assert.match(js,/function restartLevelWithReward/);
+ assert.match(js,/retryCurrentSoloRound\(\);notify\('Nivel reiniciado gratuitamente/);
+ assert.match(js,/mode==='tutorial'/);
+ assert.match(css,/\.reward-retry/);
 });
