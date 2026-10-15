@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js';
 
-// v57.0.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v57.1.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.0.0-beta.1';
+const VERSION='57.1.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -18,8 +19,88 @@ const LEVELS=[
  {level:9,count:25,random:true,range:2.4},{level:10,count:30,random:true,range:2.5}
 ];
 const DEFAULT_PROFILE={name:'INVITADO',color:'#00eaff',badge:'◆',level:1,elo:1000,coins:0};
-function readProfile(){try{return {...DEFAULT_PROFILE,...JSON.parse(localStorage.getItem('3line57_profile')||'{}')}}catch{return {...DEFAULT_PROFILE}}}
-let profile=readProfile(),selectedLevel=Math.min(10,Math.max(1,profile.level||1)),tutorial=false,awardRecorded=false;
+function readProfile(key='3line57_profile'){try{return {...DEFAULT_PROFILE,...JSON.parse(localStorage.getItem(key)||'{}')}}catch{return {...DEFAULT_PROFILE}}}
+let profile=readProfile(),selectedLevel=1,tutorial=false,awardRecorded=false;
+let currentAccount=null,unlockedLevel=1,loginReady=false,authError='';
+function accountProfileKey(uid){return '3line57_profile_'+uid;}
+function openLoginGate(message='Inicia sesión para acceder al juego.'){
+  loginReady=true;currentAccount=null;
+  el('loginGate').classList.remove('hidden');el('app').classList.add('auth-locked');
+  el('loginStatus').textContent=message;
+}
+function enterAccount(account){
+  if(!account?.uid)return;
+  currentAccount=account;loginReady=true;
+  const localGuest=account.provider==='local-guest';
+  const key=accountProfileKey(account.uid);
+  const saved=localStorage.getItem(key);
+  profile=readProfile(saved?key:localGuest?'3line57_profile':key);
+  profile.name=account.provider==='google'?String(account.name||'AGENTE').toUpperCase().slice(0,30):profile.name||'INVITADO';
+  if(!['#00eaff','#ff2d7a','#50ff65','#ffd231','#b35aff'].includes(profile.color))profile.color='#00eaff';
+  if(!['◆','⚡','★','✦','☣'].includes(profile.badge))profile.badge='◆';
+  unlockedLevel=Math.max(1,Math.min(10,Number(localStorage.getItem('3line57_unlocked_'+account.uid))||1));
+  profile.level=unlockedLevel;selectedLevel=unlockedLevel;
+  localStorage.setItem(key,JSON.stringify(profile));
+  el('loginGate').classList.add('hidden');el('app').classList.remove('auth-locked');
+  el('googleNote').textContent=account.provider==='google'?
+   'Conectado con Google a través de Firebase. La sesión se conserva en este navegador; el progreso del juego sigue siendo local.':
+   'Sesión de invitado persistente en este dispositivo. Puedes jugar sin correo.';
+  renderProfile();renderLevels();screen('menu');
+}
+function localGuestAccount(){
+  localStorage.setItem('3line57_guest_session','yes');
+  enterAccount({uid:'local-guest',name:'INVITADO',provider:'local-guest',verified:false});
+}
+async function beginLogin(){
+  el('loginStatus').textContent='Comprobando tu sesión guardada…';
+  const savedGuest=localStorage.getItem('3line57_guest_session')==='yes';
+  const success=await initializeAccountAuth(
+    account=>{
+      if(account){
+        localStorage.removeItem('3line57_guest_session');
+        enterAccount(account);
+      }else if(!currentAccount){
+        if(savedGuest)localGuestAccount();
+        else openLoginGate('Selecciona Google o invitado para continuar.');
+      }
+    },
+    err=>{
+      authError=err?.message||'No se pudo conectar con Firebase';
+      el('loginStatus').textContent='Firebase: '+authError+' · Puedes continuar como invitado local.';
+    }
+  );
+  if(!success&&!currentAccount){
+    if(savedGuest)localGuestAccount();
+    else openLoginGate('Conexión Firebase no disponible. Puedes probar el modo invitado local.');
+  }
+}
+async function loginGoogleFlow(){
+  el('loginStatus').textContent='Abriendo Google para iniciar sesión…';
+  try{
+    await loginGoogle();
+    localStorage.removeItem('3line57_guest_session');
+  }catch(e){
+    const msg=e?.code==='auth/unauthorized-domain'?
+      'Este dominio debe autorizarse en Firebase Authentication → Settings → Authorized domains.':
+      e?.code==='auth/popup-closed-by-user'?'Ventana de Google cerrada.':
+      ('Google no pudo iniciar sesión: '+(e?.code||e?.message||'desconocido'));
+    el('loginStatus').textContent=msg;
+  }
+}
+async function loginGuestFlow(){
+  el('loginStatus').textContent='Iniciando invitado…';
+  if(authAvailable()){
+    try{await loginGuest();return;}catch(e){authError=e?.message||String(e);}
+  }
+  localGuestAccount();
+  notify('Invitado local: se conserva el acceso en este navegador; no hay cuenta cloud.');
+}
+async function logoutGame(){
+  if(!confirm('¿Cerrar sesión de este dispositivo?'))return;
+  cleanup();localStorage.removeItem('3line57_guest_session');
+  try{await logoutFirebase();}catch{}
+  openLoginGate('Sesión cerrada. Vuelve a entrar para jugar.');
+}
 let POINTS=[]; // Escena y reglas comparten los puntos enviados por anfitrión.
 const seedRandom=seed=>{let x=seed>>>0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;}};
 function levelPoints(level,seed){
@@ -36,7 +117,7 @@ function levelPoints(level,seed){
  return pts;
 }
 function profilePacket(){return {name:String(profile.name).slice(0,30),color:profile.color,badge:profile.badge};}
-function saveProfile(){try{localStorage.setItem('3line57_profile',JSON.stringify(profile));}catch{} renderProfile();}
+function saveProfile(){try{localStorage.setItem(accountProfileKey(currentAccount?.uid||'local-guest'),JSON.stringify(profile));}catch{} renderProfile();}
 function renderProfile(){
  for(const [id,val] of [['profileName',profile.name],['profileAvatar',profile.badge],['rankLevel',profile.level],['eloValue',profile.elo]]){const elem=document.getElementById(id);if(elem)elem.textContent=val;}
  const a=document.getElementById('profileAvatar');if(a)a.style.color=profile.color;
@@ -44,11 +125,17 @@ function renderProfile(){
  document.querySelectorAll('#badges [data-badge]').forEach(x=>x.classList.toggle('current',x.dataset.badge===profile.badge));
 }
 function renderLevels(){
- const grid=document.getElementById('levelGrid');if(!grid)return;grid.replaceChildren();
- LEVELS.forEach(l=>{const b=document.createElement('button');b.textContent=l.level;b.className=l.level===selectedLevel?'active':'';
- b.title=l.count+' nodos'+(l.random?' aleatorios':' guiados');
- b.onclick=()=>{selectedLevel=l.level;renderLevels();document.getElementById('levelDescription').textContent='Nivel '+l.level+' · '+l.count+' puntos · '+(l.random?'posiciones aleatorias':'posiciones guiadas')+' · VS CPU o PvP';};
- grid.appendChild(b);});
+ const grid=el('levelGrid');if(!grid)return;grid.replaceChildren();
+ const accessible=Math.min(10,unlockedLevel),level=LEVELS[accessible-1];
+ selectedLevel=accessible;
+ const b=document.createElement('button');b.className='level-current';
+ const title=document.createElement('span');title.textContent='NIVEL '+accessible+' · '+level.count+' NODOS';
+ const icon=document.createElement('strong');icon.textContent='▶';b.append(title,icon);
+ b.addEventListener('click',()=>showCpu(accessible===1));
+ grid.appendChild(b);
+ el('levelDescription').textContent=accessible===1?'Nivel 1: aprende conectando cinco nodos frente al BOT.':'Nivel '+accessible+': '+level.count+' nodos '+(level.random?'en posiciones aleatorias':'ordenados')+'. Gana para continuar.';
+ el('tutorialBtn').textContent=accessible===1?'🎓 NIVEL 1 · APRENDER CON BOT':'🎓 REPASAR TUTORIAL';
+ el('cpuBtn').textContent='⚡ JUGAR NIVEL '+accessible+' CONTRA BOT';
 }
 function tutorials(){
  const h=document.getElementById('tutorialHint');if(!h)return;
@@ -57,8 +144,15 @@ function tutorials(){
  h.textContent=!game.rolled?'PASO 1 · Pulsa el dado luminoso de arriba.':selected<0?'PASO 2 · Toca un nodo. A continuación toca otro para construir una línea.':'PASO 3 · Escoge un segundo nodo. Cierra tres líneas para formar tu primer triángulo.';
 }
 function awardResult(){
- if(!game||game.status!=='end'||awardRecorded||game.winner!==myPlayer)return;
- awardRecorded=true;profile.elo+=12;profile.coins+=15;profile.level=Math.max(profile.level,Math.min(10,(game.level||1)+1));saveProfile();
+ if(!game||game.status!=='end'||awardRecorded)return false;
+ awardRecorded=true;
+ if(game.winner!==myPlayer || mode==='pvp')return false;
+ profile.elo=(profile.elo||1000)+12;profile.coins=(profile.coins||0)+15;
+ const next=Math.min(10,game.level+1);
+ unlockedLevel=Math.max(unlockedLevel,next);
+ profile.level=unlockedLevel;
+ try{localStorage.setItem('3line57_unlocked_'+(currentAccount?.uid||'local-guest'),String(unlockedLevel));}catch{}
+ saveProfile();renderLevels();return true;
 }
 function xy(i){return {x:POINTS[i].x,y:POINTS[i].z};}
 function area(a,b,c){return (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);}
@@ -327,31 +421,6 @@ function initBackground(){
  }
  resize();addEventListener('resize',resize);requestAnimationFrame(tick);
 }
-let googleClientId='';
-async function initGoogleConfig(){
- try{
-  const response=await fetch('./auth-config.json',{cache:'no-store'});if(!response.ok)return;
-  const value=await response.json();
-  if(typeof value.clientId==='string'&&value.clientId.endsWith('.apps.googleusercontent.com'))googleClientId=value.clientId;
-  if(googleClientId)el('googleNote').textContent='Google Identity listo para probar identificación visual; se requiere backend para verificar las credenciales y guardar progreso multidispositivo.';
- }catch{}
-}
-function tryGoogleLogin(){
- if(!googleClientId){notify('Para activar Google debes configurar el Client ID en auth-config.json.');return;}
- if(!window.google?.accounts?.id){notify('No se cargó Google Identity Services.');return;}
- window.google.accounts.id.initialize({client_id:googleClientId,callback:response=>{
-  // Este JWT se decodifica SOLO para mostrar nombre: NO reemplaza una verificación segura en servidor.
-  try{
-   const jwt=response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-   const bytes=Uint8Array.from(atob(jwt),c=>c.charCodeAt(0));
-   const data=JSON.parse(new TextDecoder().decode(bytes));
-   profile.name=String(data.name||data.given_name||'AGENTE').slice(0,30).toUpperCase();
-   saveProfile();notify('Nombre de Google cargado localmente. Todavía falta autenticación verificada en servidor.');
-  }catch{notify('No fue posible leer el perfil.');}
- }});
- window.google.accounts.id.prompt();
-}
-
 function initialize3D(){
  if(renderer){resize3D();return;}
  const viewport=el('viewport');scene=new THREE.Scene();scene.background=new THREE.Color(0x03121d);
