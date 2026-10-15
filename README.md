@@ -6,7 +6,7 @@ Juego 3D de estrategia por turnos, desarrollado para Fundación Ecopiensa Evolut
 
 ## Probar la beta
 
-1. Abrir la página del juego mediante GitHub Pages en HTTPS. En GitHub: **Settings → Pages → Build and deployment → Deploy from a branch → main / (root) → Save**.
+1. Abrir la página del juego mediante GitHub Pages en HTTPS. En GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions → Save**. El archivo .github/workflows/pages.yml hará el despliegue.
 2. Si GitHub Pages queda habilitado, la dirección esperada es: `https://fundacionecopiensaevolution.github.io/3d-line/`. Confirmar la publicación antes de difundirla.
 3. Para **CPU**, pulsar «JUGAR CONTRA CPU».
 4. Para **PvP**, una persona pulsa «CREAR PARTIDA PvP»; comparte el código de **6 caracteres** o la invitación QR. La otra abre la misma página y usa «UNIRME» o escanea el QR.
