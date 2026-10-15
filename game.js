@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.4.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.5.0';
 
 // v57.4.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.4.0-beta.1';
+const VERSION='57.5.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -97,7 +97,7 @@ async function loginGuestFlow(){
   notify('Invitado local: se conserva el acceso en este navegador; no hay cuenta cloud.');
 }
 async function logoutGame(){
-  if(!confirm('¿Cerrar sesión de este dispositivo?'))return;
+  if(!await gameConfirm('¿Cerrar sesión de este dispositivo y regresar a la pantalla de acceso?','CERRAR SESIÓN'))return;
   cleanup();localStorage.removeItem('3line57_guest_session');
   try{await logoutFirebase();}catch{}
   openLoginGate('Sesión cerrada. Vuelve a entrar para jugar.');
@@ -162,12 +162,146 @@ function pointInsideTriangle(p,a,b,c){
  const v1=area(a,b,p),v2=area(b,c,p),v3=area(c,a,p);
  return (v1>1e-5&&v2>1e-5&&v3>1e-5)||(v1< -1e-5&&v2< -1e-5&&v3< -1e-5);
 }
-function blockedNodes(s){
- const blocked=new Set();
- for(const t of s.tris){const a=xy(t.a),b=xy(t.b),c=xy(t.c);
- for(let i=0;i<POINTS.length;i++)if(![t.a,t.b,t.c].includes(i)&&pointInsideTriangle(xy(i),a,b,c))blocked.add(i);}
- return [...blocked];
+// Geometría real XYZ: un triángulo es una superficie 2D en el espacio,
+// NO encierra por sí solo un nodo situado encima o debajo de esa cara.
+function v3(p){return {x:p.x,y:p.y,z:p.z};}
+function sub3(a,b){return {x:a.x-b.x,y:a.y-b.y,z:a.z-b.z};}
+function dot3(a,b){return a.x*b.x+a.y*b.y+a.z*b.z;}
+function cross3(a,b){return {x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x};}
+function normSq3(v){return dot3(v,v);}
+function pointSegmentDistance3(p,a,b){
+ const d=sub3(b,a),len=normSq3(d);
+ const t=len<1e-12?0:Math.max(0,Math.min(1,dot3(sub3(p,a),d)/len));
+ const closest={x:a.x+d.x*t,y:a.y+d.y*t,z:a.z+d.z*t};
+ return Math.sqrt(normSq3(sub3(p,closest)));
 }
+function segmentDistance3(a,b,c,d){
+ // Distancia entre DOS segmentos 3D; proyecciones 2D que se cruzan a distinta
+ // altura NO constituyen una intersección.
+ const u=sub3(b,a),v=sub3(d,c),w=sub3(a,c);
+ const A=dot3(u,u),B=dot3(u,v),C=dot3(v,v),D=dot3(u,w),E=dot3(v,w);
+ let sn,sd=A*C-B*B,tn,td=sd;
+ if(A<1e-12)return pointSegmentDistance3(a,c,d);
+ if(C<1e-12)return pointSegmentDistance3(c,a,b);
+ if(sd<1e-12){sn=0;sd=1;tn=E;td=C;}
+ else{sn=B*E-C*D;tn=A*E-B*D;
+  if(sn<0){sn=0;tn=E;td=C;}
+  else if(sn>sd){sn=sd;tn=E+B;td=C;}
+ }
+ if(tn<0){tn=0;if(-D<0)sn=0;else if(-D>A)sn=sd;else{sn=-D;sd=A;}}
+ else if(tn>td){tn=td;if(-D+B<0)sn=0;else if(-D+B>A)sn=sd;else{sn=-D+B;sd=A;}}
+ const sc=Math.abs(sn)<1e-12?0:sn/sd,tc=Math.abs(tn)<1e-12?0:tn/td;
+ return Math.sqrt(normSq3({x:w.x+sc*u.x-tc*v.x,y:w.y+sc*u.y-tc*v.y,z:w.z+sc*u.z-tc*v.z}));
+}
+function triangleNormal(a,b,c){return cross3(sub3(b,a),sub3(c,a));}
+function projectedTriangleFace(face){
+ const [A,B,C]=[POINTS[face.a],POINTS[face.b],POINTS[face.c]];
+ const n=triangleNormal(A,B,C),x=Math.abs(n.x),y=Math.abs(n.y),z=Math.abs(n.z);
+ if(x>=y&&x>=z)return p=>({x:p.y,y:p.z});
+ if(y>=z)return p=>({x:p.x,y:p.z});
+ return p=>({x:p.x,y:p.y});
+}
+function rayTriangleT(origin,dir,a,b,c){
+ // Möller-Trumbore, ambas caras, devuelve distancia del rayo al triángulo.
+ const edge1=sub3(b,a),edge2=sub3(c,a),p=cross3(dir,edge2);
+ const det=dot3(edge1,p);if(Math.abs(det)<1e-10)return null;
+ const inv=1/det,t=sub3(origin,a),u=dot3(t,p)*inv;
+ if(u< -1e-7||u>1+1e-7)return null;
+ const q=cross3(t,edge1),v=dot3(dir,q)*inv;
+ if(v< -1e-7||u+v>1+1e-7)return null;
+ const distance=dot3(edge2,q)*inv;
+ return distance>1e-7?distance:null;
+}
+function segmentIntersectsFace3D(a,b,face){
+ const A=POINTS[a],B=POINTS[b],T=[POINTS[face.a],POINTS[face.b],POINTS[face.c]];
+ const n=triangleNormal(...T),length=Math.sqrt(normSq3(n));
+ if(length<1e-9)return false;
+ const d0=dot3(sub3(A,T[0]),n)/length,d1=dot3(sub3(B,T[0]),n)/length;
+ if(d0*d1< -1e-9){
+  const t=d0/(d0-d1),hit={x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t,z:A.z+(B.z-A.z)*t};
+  const proj=projectedTriangleFace(face);
+  return pointInsideTriangle(proj(hit),proj(T[0]),proj(T[1]),proj(T[2]));
+ }
+ // Segmento coplanar: entra en la superficie sombreada por cualquiera de sus lados.
+ if(Math.abs(d0)<1e-6&&Math.abs(d1)<1e-6){
+  const proj=projectedTriangleFace(face),P=proj(A),Q=proj(B);
+  const [U,V,W]=T.map(proj);
+  if(pointInsideTriangle(P,U,V,W)||pointInsideTriangle(Q,U,V,W))return true;
+  if(pointInsideTriangle({x:(P.x+Q.x)/2,y:(P.y+Q.y)/2},U,V,W))return true;
+  return [[U,V],[V,W],[W,U]].some(([X,Y])=>segmentsCross(P,Q,X,Y));
+ }
+ return false;
+}
+function closedTriangleShells(tris){
+ // Solo una malla cerrada (cada arista usada exactamente por dos caras)
+ // puede crear un volumen bloqueado. Una cara o varios triángulos abiertos NO.
+ const edges=new Map();
+ tris.forEach((t,i)=>{
+  for(const [a,b] of [[t.a,t.b],[t.b,t.c],[t.c,t.a]]){
+   const key=a<b?a+'-'+b:b+'-'+a;
+   if(!edges.has(key))edges.set(key,[]);
+   edges.get(key).push(i);
+  }
+ });
+ const seen=new Set(),result=[];
+ for(let i=0;i<tris.length;i++){
+  if(seen.has(i))continue;
+  const todo=[i],part=[];seen.add(i);
+  while(todo.length){
+   const j=todo.pop();part.push(j);const t=tris[j];
+   for(const [a,b] of [[t.a,t.b],[t.b,t.c],[t.c,t.a]]){
+    const key=a<b?a+'-'+b:b+'-'+a;
+    for(const k of edges.get(key)||[])if(!seen.has(k)){seen.add(k);todo.push(k);}
+   }
+  }
+  if(part.length<4)continue;
+  const counts=new Map(),vertices=new Set();
+  for(const j of part){const t=tris[j];
+   for(const v of [t.a,t.b,t.c])vertices.add(v);
+   for(const [a,b] of [[t.a,t.b],[t.b,t.c],[t.c,t.a]]){
+    const key=a<b?a+'-'+b:b+'-'+a;
+    counts.set(key,(counts.get(key)||0)+1);
+   }
+  }
+  if(vertices.size>=4&&[...counts.values()].every(c=>c===2)){
+   // Una lámina plana cubierta por dos lados no es un sólido con interior.
+   const ids=[...vertices],p0=POINTS[ids[0]];
+   let spansVolume=false;
+   outer: for(let a=1;a<ids.length;a++)for(let b=a+1;b<ids.length;b++)for(let c=b+1;c<ids.length;c++){
+    const triple=dot3(sub3(POINTS[ids[a]],p0),
+      cross3(sub3(POINTS[ids[b]],p0),sub3(POINTS[ids[c]],p0)));
+    if(Math.abs(triple)>1e-5){spansVolume=true;break outer;}
+   }
+   if(spansVolume)result.push(part.map(j=>tris[j]));
+  }
+ }
+ return result;
+}
+function pointInsideClosedShell(p,shell){
+ const dirs=[{x:1,y:.347,z:.159},{x:.197,y:1,z:.439},{x:.281,y:.233,z:1}];
+ let insideVotes=0;
+ for(const dir of dirs){
+  const hits=[];
+  for(const t of shell){
+   const hit=rayTriangleT(p,dir,POINTS[t.a],POINTS[t.b],POINTS[t.c]);
+   if(hit!==null&&!hits.some(n=>Math.abs(n-hit)<1e-5))hits.push(hit);
+  }
+  if(hits.length%2===1)insideVotes++;
+ }
+ return insideVotes>=2;
+}
+function blockedNodes(s){
+ const closed=closedTriangleShells(s.tris||[]);
+ if(!closed.length)return [];
+ const blocked=[];
+ for(let i=0;i<POINTS.length;i++){
+  // Las esquinas de la malla cerrada son jugables; solamente se bloquean
+  // los nodos estrictamente EN EL INTERIOR de un sólido completamente sellado.
+  if(closed.some(shell=>!shell.some(t=>[t.a,t.b,t.c].includes(i))&&pointInsideClosedShell(POINTS[i],shell)))blocked.push(i);
+ }
+ return blocked;
+}
+
 function segmentsCross(a,b,c,d){
  const A=area(a,b,c),B=area(a,b,d),C=area(c,d,a),D=area(c,d,b);
  return ((A>1e-6&&B< -1e-6)||(A< -1e-6&&B>1e-6))&&((C>1e-6&&D< -1e-6)||(C< -1e-6&&D>1e-6));
@@ -180,33 +314,25 @@ function nearSegment(p,a,b){
 // Las líneas sueltas NO son paredes. Solo la zona de un triángulo ya conquistado
 // (s.tris) impide nuevas conexiones que atraviesen su superficie proyectada XZ.
 // El análisis XZ coincide con las reglas actuales de encapsulamiento de nodos.
-function crossesOwnedTriangle(a,b,t){
- const A=xy(a),B=xy(b),T=[xy(t.a),xy(t.b),xy(t.c)];
- // Cualquier cruce estricto del límite de una zona pintada bloquea el camino.
- for(let i=0;i<3;i++)if(segmentsCross(A,B,T[i],T[(i+1)%3]))return true;
- // Una diagonal con extremos en los bordes puede atravesar el interior
- // sin cruzar estrictamente otro borde; el punto medio detecta ese caso.
- const midpoint={x:(A.x+B.x)/2,y:(A.y+B.y)/2};
- return pointInsideTriangle(midpoint,T[0],T[1],T[2]);
-}
+function crossesOwnedTriangle(a,b,t){return segmentIntersectsFace3D(a,b,t);}
 function edgeError(a,b,s){
  if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=POINTS.length||b>=POINTS.length||a===b)return 'Puntos inválidos.';
- if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo quedó dentro de una zona cerrada.';
- if(s.lines.some(x=>linkKey(x.a,x.b)===linkKey(a,b)))return 'Esta línea ya existe.';
- // La distancia no limita el juego; únicamente las zonas coloreadas impiden cruzar.
- const A=xy(a),B=xy(b);
- for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&nearSegment(xy(i),A,B)<.075)return 'La línea atraviesa otro nodo.';
- // Una conexión existente también es una barrera, aunque aún no cierre una zona.
- // Los segmentos con extremos comunes pueden salir del mismo nodo sin bloquearse.
- for(const line of s.lines){
-  if(a===line.a||a===line.b||b===line.a||b===line.b)continue;
-  if(segmentsCross(A,B,xy(line.a),xy(line.b)))return 'No puedes cruzar una línea ya colocada.';
+ if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo está encerrado en un volumen completamente cerrado.';
+ if(s.lines.some(l=>linkKey(l.a,l.b)===linkKey(a,b)))return 'Esta línea ya está construida.';
+ const A=POINTS[a],B=POINTS[b];
+ for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&pointSegmentDistance3(POINTS[i],A,B)<.055)return 'La conexión atravesaría otro nodo.';
+ for(const l of s.lines){
+  if(a===l.a||a===l.b||b===l.a||b===l.b)continue;
+  if(segmentDistance3(A,B,POINTS[l.a],POINTS[l.b])<.04)return 'No puedes cruzar una línea existente en el espacio 3D.';
  }
- for(const triangle of s.tris)if(crossesOwnedTriangle(a,b,triangle))return 'No puedes atravesar un triángulo ya conquistado.';
+ // Las caras triangulares conquistadas son superficies que bloquean SOLO si
+ // se atraviesan realmente en 3D; un punto por encima queda libre.
+ for(const t of s.tris)if(crossesOwnedTriangle(a,b,t))return 'Una cara conquistada bloquea esta trayectoria 3D.';
  return null;
 }
 const el=id=>document.getElementById(id);
 let mode='none', myPlayer=0, host=false, room='', connected=false, peer=null,conn=null,game=null;
+let reconnectTimer=null,pendingSyncTimer=null,reconnectAttempts=0;
 let renderer,scene,camera,orbit,board,staticGroup,linesGroup,triGroup,nodes=[],raycaster=new THREE.Raycaster();
 let selected=-1, pointerStart=null, cpuTimer=null, joinTimer=null, scanner=null,toastTimer=null;
 let arSession=null,hitSource=null,arSpace=null,lastHit=null,reticle=null,arPlaced=false;
@@ -215,16 +341,83 @@ const distance=(a,b)=>POINTS[a].distanceTo(POINTS[b]);
 const validEdge=(a,b,s)=>!edgeError(a,b,s);
 const rand=n=>{const v=new Uint32Array(1);crypto.getRandomValues(v);return v[0]%n;};
 const roomId=()=>Array.from({length:6},()=>CODE_CHARS[rand(CODE_CHARS.length)]).join('');
-const copyText=async s=>{try{await navigator.clipboard.writeText(s);notify('Enlace copiado al portapapeles.');}catch{prompt('Copia el enlace de invitación:',s);}};
-function notify(message){const t=el('toast');t.textContent=message;t.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('visible'),4100);}
+const copyText=async s=>{
+ try{await navigator.clipboard.writeText(s);notify('Enlace copiado al portapapeles.');}
+ catch{await showGameDialog({title:'COPIAR INVITACIÓN',message:'Selecciona el enlace para copiarlo desde tu dispositivo.',accept:'LISTO',cancel:null,copy:s});}
+};
+function notify(message){
+ const t=el('toast');t.textContent='⬡ '+String(message);t.classList.add('visible');
+ clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('visible'),4600);
+}
+let gameDialogResolve=null;
+function closeGameDialog(accept){
+ const layer=el('gameDialog');layer.classList.add('hidden');
+ const callback=gameDialogResolve;gameDialogResolve=null;
+ if(callback)callback(Boolean(accept));
+}
+function showGameDialog({title='AVISO DEL NEXO',message,accept='ACEPTAR',cancel='CANCELAR',copy=null}){
+ if(gameDialogResolve)closeGameDialog(false);
+ el('gameDialogTitle').textContent=title;
+ el('gameDialogMessage').textContent=String(message);
+ el('gameDialogAccept').textContent=accept;
+ el('gameDialogCancel').classList.toggle('hidden',cancel===null);
+ if(cancel!==null)el('gameDialogCancel').textContent=cancel;
+ const field=el('gameDialogCopy');
+ field.classList.toggle('hidden',copy===null);
+ if(copy!==null)field.value=String(copy);
+ el('gameDialog').classList.remove('hidden');
+ if(copy!==null){field.focus();field.select();}
+ else el('gameDialogAccept').focus();
+ return new Promise(resolve=>{gameDialogResolve=resolve;});
+}
+const gameConfirm=(message,title='CONFIRMAR ACCIÓN')=>showGameDialog({title,message,accept:'SÍ, CONTINUAR',cancel:'REGRESAR'});
 function screen(id){for(const n of ['menu','waiting','game','results'])el(n).classList.toggle('hidden',n!==id);el('monetization').classList.toggle('hidden',id==='game');}
 function networkStatus(message,on=false){el('connection').textContent=message;el('connection').classList.toggle('online',on);}
 function linkUrl(){const u=new URL(location.href);u.search='';u.hash='';u.searchParams.set('room',room);return u.href;}
 function cleanup(){
-  clearTimeout(cpuTimer);clearTimeout(joinTimer);selected=-1;connected=false;game=null;
+  clearTimeout(cpuTimer);clearTimeout(joinTimer);clearTimeout(reconnectTimer);clearTimeout(pendingSyncTimer);reconnectTimer=null;pendingSyncTimer=null;reconnectAttempts=0;selected=-1;connected=false;game=null;
   if(conn){try{conn.close();}catch{}conn=null;}
   if(peer){try{peer.destroy();}catch{}peer=null;}
   room='';mode='none';host=false;networkStatus('SIN CONECTAR');
+}
+function scheduleGuestReconnection(){
+ if(mode!=='pvp'||host||!room||reconnectTimer||document.visibilityState==='hidden')return;
+ const code=room;
+ const delay=Math.min(8000,700*Math.pow(1.7,Math.min(reconnectAttempts,6)));
+ reconnectTimer=setTimeout(()=>{
+  reconnectTimer=null;
+  if(mode!=='pvp'||host||room!==code||document.visibilityState==='hidden'||conn?.open)return;
+  reconnectAttempts++;networkStatus('RECONEXIÓN '+reconnectAttempts+'…');
+  joinRoom(code,true);
+ },delay);
+}
+function askHostForFreshState(){
+ if(mode!=='pvp'||host||!room)return;
+ if(!conn?.open){scheduleGuestReconnection();return;}
+ clearTimeout(pendingSyncTimer);
+ try{
+  conn.send({type:'SYNC_REQUEST',knownVersion:game?.version??-1});
+  networkStatus('SINCRONIZANDO…');
+  pendingSyncTimer=setTimeout(()=>{
+   pendingSyncTimer=null;
+   if(mode==='pvp'&&!host&&room){
+    connected=false;
+    if(conn){try{conn.close();}catch{}conn=null;}
+    networkStatus('RECUPERANDO PARTIDA…');
+    scheduleGuestReconnection();
+   }
+  },4500);
+ }catch{
+  connected=false;networkStatus('RECUPERANDO PARTIDA…');scheduleGuestReconnection();
+ }
+}
+function restoreNetworkAfterPause(){
+ if(mode!=='pvp'||!room||document.visibilityState==='hidden')return;
+ if(peer?.disconnected&&!peer?.destroyed)try{peer.reconnect();}catch{}
+ if(host){
+  if(conn?.open)broadcast();
+  else networkStatus('ESPERANDO AL RIVAL…');
+ }else askHostForFreshState();
 }
 function newState(){
  const seed=rand(0x7fffffff),level=tutorial?1:selectedLevel;
@@ -242,7 +435,9 @@ function enterGame(){
 function setState(state){
  if(!state||state.schema!==2||!Array.isArray(state.points)||!Array.isArray(state.lines)||!Array.isArray(state.tris)||!Array.isArray(state.scores))return;
  /* los mensajes PvP se validan por esquema y versión */
+ if(mode==='pvp'&&!host&&game&&state.version<game.version)return;
  game=state;POINTS=state.points.map(p=>new THREE.Vector3(...p));
+ if(game.turn!==myPlayer)selected=-1;
  if(!el('game').classList.contains('hidden')){
    rebuildBoard();refresh();
  }else if(state.status==='play')enterGame();
@@ -261,8 +456,8 @@ function foundTriangles(a,b,lines,existing){
    if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(a,c)))continue;
    if(!lines.some(e=>linkKey(e.a,e.b)===linkKey(b,c)))continue;
    const k=[a,b,c].sort((x,y)=>x-y).join('-');if(known.has(k))continue;
-   const A=xy(a),B=xy(b),C=xy(c);
-   if(Math.abs(area(A,B,C))<.085)continue;
+   const n=triangleNormal(POINTS[a],POINTS[b],POINTS[c]);
+   if(Math.sqrt(normSq3(n))<.085)continue;
    known.add(k);result.push({a,b,c,owner:game.turn});
  }
  return result;
@@ -387,11 +582,13 @@ function hostConnection(c){
       game.players[1]={name:String(p.name||'RIVAL').slice(0,30),color:/^#[0-9a-fA-F]{6}$/.test(p.color)?p.color:'#ff2d7a',badge:PLAYER_BADGES.includes(p.badge)?p.badge:'★'};
     }
     setState(game);broadcast();
+  }else if(m.type==='SYNC_REQUEST'&&game){
+    broadcast();
   }else if(m.type==='ACTION'&&connected&&game&&game.status==='play'){
     applyAction(m.action,m.data||{},1);
   }
  });
- c.on('close',()=>{if(conn===c){conn=null;connected=false;networkStatus('RIVAL DESCONECTADO');refresh();notify('Rival desconectado. Puede volver con el mismo código.');}});
+ c.on('close',()=>{if(conn===c){conn=null;connected=false;networkStatus('ESPERANDO RECONEXIÓN');refresh();notify('El rival puede reconectarse a la misma sala; la partida sigue guardada.');}});
  c.on('error',()=>networkStatus('ERROR DE CONEXIÓN'));
 }
 function showHostRoom(){
@@ -411,26 +608,76 @@ function createRoom(){
     peer.on('disconnected',()=>networkStatus('RECONECTANDO…'));
   }catch(e){notify('No se pudo crear sala: '+e.message);cleanup();screen('menu');}
 }
-function joinRoom(codeInput){
-  const code=String(codeInput||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(code.length!==6){notify('El código debe tener seis letras o números.');return;}
-  cleanup();if(typeof Peer==='undefined'){notify('No pudo cargarse PeerJS.');return;}
-  tutorial=false;awardRecorded=false;mode='pvp';host=false;myPlayer=1;room=code;networkStatus('CONECTANDO…');el('joinBtn').disabled=true;el('joinBtn').textContent='CONECTANDO…';
-  try{
-    peer=new Peer(undefined,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
-    peer.on('open',()=>{
-      conn=peer.connect(PEER_PREFIX+code,{reliable:true,serialization:'json'});
-      conn.on('open',()=>{connected=true;networkStatus('CONECTADO',true);conn.send({type:'HELLO',version:VERSION,profile:profilePacket()});});
-      conn.on('data',m=>{
-        if(m?.type==='STATE'&&m.state){clearTimeout(joinTimer);el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';setState(m.state);}
-        else if(m?.type==='ERROR'){notify(m.message);home();}
-      });
-      conn.on('close',()=>{connected=false;networkStatus('RIVAL DESCONECTADO');refresh();notify('Se perdió la conexión con el anfitrión.');});
-      conn.on('error',()=>networkStatus('ERROR DE ENLACE'));
-    });
-    peer.on('error',e=>{clearTimeout(joinTimer);notify('No se encontró la sala o falló la conexión: '+(e.type||e.message));home();});
-    joinTimer=setTimeout(()=>{if(!game){notify('No hubo respuesta. Verifica código y conexión en ambos dispositivos.');home();}},18000);
-  }catch(e){notify('No se pudo unir: '+e.message);home();}
+function joinRoom(codeInput,keepState=false){
+ const code=String(codeInput||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ if(code.length!==6){notify('El código debe tener seis letras o números.');return;}
+ if(keepState){
+  clearTimeout(joinTimer);clearTimeout(pendingSyncTimer);
+  if(conn){try{conn.close();}catch{}conn=null;}
+  if(peer){try{peer.destroy();}catch{}peer=null;}
+  connected=false;
+ }else cleanup();
+ if(typeof Peer==='undefined'){
+  notify('No pudo cargarse la conexión de salas. Verifica internet.');
+  if(keepState)scheduleGuestReconnection();
+  return;
+ }
+ tutorial=false;mode='pvp';host=false;myPlayer=1;room=code;
+ networkStatus(keepState?'RECONECTANDO…':'CONECTANDO…');
+ el('joinBtn').disabled=true;el('joinBtn').textContent='CONECTANDO…';
+ try{
+  const newPeer=new Peer(undefined,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
+  peer=newPeer;
+  newPeer.on('open',()=>{
+   if(peer!==newPeer)return;
+   const newConn=newPeer.connect(PEER_PREFIX+code,{reliable:true,serialization:'json'});
+   conn=newConn;
+   newConn.on('open',()=>{
+    if(conn!==newConn)return;
+    clearTimeout(reconnectTimer);reconnectTimer=null;reconnectAttempts=0;
+    connected=true;networkStatus('CONECTADO',true);
+    newConn.send({type:'HELLO',version:VERSION,profile:profilePacket(),resume:Boolean(keepState)});
+    // El anfitrión conserva la autoridad: siempre envía STATE completo.
+    if(keepState)askHostForFreshState();
+   });
+   newConn.on('data',m=>{
+    if(conn!==newConn)return;
+    if(m?.type==='STATE'&&m.state){
+     clearTimeout(joinTimer);clearTimeout(pendingSyncTimer);pendingSyncTimer=null;
+     el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';
+     connected=true;reconnectAttempts=0;networkStatus('SINCRONIZADO',true);
+     setState(m.state);
+    }else if(m?.type==='ERROR'){notify(m.message);home();}
+   });
+   newConn.on('close',()=>{
+    if(conn!==newConn)return;
+    conn=null;connected=false;networkStatus('PARTIDA EN PAUSA');
+    refresh();notify('Conexión interrumpida. Se intentará recuperar la misma sala.');
+    scheduleGuestReconnection();
+   });
+   newConn.on('error',()=>{if(conn===newConn){connected=false;networkStatus('RECONEXIÓN PENDIENTE');scheduleGuestReconnection();}});
+  });
+  newPeer.on('error',e=>{
+   if(peer!==newPeer)return;
+   networkStatus('ERROR DE ENLACE');
+   if(keepState||game){
+    notify('Reconectando a la partida…');scheduleGuestReconnection();
+   }else{
+    clearTimeout(joinTimer);
+    notify('No se encontró la sala o falló la conexión: '+(e.type||e.message));
+    home();
+   }
+  });
+  newPeer.on('disconnected',()=>{if(peer===newPeer&&!newPeer.destroyed)try{newPeer.reconnect();}catch{}});
+  joinTimer=setTimeout(()=>{
+   if(peer!==newPeer||conn?.open)return;
+   if(keepState||game){networkStatus('BUSCANDO ANFITRIÓN');scheduleGuestReconnection();}
+   else{notify('La sala no respondió. Revisa el código y la conexión.');home();}
+  },14000);
+ }catch(e){
+  notify('No se pudo establecer la conexión: '+e.message);
+  if(keepState)scheduleGuestReconnection();else home();
+ }
 }
 function home(){if(arSession)arSession.end().catch(()=>{});cleanup();el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';screen('menu');}
 
@@ -820,6 +1067,18 @@ function enablePinchScale(){
 }
 
 function bind(){
+ el('gameDialogAccept').addEventListener('click',()=>closeGameDialog(true));
+ el('gameDialogCancel').addEventListener('click',()=>closeGameDialog(false));
+ el('gameDialog').addEventListener('pointerdown',e=>{if(e.target===el('gameDialog'))closeGameDialog(false);});
+ document.addEventListener('keydown',e=>{
+  if(el('gameDialog').classList.contains('hidden'))return;
+  if(e.key==='Escape'){e.preventDefault();closeGameDialog(false);}
+ });
+ // En dispositivos móviles la suspensión de pantalla puede interrumpir WebRTC.
+ // Al regresar se solicita snapshot completo sin reiniciar la partida ni nivel.
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')restoreNetworkAfterPause();});
+ window.addEventListener('pageshow',()=>{if(mode==='pvp')restoreNetworkAfterPause();});
+ window.addEventListener('online',()=>{if(mode==='pvp')restoreNetworkAfterPause();});
  document.addEventListener('pointerdown',onARPointerDown,true);
  document.addEventListener('pointerup',onARPointerUp,true);
  document.addEventListener('pointercancel',e=>{arPointers.delete(e.pointerId);arPointerStart=null;},true);
@@ -838,7 +1097,7 @@ function bind(){
  el('cancelBtn').addEventListener('click',home);
  el('diceBtn').addEventListener('click',()=>{animateGalacticDice();action('ROLL');});
  el('passBtn').addEventListener('click',()=>action('PASS'));
- el('leaveBtn').addEventListener('click',()=>{if(!confirm('¿Abandonar la partida?'))return;action('SURRENDER');home();});
+ el('leaveBtn').addEventListener('click',async()=>{if(!await gameConfirm('Abandonar la sala finalizará tu participación. ¿Quieres salir?','ABANDONAR PARTIDA'))return;action('SURRENDER');home();});
  el('homeBtn').addEventListener('click',home);
  el('continueBtn').addEventListener('click',continueToNextLevel);
  el('resetViewBtn').addEventListener('click',resetView);

@@ -1,5 +1,14 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.5.0-beta.1 — 2026-10-15
+
+- Motor de intersecciones XYZ (líneas-líneas, segmento-cara triangular y nodos en segmentos). Un triángulo es una pared de superficie sin volumen, así que los nodos encima de su proyección siguen habilitados.
+- Bloqueo de nodos solo cuando quedan dentro de un conjunto cerrado de caras triangulares con aristas compartidas por dos caras; comprobación ray casting en tres direcciones.
+- Snapshot `SYNC_REQUEST` al recuperar pantalla o red; huésped intenta reconectar a la misma sala conservando tablero, turno y puntajes previos.
+- Confirmación de abandono y cierre de sesión mediante panel gamer; reemplazado prompt nativo para copiar.
+- Ampliadas pruebas de cerramientos volumétricos, superposición XYZ y reconexión, manteniendo Firebase d-line-g y las funciones PvP/AR existentes.
+- Publicación sujeta a tests y prueba del usuario: una pestaña móvil destruida por el sistema operativo aún puede requerir reabrir el mismo código.
+
 ## 57.4.0-beta.1 — 2026-10-15
 
 - Se aplican conjuntamente las dos barreras: una línea ya dibujada impide que otra línea posterior la cruce; un triángulo cerrado, sombreado y conquistado impide atravesar su territorio. Los enlaces desde un nodo común continúan permitidos; no se restaura el límite de distancia entre nodos.

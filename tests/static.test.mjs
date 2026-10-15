@@ -7,9 +7,9 @@ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const auth=fs.readFileSync(new URL('../auth.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 57',()=>{
-  assert.match(html,/V57\.4\.0/);
-  assert.match(html,/game\.js\?v=57\.4\.0/);
-  assert.match(js,/const VERSION='57\.4\.0-beta\.1'/);
+  assert.match(html,/V57\.5\.0/);
+  assert.match(html,/game\.js\?v=57\.5\.0/);
+  assert.match(js,/const VERSION='57\.5\.0-beta\.1'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
@@ -53,6 +53,8 @@ test('niveles y reglas geométricas de V57',()=>{
   assert.match(js,/pointInsideTriangle/);
   assert.match(js,/renderer\.xr\.setReferenceSpaceType\(spaceType\)/);
   assert.match(js,/crossesOwnedTriangle/);
+  assert.match(js,/pointInsideClosedShell/);
+  assert.match(js,/segmentDistance3/);
   assert.match(js,/closestXRNodeOnScreen/);
   assert.match(js,/setARSelectionMode/);
   assert.match(js,/selectAimedNode/);
@@ -91,7 +93,7 @@ test('HUD gamer, tutorial BOT, escala AR y progresión',()=>{
 });
 
 test('cambio de proyecto Firebase y cache-busting de auth.js',()=>{
- assert.match(js,/from '\.\/auth\.js\?v=57\.4\.0'/);
+ assert.match(js,/from '\.\/auth\.js\?v=57\.5\.0'/);
  assert.match(auth,/appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef"/);
  assert.match(auth,/browserLocalPersistence/);
  assert.match(auth,/onAuthStateChanged/);
@@ -112,4 +114,23 @@ test('insignias y controles adaptables a móviles pequeños',()=>{
  assert.match(css,/@media\(max-width:350px\)/);
  assert.match(css,/safe-area-inset-bottom/);
  assert.match(css,/orientation:landscape/);
+});
+
+test('avisos y confirmaciones propios, sin ventanas JS normales',()=>{
+ for(const id of ['gameDialog','gameDialogTitle','gameDialogAccept','gameDialogCancel','gameDialogCopy'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(js,/function showGameDialog/);
+ assert.match(js,/gameConfirm/);
+ assert.doesNotMatch(js,/\bwindow\.confirm\s*\(/);
+ assert.doesNotMatch(js,/\bwindow\.prompt\s*\(/);
+ assert.match(css,/\.game-dialog-overlay/);
+});
+test('reconexión tras suspensión solicita estado de la misma sala',()=>{
+ assert.match(js,/function askHostForFreshState/);
+ assert.match(js,/type:'SYNC_REQUEST'/);
+ assert.match(js,/m\.type==='SYNC_REQUEST'/);
+ assert.match(js,/function scheduleGuestReconnection/);
+ assert.match(js,/visibilitychange/);
+ assert.match(js,/pageshow/);
+ assert.match(js,/joinRoom\(code,true\)/);
 });
