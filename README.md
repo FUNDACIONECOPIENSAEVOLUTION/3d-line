@@ -1,4 +1,4 @@
-# 3 LINE-AR — V57.6.1 beta 9.1
+# 3 LINE-AR — V57.7.0 beta 10
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
@@ -7,6 +7,18 @@ Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC 
 ## V57.6.1: regreso al juego después del bloqueo del teléfono
 
 Al apagar la pantalla, Android puede terminar la **sesión WebXR de cámara** por razones de gestión de recursos. El estado de la partida se recupera por PeerJS al volver, pero una sesión de AR terminada **no se puede reabrir automáticamente sin interacción del usuario**. Esta versión muestra un aviso neón para que vuelvas a pulsar **ACTIVAR AR** y **FIJAR TABLERO**. La sala, puntuaciones y conexiones no se borran por salir de AR. Se necesita prueba real de suspensión/reanudación en teléfono.
+
+## V57.7: videos recompensados, insignias y reintento contra BOT
+
+La primera fila de insignias (◆ ⚡ ★ ✦ ☣) está **gratis y desbloqueada**. Las otras once se desbloquean con **1, 2, 3… hasta 11 videos reales completados**, uno por cada nueva insignia según su posición. El contador se guarda por insignia y usuario en este navegador, sin borrar la elección de nivel, AR o PvP. Los cosméticos no mejoran los resultados competitivos.
+
+Los botones bloqueados muestran la cantidad de videos necesaria. **No hay proveedor publicitario aprobado todavía**, por eso no se puede contabilizar ni simular su reproducción. La conexión está preparada en `ads-rewarded.js`, con ID público pendiente en `ads-config.json`. Solo se concede progreso después de `adViewed` de Google H5 Games Ads.
+
+**Reintento sin regresar al menú:** en el resultado de partidas contra BOT y en tutorial se ofrece **REINTENTAR NIVEL**. Sin publicidad aprobada funciona gratuitamente durante la beta. Cuando exista H5 Ads real, el usuario podrá optar por video para reiniciar directamente o regresar al menú y repetir gratis. El anuncio no interrumpe un turno ni afecta a otro jugador PvP.
+
+**Monedas:** solo se acreditan las 20 monedas cosméticas por un video realmente completado; se guardan localmente por perfil, no en el antiguo contador global. Los datos de recompensas cliente no son seguros contra manipulación: antes de lanzar monetización comercial o ranking, implementar un backend confiable y verificación de eventos.
+
+**Preparación Android:** guía completa en [docs/MONETIZACION_ANDROID_PLAY.md](./docs/MONETIZACION_ANDROID_PLAY.md). El APK y AAB aún no se han generado; hay que comprobar WebXR y servicios de anuncios nativos antes de Play Store.
 
 ## V57.6: bloqueo por cara y Academia táctica interactiva
 
