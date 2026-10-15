@@ -114,3 +114,75 @@ body.xr-active .game-header{z-index:35}
 #levelWinNotice{font-size:12px;color:#a6d5e8;line-height:1.5;margin:12px 0}
 #continueBtn{border-color:var(--green);color:#e4ffe6;background:linear-gradient(125deg,#1a774d,#0c2837);box-shadow:0 0 18px #42ff962b}
 @media(max-width:640px){.scoreline .turncenter{gap:2px}.galaxy-dice{min-width:60px;min-height:72px;padding:2px 3px}.galaxy-dice svg{width:39px;height:39px}.galaxy-dice span{font-size:8px}.login-panel{padding:20px}.ar-size-control{right:3px}}
+
+/* V57.4: insignias adicionales, control AR doble y disposición móvil con área segura. */
+html,body{max-width:100%;overflow-x:hidden}
+#app,#game,.game,.arena,.panel{min-width:0}
+button{max-width:100%;overflow-wrap:anywhere}
+.player-custom{align-items:flex-start}
+.player-custom>span{flex:0 0 66px;padding-top:8px}
+.badge-choices{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;flex:1;max-width:250px;justify-content:stretch}
+.badge-choices button{width:100%;min-width:0;min-height:35px;height:35px;padding:1px;display:grid;place-items:center;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",Arial,sans-serif;font-size:20px}
+.badge-choices button.current{transform:scale(1.05);box-shadow:0 0 10px #00eaff55}
+.scoreline,.score-player,.turncenter{min-width:0}
+.score-player small,.turncenter small,.turncenter b{max-width:100%;overflow-wrap:anywhere}
+.ar-aim-crosshair{position:fixed;z-index:31;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border:2px solid #00eaff;border-radius:50%;pointer-events:none;box-shadow:0 0 13px #00eaff6b,inset 0 0 15px #00eaff50;transition:border-color .15s}
+.ar-aim-crosshair:before,.ar-aim-crosshair:after{content:"";position:absolute;background:#d3ffff;box-shadow:0 0 6px #00eaff}
+.ar-aim-crosshair:before{width:2px;height:60px;left:19px;top:-10px}
+.ar-aim-crosshair:after{height:2px;width:60px;top:19px;left:-10px}
+.ar-aim-crosshair span{position:absolute;inset:16px;background:#e9ffff;border-radius:50%;box-shadow:0 0 11px #00eaff}
+.ar-aim-crosshair.ar-aim-target{border-color:#57ff79;box-shadow:0 0 24px #57ff79a5,inset 0 0 12px #57ff795a}
+.ar-selection-modes{position:fixed;z-index:34;left:8px;right:8px;bottom:calc(158px + env(safe-area-inset-bottom,0px));width:min(440px,calc(100% - 16px));margin-inline:auto;background:#071b2aeb;border:1px solid #246c85;border-radius:13px;padding:8px;box-shadow:0 0 22px #0009;text-align:center;display:grid;gap:4px;backdrop-filter:blur(6px)}
+.ar-mode-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ar-mode-tabs button,.ar-aim-confirm{min-width:0;min-height:36px;padding:6px 7px;border:1px solid #28607b;border-radius:9px;color:#d7edfc;background:#0a2234;font-size:clamp(10px,2.5vw,12px);line-height:1.2;white-space:normal}
+.ar-mode-tabs button.ar-mode-active{border-color:#00eaff;color:#00eaff;background:#10354a}
+.ar-aim-confirm{border-color:#57ff79;color:#dffff0;background:#14523c;font-weight:800}
+.ar-aim-confirm:disabled{opacity:.45}
+.ar-aim-text{font-size:10px;color:#c5e7f3;line-height:1.25;min-height:14px}
+body.xr-active .ar-selection-modes{position:fixed;display:grid;z-index:34}
+body.xr-active .toolbar{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:calc(100% - 12px);
+ left:6px;right:6px;bottom:calc(5px + env(safe-area-inset-bottom,0px));
+ padding:6px;gap:5px;max-height:138px;overflow-y:auto;overscroll-behavior:contain;
+}
+body.xr-active .toolbar button{flex:none;max-width:none;min-width:0;min-height:38px;padding:6px 4px;font-size:clamp(9px,2.3vw,11px);line-height:1.15;white-space:normal}
+body.xr-active .game-header{left:5px;right:5px;top:calc(5px + env(safe-area-inset-top,0px));padding:5px;max-width:calc(100% - 10px);max-height:150px;overflow:hidden}
+body.xr-active .game-header .scoreline{width:100%}
+body.xr-active .arenaLabel{max-width:calc(100% - 20px);left:10px;right:10px;top:calc(112px + env(safe-area-inset-top,0px));font-size:9px;pointer-events:none}
+body.xr-active .selected{bottom:calc(260px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 36px);font-size:10px;padding:6px 8px;pointer-events:none}
+body.xr-active #arSizeControl{right:3px;top:48%;transform:translateY(-50%);max-width:37px;z-index:35}
+body.xr-active #viewport{width:100vw;height:100dvh}
+@media(max-width:420px){
+ #app{padding:6px}
+ .gamer-menu{padding:12px 10px;max-width:100%}
+ .game-header{padding:5px}
+ .scoreline{gap:3px}
+ .scoreline .score-player{min-width:0}
+ .scoreline .score-player small{font-size:8px}
+ .scoreline .turncenter{min-width:0}
+ .game-header .galaxy-dice{min-width:48px;min-height:60px}
+ .galaxy-dice svg{width:33px;height:33px}
+ body.xr-active .toolbar{grid-template-columns:repeat(3,minmax(0,1fr));max-height:154px}
+ body.xr-active .ar-selection-modes{bottom:calc(174px + env(safe-area-inset-bottom,0px))}
+ body.xr-active .selected{bottom:calc(284px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:350px){
+ .brand-banner img{width:42px;height:42px}
+ .brand-banner h1{font-size:25px}
+ .player-custom>span{flex-basis:60px}
+ .badge-choices button{min-height:31px;height:31px;font-size:17px}
+ .ar-mode-tabs button{font-size:9px}
+ .scoreline .turncenter b{font-size:11px}
+ body.xr-active .toolbar button{font-size:9px;padding:4px 2px}
+}
+@media(max-height:520px) and (orientation:landscape){
+ body.xr-active .game-header{max-width:calc(100% - 190px);right:185px}
+ body.xr-active .ar-selection-modes{left:auto;right:5px;bottom:calc(58px + env(safe-area-inset-bottom,0px));width:190px;padding:5px;gap:2px}
+ .ar-mode-tabs{grid-template-columns:1fr;gap:3px}
+ .ar-mode-tabs button,.ar-aim-confirm{min-height:28px;font-size:10px}
+ .ar-aim-text{font-size:9px}
+ body.xr-active .toolbar{grid-template-columns:repeat(8,minmax(0,1fr));max-height:53px;overflow-y:auto}
+ body.xr-active .toolbar button{min-height:34px;font-size:9px}
+ body.xr-active .selected{bottom:calc(69px + env(safe-area-inset-bottom,0px));font-size:9px}
+ body.xr-active #arSizeControl{top:54%;right:3px}
+}

@@ -7,9 +7,9 @@ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const auth=fs.readFileSync(new URL('../auth.js',import.meta.url),'utf8');
 test('la aplicación carga archivos identificados por la versión 57',()=>{
-  assert.match(html,/V57\.3\.0/);
-  assert.match(html,/game\.js\?v=57\.3\.0/);
-  assert.match(js,/const VERSION='57\.3\.0-beta\.1'/);
+  assert.match(html,/V57\.4\.0/);
+  assert.match(html,/game\.js\?v=57\.4\.0/);
+  assert.match(js,/const VERSION='57\.4\.0-beta\.1'/);
 });
 test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
   const body=js.replace(/^import .*?;\s*$/gm,'');
@@ -54,6 +54,9 @@ test('niveles y reglas geométricas de V57',()=>{
   assert.match(js,/renderer\.xr\.setReferenceSpaceType\(spaceType\)/);
   assert.match(js,/crossesOwnedTriangle/);
   assert.match(js,/closestXRNodeOnScreen/);
+  assert.match(js,/setARSelectionMode/);
+  assert.match(js,/selectAimedNode/);
+  assert.match(js,/PLAYER_BADGES/);
 });
 test('Google no afirma acceso real sin configurar cliente y servidor',()=>{
  assert.match(js,/initializeAccountAuth/);
@@ -88,9 +91,25 @@ test('HUD gamer, tutorial BOT, escala AR y progresión',()=>{
 });
 
 test('cambio de proyecto Firebase y cache-busting de auth.js',()=>{
- assert.match(js,/from '\.\/auth\.js\?v=57\.3\.0'/);
+ assert.match(js,/from '\.\/auth\.js\?v=57\.4\.0'/);
  assert.match(auth,/appId:"1:1078189274558:web:5db5ebbb74ee2fc8df75ef"/);
  assert.match(auth,/browserLocalPersistence/);
  assert.match(auth,/onAuthStateChanged/);
  assert.doesNotMatch(html,/accounts\.google\.com\/gsi\/client/);
+});
+
+test('AR táctil y apuntar con cámara tienen botones y controles dedicados',()=>{
+ for(const id of ['arSelectionModes','arTouchModeBtn','arAimModeBtn','arAimSelectBtn','arAimCrosshair','arAimText'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(js,/function selectAimedNode/);
+ assert.match(js,/function onARPointerUp/);
+ assert.match(js,/session\.addEventListener\('select',onARXRSelect\)/);
+});
+test('insignias y controles adaptables a móviles pequeños',()=>{
+ const badges=[...html.matchAll(/data-badge="([^"]+)"/g)].map(m=>m[1]);
+ assert.ok(new Set(badges).size>=16);
+ assert.match(css,/@media\(max-width:420px\)/);
+ assert.match(css,/@media\(max-width:350px\)/);
+ assert.match(css,/safe-area-inset-bottom/);
+ assert.match(css,/orientation:landscape/);
 });

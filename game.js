@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.3.0';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.4.0';
 
-// v57.3.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v57.4.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.3.0-beta.1';
+const VERSION='57.4.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -37,7 +37,7 @@ function enterAccount(account){
   profile=readProfile(saved?key:localGuest?'3line57_profile':key);
   profile.name=account.provider==='google'?String(account.name||'AGENTE').toUpperCase().slice(0,30):profile.name||'INVITADO';
   if(!['#00eaff','#ff2d7a','#50ff65','#ffd231','#b35aff'].includes(profile.color))profile.color='#00eaff';
-  if(!['◆','⚡','★','✦','☣'].includes(profile.badge))profile.badge='◆';
+  if(!PLAYER_BADGES.includes(profile.badge))profile.badge='◆';
   unlockedLevel=Math.max(1,Math.min(10,Number(localStorage.getItem('3line57_unlocked_'+account.uid))||1));
   profile.level=unlockedLevel;selectedLevel=unlockedLevel;
   localStorage.setItem(key,JSON.stringify(profile));
@@ -117,6 +117,7 @@ function levelPoints(level,seed){
  }
  return pts;
 }
+const PLAYER_BADGES=['◆','⚡','★','✦','☣','🛡','👑','🐉','🦅','🤖','👾','🔥','❄','⚔','☯','♜'];
 function profilePacket(){return {name:String(profile.name).slice(0,30),color:profile.color,badge:profile.badge};}
 function saveProfile(){try{localStorage.setItem(accountProfileKey(currentAccount?.uid||'local-guest'),JSON.stringify(profile));}catch{} renderProfile();}
 function renderProfile(){
@@ -195,6 +196,12 @@ function edgeError(a,b,s){
  // La distancia no limita el juego; únicamente las zonas coloreadas impiden cruzar.
  const A=xy(a),B=xy(b);
  for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&nearSegment(xy(i),A,B)<.075)return 'La línea atraviesa otro nodo.';
+ // Una conexión existente también es una barrera, aunque aún no cierre una zona.
+ // Los segmentos con extremos comunes pueden salir del mismo nodo sin bloquearse.
+ for(const line of s.lines){
+  if(a===line.a||a===line.b||b===line.a||b===line.b)continue;
+  if(segmentsCross(A,B,xy(line.a),xy(line.b)))return 'No puedes cruzar una línea ya colocada.';
+ }
  for(const triangle of s.tris)if(crossesOwnedTriangle(a,b,triangle))return 'No puedes atravesar un triángulo ya conquistado.';
  return null;
 }
@@ -377,7 +384,7 @@ function hostConnection(c){
     if(!game)game=newState();
     if(m.profile&&typeof m.profile==='object'){
       const p=m.profile;
-      game.players[1]={name:String(p.name||'RIVAL').slice(0,30),color:/^#[0-9a-fA-F]{6}$/.test(p.color)?p.color:'#ff2d7a',badge:['◆','⚡','★','✦','☣'].includes(p.badge)?p.badge:'★'};
+      game.players[1]={name:String(p.name||'RIVAL').slice(0,30),color:/^#[0-9a-fA-F]{6}$/.test(p.color)?p.color:'#ff2d7a',badge:PLAYER_BADGES.includes(p.badge)?p.badge:'★'};
     }
     setState(game);broadcast();
   }else if(m.type==='ACTION'&&connected&&game&&game.status==='play'){
@@ -431,7 +438,7 @@ function badgeSprite(badge,color){
  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
  const ctx=canvas.getContext('2d');ctx.fillStyle='#081c30';ctx.beginPath();ctx.arc(64,64,43,0,Math.PI*2);ctx.fill();
  ctx.strokeStyle=color;ctx.lineWidth=5;ctx.stroke();
- ctx.fillStyle=color;ctx.font='bold 56px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(badge,64,66);
+ ctx.fillStyle=color;ctx.font='bold 54px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(badge,64,66);
  const texture=new THREE.CanvasTexture(canvas),mat=new THREE.SpriteMaterial({map:texture,transparent:true});
  const spr=new THREE.Sprite(mat);spr.scale.set(.42,.42,1);return spr;
 }
@@ -471,7 +478,7 @@ function initialize3D(){
  renderer.domElement.addEventListener('pointerdown',e=>{pointerStart=[e.clientX,e.clientY];});
  renderer.domElement.addEventListener('pointerup',e=>{if(!pointerStart)return;const delta=Math.hypot(e.clientX-pointerStart[0],e.clientY-pointerStart[1]);pointerStart=null;if(delta<9)pickNode(e);});
  window.addEventListener('resize',resize3D);
- renderer.setAnimationLoop((time,frame)=>{if(orbit&&!arSession)orbit.update();updateAR(frame);renderer.render(scene,camera);});
+ renderer.setAnimationLoop((time,frame)=>{if(orbit&&!arSession)orbit.update();updateAR(frame);if(arSession)updateARAim();renderer.render(scene,camera);});
  resize3D();
 }
 function resize3D(){if(!renderer||arSession)return;const rect=el('viewport').getBoundingClientRect();if(!rect.width||!rect.height)return;camera.aspect=rect.width/rect.height;camera.updateProjectionMatrix();renderer.setSize(rect.width,rect.height,false);}
@@ -512,7 +519,7 @@ function rebuildBoard(){
  }
 }
 // En AR los toques pertenecen al DOM overlay o XRSession; no a la ArrayCamera.
-let arPointerStart=null,lastARNodePick=0;
+let arPointerStart=null,lastARNodePick=0,arSelectionMode='touch',arAimedNode=-1;
 const arPointers=new Set();
 function canSelectNode(){
  return Boolean(game&&game.status==='play'&&game.turn===myPlayer&&game.rolled&&game.moves&&(mode!=='pvp'||connected));
@@ -559,8 +566,43 @@ function pickNode(e){
  const hits=raycaster.intersectObjects(nodes,false);
  if(hits.length)selectNodeById(hits[0].object.userData.nodeId);
 }
+// Dos formas de seleccionar: tocar el nodo en pantalla o apuntar con la cámara
+// a su posición en el espacio y confirmar. El evento XRSelect también está activo.
+function setARSelectionMode(next){
+ arSelectionMode=next==='aim'?'aim':'touch';
+ arAimedNode=-1;
+ const aiming=arSelectionMode==='aim';
+ el('arTouchModeBtn').classList.toggle('ar-mode-active',!aiming);
+ el('arAimModeBtn').classList.toggle('ar-mode-active',aiming);
+ el('arTouchModeBtn').setAttribute('aria-pressed',String(!aiming));
+ el('arAimModeBtn').setAttribute('aria-pressed',String(aiming));
+ el('arAimCrosshair').classList.toggle('hidden',!aiming||!arSession);
+ el('arAimSelectBtn').classList.toggle('hidden',!aiming);
+ el('arAimSelectBtn').disabled=true;
+ el('arAimText').textContent=aiming?'Apunta la cruz al punto 3D y pulsa SELECCIONAR.':'Toca directamente dos nodos en la pantalla.';
+}
+function updateARAim(){
+ if(!arSession||!arPlaced||arSelectionMode!=='aim')return;
+ const id=closestXRNodeOnScreen(window.innerWidth/2,window.innerHeight/2);
+ // El turno puede cambiar aunque el objetivo siga siendo el mismo.
+ el('arAimSelectBtn').disabled=id<0||!canSelectNode();
+ if(id===arAimedNode)return;
+ arAimedNode=id;
+ const target=el('arAimText');
+ target.textContent=id>=0?'OBJETIVO: NODO '+(id+1)+' · pulsa SELECCIONAR':'Mueve el celular hasta alinear la cruz con un nodo.';
+ el('arAimCrosshair').classList.toggle('ar-aim-target',id>=0);
+}
+function selectAimedNode(){
+ if(!arSession||arSelectionMode!=='aim'||!arPlaced)return false;
+ const id=closestXRNodeOnScreen(window.innerWidth/2,window.innerHeight/2);
+ if(id<0){notify('Apunta al nodo con la cruz del centro.');return false;}
+ if(Date.now()-lastARNodePick<330)return false;
+ const didSelect=selectNodeById(id);
+ if(didSelect)lastARNodePick=Date.now();
+ return didSelect;
+}
 function isARControl(target){
- return Boolean(target?.closest?.('button,input,select,textarea,a,label,.game-header,.toolbar,.ar-size-control,.selected,.arenaLabel,.tutorial-hint,.overlay'));
+ return Boolean(target?.closest?.('button,input,select,textarea,a,label,.game-header,.toolbar,.ar-size-control,.selected,.arenaLabel,.tutorial-hint,.overlay,.ar-selection-modes,.ar-aim-crosshair'));
 }
 function pickNodeInAR(clientX,clientY){
  if(!arPlaced||!canSelectNode()||Date.now()-lastARNodePick<330)return false;
@@ -569,7 +611,7 @@ function pickNodeInAR(clientX,clientY){
  const ok=selectNodeById(id);if(ok)lastARNodePick=Date.now();return ok;
 }
 function onARPointerDown(e){
- if(!arSession||!arPlaced||isARControl(e.target))return;
+ if(!arSession||!arPlaced||arSelectionMode!=='touch'||isARControl(e.target))return;
  arPointers.add(e.pointerId);
  if(arPointers.size===1)arPointerStart={id:e.pointerId,x:e.clientX,y:e.clientY};
  else arPointerStart=null;
@@ -578,12 +620,13 @@ function onARPointerUp(e){
  if(!arSession)return;
  arPointers.delete(e.pointerId);
  const start=arPointerStart;arPointerStart=null;
- if(!start||arPointers.size||start.id!==e.pointerId||isARControl(e.target))return;
+ if(!start||arSelectionMode!=='touch'||arPointers.size||start.id!==e.pointerId||isARControl(e.target))return;
  if(Math.hypot(e.clientX-start.x,e.clientY-start.y)>20)return;
  pickNodeInAR(e.clientX,e.clientY);
 }
 function onARXRSelect(e){
  if(!arSession||!arPlaced||!canSelectNode()||Date.now()-lastARNodePick<330)return;
+ if(arSelectionMode==='aim'){selectAimedNode();return;}
  try{
   const ref=renderer.xr.getReferenceSpace(),raySpace=e.inputSource?.targetRaySpace;
   if(!ref||!raySpace)return;
@@ -628,12 +671,12 @@ async function startAR(){
  try{
   const session=await navigator.xr.requestSession('immersive-ar',{optionalFeatures:['hit-test','dom-overlay','local-floor','bounded-floor'],domOverlay:{root:document.body}});
   arSession=session;arPlaced=false;lastHit=null;scene.background=null;orbit.enabled=false;
-  board.visible=false;document.body.classList.add('xr-active');el('arSizeControl').classList.remove('hidden');syncARSlider();el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
+  board.visible=false;document.body.classList.add('xr-active');el('arSelectionModes').classList.remove('hidden');setARSelectionMode('touch');el('arSizeControl').classList.remove('hidden');syncARSlider();el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
   session.addEventListener('select',onARXRSelect);
   session.addEventListener('end',()=>{
    arSession=null;arPlaced=false;lastHit=null;arPointerStart=null;arPointers.clear();
    if(hitSource){try{hitSource.cancel();}catch{}hitSource=null;}
-   scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');el('arSizeControl').classList.add('hidden');
+   scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');el('arSelectionModes').classList.add('hidden');el('arAimCrosshair').classList.add('hidden');arAimedNode=-1;el('arSizeControl').classList.add('hidden');
    el('placeBtn').classList.add('hidden');el('exitArBtn').classList.add('hidden');el('arBtn').classList.remove('hidden');
    if(reticle)reticle.visible=false;board.visible=true;resetBoard();orbit.enabled=true;resize3D();
   });
@@ -800,6 +843,9 @@ function bind(){
  el('continueBtn').addEventListener('click',continueToNextLevel);
  el('resetViewBtn').addEventListener('click',resetView);
  el('arBtn').addEventListener('click',startAR);
+ el('arTouchModeBtn').addEventListener('click',()=>setARSelectionMode('touch'));
+ el('arAimModeBtn').addEventListener('click',()=>setARSelectionMode('aim'));
+ el('arAimSelectBtn').addEventListener('click',selectAimedNode);
  el('placeBtn').addEventListener('click',placeAR);
  el('scaleDownBtn').addEventListener('click',()=>scaleBoard(.87));
  el('scaleUpBtn').addEventListener('click',()=>scaleBoard(1.15));
