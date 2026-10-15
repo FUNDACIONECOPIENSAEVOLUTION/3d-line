@@ -1,8 +1,12 @@
-# 3 LINE-AR — V57.6.0 beta 9
+# 3 LINE-AR — V57.6.1 beta 9.1
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
 Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC por código o QR, IA rival y realidad aumentada experimental.
+
+## V57.6.1: regreso al juego después del bloqueo del teléfono
+
+Al apagar la pantalla, Android puede terminar la **sesión WebXR de cámara** por razones de gestión de recursos. El estado de la partida se recupera por PeerJS al volver, pero una sesión de AR terminada **no se puede reabrir automáticamente sin interacción del usuario**. Esta versión muestra un aviso neón para que vuelvas a pulsar **ACTIVAR AR** y **FIJAR TABLERO**. La sala, puntuaciones y conexiones no se borran por salir de AR. Se necesita prueba real de suspensión/reanudación en teléfono.
 
 ## V57.6: bloqueo por cara y Academia táctica interactiva
 
