@@ -423,8 +423,8 @@ function badgeSprite(badge,color){
 }
 function scaleBoard(mult){
  if(!arSession||!board){notify('La escala se usa después de iniciar AR.');return;}
- const scale=Math.max(.1,Math.min(1.4,board.scale.x*mult));
- board.scale.setScalar(scale);notify('Escala AR '+Math.round(scale*100)+'%');
+ const scale=Math.max(.12,Math.min(1.4,board.scale.x*mult));
+ board.scale.setScalar(scale);syncARSlider();notify('Escala AR '+Math.round(scale*100)+'%');
 }
 function initBackground(){
  const canvas=el('bg-canvas');if(!canvas)return;const ctx=canvas.getContext('2d');let points=[];
@@ -533,11 +533,11 @@ async function startAR(){
  try{
   const session=await navigator.xr.requestSession('immersive-ar',{optionalFeatures:['hit-test','dom-overlay','local-floor','bounded-floor'],domOverlay:{root:document.body}});
   arSession=session;arPlaced=false;lastHit=null;scene.background=null;orbit.enabled=false;
-  board.visible=false;document.body.classList.add('xr-active');el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
+  board.visible=false;document.body.classList.add('xr-active');el('arSizeControl').classList.remove('hidden');syncARSlider();el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
   session.addEventListener('end',()=>{
    arSession=null;arPlaced=false;lastHit=null;
    if(hitSource){try{hitSource.cancel();}catch{}hitSource=null;}
-   scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');
+   scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');el('arSizeControl').classList.add('hidden');
    el('placeBtn').classList.add('hidden');el('exitArBtn').classList.add('hidden');el('arBtn').classList.remove('hidden');
    if(reticle)reticle.visible=false;board.visible=true;resetBoard();orbit.enabled=true;resize3D();
   });
@@ -556,7 +556,7 @@ async function startAR(){
    hitSource=await session.requestHitTestSource({space:viewer});
    notify('Busca una superficie con la cámara y pulsa FIJAR TABLERO.');
   }catch{
-   hitSource=null;board.visible=true;arPlaced=true;board.position.set(0,-.25,-1.2);board.scale.setScalar(.26);
+   hitSource=null;board.visible=true;arPlaced=true;board.position.set(0,-.25,-1.2);board.scale.setScalar(.26);syncARSlider();
    el('placeBtn').classList.add('hidden');
    notify('AR en modo holograma sin seguimiento de suelo. Puedes ajustar la escala; no es un ancla fija.');
   }
@@ -566,7 +566,7 @@ function placeAR(){
  if(!arSession||!lastHit){notify('Todavía no se detecta una superficie. Mueve el teléfono lentamente.');return;}
  const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();lastHit.decompose(p,q,s);
  board.position.copy(p);board.quaternion.copy(q);board.scale.setScalar(.26);
- board.visible=true;arPlaced=true;if(reticle)reticle.visible=false;
+ board.visible=true;arPlaced=true;syncARSlider();if(reticle)reticle.visible=false;
  el('placeBtn').classList.add('hidden');
  notify('Tablero fijado localmente. Los dos móviles deben alinear la posición manualmente; aún no hay anclas compartidas.');
 }
@@ -658,6 +658,28 @@ async function showDiagnostics(){
 }
 
 let pendingJoinCode='';
+
+let pinchDistance=0,pinchScaleStart=0;
+function syncARSlider(){
+ if(board&&el('arScaleSlider'))el('arScaleSlider').value=String(Math.max(.12,Math.min(1.4,board.scale.x)));
+}
+function enablePinchScale(){
+ const root=el('viewport');
+ root.addEventListener('touchstart',e=>{
+  if(!arSession||e.touches.length!==2)return;
+  const [a,b]=e.touches;
+  pinchDistance=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  pinchScaleStart=board?.scale.x||.26;e.preventDefault();
+ },{passive:false});
+ root.addEventListener('touchmove',e=>{
+  if(!arSession||e.touches.length!==2||pinchDistance<=0||!board)return;
+  const [a,b]=e.touches,d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  board.scale.setScalar(Math.max(.12,Math.min(1.4,pinchScaleStart*d/pinchDistance)));
+  syncARSlider();e.preventDefault();
+ },{passive:false});
+ root.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDistance=0;},{passive:true});
+}
+
 function bind(){
  el('createBtn').addEventListener('click',createRoom);
  el('cpuBtn').addEventListener('click',()=>showCpu(false));
@@ -690,10 +712,11 @@ function bind(){
  el('inviteBtn').addEventListener('click',()=>copyText(location.origin+location.pathname));
  el('coins').textContent=Number(profile.coins||0);
  setAds();screen('menu');networkStatus('SIN CONECTAR');
- renderProfile();renderLevels();initBackground();beginLogin();
+ renderProfile();renderLevels();initBackground();enablePinchScale();beginLogin();
  el('signGoogleBtn').addEventListener('click',loginGoogleFlow);
  el('signGuestBtn').addEventListener('click',loginGuestFlow);
  el('logoutBtn').addEventListener('click',logoutGame);
+ el('arScaleSlider').addEventListener('input',e=>{if(board&&arSession)board.scale.setScalar(Math.max(.12,Math.min(1.4,Number(e.target.value)||.26)));});
  pendingJoinCode=new URLSearchParams(location.search).get('room')||'';
  if(!/^[A-Z0-9]{6}$/i.test(pendingJoinCode))pendingJoinCode='';
 }
