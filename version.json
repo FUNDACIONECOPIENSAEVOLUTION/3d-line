@@ -1,8 +1,8 @@
 {
   "name": "3 LINE-AR",
-  "version": "56.0.0-beta.1",
+  "version": "56.1.0-beta.2",
   "buildDate": "2026-10-15",
-  "status": "technical-beta",
+  "status": "technical-beta-with-diagnostics",
   "network": "PeerJS WebRTC",
   "ar": "WebXR local hit-test, no shared anchors",
   "monetization": "inactive pending approval"
