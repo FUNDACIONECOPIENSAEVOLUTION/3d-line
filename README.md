@@ -1,8 +1,20 @@
-# 3 LINE-AR — V57.0.0 beta 3
+# 3 LINE-AR — V57.1.0 beta 4
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
 Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC por código o QR, IA rival y realidad aumentada experimental.
+
+## V57.1: inicio de sesión, tutorial y desbloqueo
+
+Al abrir se muestra primero una pantalla de acceso. El usuario puede iniciar sesión con Google mediante Firebase Authentication (configuración pública original V51.2) o como invitado. El sistema usa `browserLocalPersistence` para recordar la sesión en el mismo navegador, hasta que el usuario cierre sesión, borre datos o Firebase invalide su acceso. En caso de indisponibilidad de Firebase, se ofrece invitado local con aviso.
+
+**Para verificar Google login**: en Firebase Console, proyecto `ar-3lilne`, ve a **Authentication → Settings → Authorized domains** y comprueba que `fundacionecopiensaevolution.github.io` esté autorizado. Asegura que **Google** y **Anonymous** estén habilitados en **Sign-in method**. Estos son pasos administrativos en Firebase que no se pueden confirmar desde un archivo HTML ni garantizar a priori. La interfaz indica cualquier rechazo de Google; no convierte automáticamente un error de Google en acceso autenticado.
+
+El tutorial tiene un BOT automático como jugador 2. El dado galáctico centrado entre puntuaciones tira aleatoriamente 1 a 6. Si se acaban los enlaces disponibles antes que las tiradas, se termina el turno automáticamente. En AR puedes modificar la escala mediante el control vertical o un gesto de pinza con dos dedos.
+
+Solo se muestra **el nivel desbloqueado**; al ganar al BOT, el siguiente nivel queda disponible y se guarda localmente para ese perfil/dispositivo. La progresión aún no se sincroniza en varios teléfonos: Firebase recupera la sesión, pero no almacena el progreso hasta implementar una base de datos con reglas adecuadas.
+
+Cuando la Fundación obtenga aprobación de Google H5 Games Ads y un identificador válido, el juego tiene preparado un anuncio intersticial en la pausa **entre niveles**. Mientras no haya anuncios aprobados, la beta permite avanzar sin ver publicidad y nunca simula que se ha cobrado por mostrarla. Los anuncios recompensados son voluntarios y separados de la progresión principal.
 
 ## V57: cambios jugables
 
@@ -33,17 +45,19 @@ El modo AR y el modo 3D pueden mostrar una partida compartida, pero **todavía n
 
 ## Google, guardado y monetización
 
-`auth-config.json` trae `clientId` vacío. Para habilitar Google Identity hay que crear un Client ID de aplicación web en Google Cloud y autorizar el origen `https://fundacionecopiensaevolution.github.io`. La identificación visual disponible una vez configurado el Client ID **no es una sesión verificable por sí misma**: hay que validar el token en un backend o usar un proveedor de autenticación verificada (Firebase, etc.) antes de proteger rankings, premios o progreso multi-dispositivo.
+La autenticación real se implementa en `auth.js`, recuperando la configuración web pública de Firebase del archivo V51.2 entregado por el usuario. Usa **Firebase Authentication** con `GoogleAuthProvider`, usuario invitado anónimo y `browserLocalPersistence`. No requiere inventar un Client ID adicional: el proyecto Firebase original ya proporciona la configuración web. El antiguo `auth-config.json` se conserva únicamente como referencia heredada y **no controla** este nuevo flujo.
 
-No es necesario ni apropiado conectar Google Drive personal como backend de las partidas. No se solicita ninguna contraseña.
+Para que el acceso Google funcione desde GitHub Pages, el administrador debe comprobar en la consola del proyecto `ar-3lilne`: **Authentication → Sign-in method → Google / Anonymous habilitados** y **Authentication → Settings → Authorized domains → fundacionecopiensaevolution.github.io**. En caso contrario la interfaz muestra un error de autorización y permite una sesión de invitado explícita. No se puede verificar ese permiso solo leyendo la configuración del HTML.
 
-El anuncio recompensado permanece desactivado hasta contar con ID publicitario real y aprobación de un programa publicitario apto para juegos HTML5. No se anuncian ingresos inexistentes ni se entregan monedas por anuncios falsos. El ELO y las monedas del navegador son solo progreso local de beta y aún no forman una economía segura.
+Aunque Firebase valida la identidad, la progresión, ELO y monedas aún se guardan **localmente por UID y dispositivo**. No hay sincronización de progreso multi-dispositivo ni un sistema antitrampas económico. No es necesario conectar Google Drive al juego.
+
+La publicidad de Google H5 Games Ads debe estar **aprobada** y tener un ID real de editor. El juego incluye un `adBreak({type:'next'})` intersticial en las pausas entre niveles, que solo se invoca con la integración aprobada. Si no hay un anuncio servido, no se bloquea el avance de la beta ni se finge que se ha visto publicidad. Las recompensas por anuncios requieren eventos reales de visualización. <https://support.google.com/adsense/answer/9959170?hl=es>
 
 ## Calidad, versión y despliegue
 
-- La versión en cabecera es **V57.0.0** y la versión interna es **57.0.0-beta.1**.
+- La versión en cabecera es **V57.1.0** y la versión interna es **57.1.0-beta.1**.
 - Cada cambio debe actualizar `version.json`, `CHANGELOG.md` y las etiquetas de recursos del HTML.
-- Las pruebas automáticas de CI están en `tests/static.test.mjs` y `tests/rules.test.mjs`.
+- Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs` y `tests/tutorial.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
 
 ## AWS

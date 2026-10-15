@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js';
 
-// v57.0.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v57.1.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.0.0-beta.1';
+const VERSION='57.1.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -18,8 +19,89 @@ const LEVELS=[
  {level:9,count:25,random:true,range:2.4},{level:10,count:30,random:true,range:2.5}
 ];
 const DEFAULT_PROFILE={name:'INVITADO',color:'#00eaff',badge:'◆',level:1,elo:1000,coins:0};
-function readProfile(){try{return {...DEFAULT_PROFILE,...JSON.parse(localStorage.getItem('3line57_profile')||'{}')}}catch{return {...DEFAULT_PROFILE}}}
-let profile=readProfile(),selectedLevel=Math.min(10,Math.max(1,profile.level||1)),tutorial=false,awardRecorded=false;
+function readProfile(key='3line57_profile'){try{return {...DEFAULT_PROFILE,...JSON.parse(localStorage.getItem(key)||'{}')}}catch{return {...DEFAULT_PROFILE}}}
+let profile=readProfile(),selectedLevel=1,tutorial=false,awardRecorded=false;
+let currentAccount=null,unlockedLevel=1,loginReady=false,authError='';
+function accountProfileKey(uid){return '3line57_profile_'+uid;}
+function openLoginGate(message='Inicia sesión para acceder al juego.'){
+  loginReady=true;currentAccount=null;
+  el('loginGate').classList.remove('hidden');el('app').classList.add('auth-locked');
+  el('loginStatus').textContent=message;
+}
+function enterAccount(account){
+  if(!account?.uid)return;
+  currentAccount=account;loginReady=true;
+  const localGuest=account.provider==='local-guest';
+  const key=accountProfileKey(account.uid);
+  const saved=localStorage.getItem(key);
+  profile=readProfile(saved?key:localGuest?'3line57_profile':key);
+  profile.name=account.provider==='google'?String(account.name||'AGENTE').toUpperCase().slice(0,30):profile.name||'INVITADO';
+  if(!['#00eaff','#ff2d7a','#50ff65','#ffd231','#b35aff'].includes(profile.color))profile.color='#00eaff';
+  if(!['◆','⚡','★','✦','☣'].includes(profile.badge))profile.badge='◆';
+  unlockedLevel=Math.max(1,Math.min(10,Number(localStorage.getItem('3line57_unlocked_'+account.uid))||1));
+  profile.level=unlockedLevel;selectedLevel=unlockedLevel;
+  localStorage.setItem(key,JSON.stringify(profile));
+  el('loginGate').classList.add('hidden');el('app').classList.remove('auth-locked');
+  el('googleNote').textContent=account.provider==='google'?
+   'Conectado con Google a través de Firebase. La sesión se conserva en este navegador; el progreso del juego sigue siendo local.':
+   'Sesión de invitado persistente en este dispositivo. Puedes jugar sin correo.';
+  renderProfile();renderLevels();screen('menu');
+  if(pendingJoinCode){const code=pendingJoinCode.toUpperCase();pendingJoinCode='';el('joinCode').value=code;setTimeout(()=>joinRoom(code),250);}
+}
+function localGuestAccount(){
+  localStorage.setItem('3line57_guest_session','yes');
+  enterAccount({uid:'local-guest',name:'INVITADO',provider:'local-guest',verified:false});
+}
+async function beginLogin(){
+  el('loginStatus').textContent='Comprobando tu sesión guardada…';
+  const savedGuest=localStorage.getItem('3line57_guest_session')==='yes';
+  const success=await initializeAccountAuth(
+    account=>{
+      if(account){
+        localStorage.removeItem('3line57_guest_session');
+        enterAccount(account);
+      }else if(!currentAccount){
+        if(savedGuest)localGuestAccount();
+        else openLoginGate('Selecciona Google o invitado para continuar.');
+      }
+    },
+    err=>{
+      authError=err?.message||'No se pudo conectar con Firebase';
+      el('loginStatus').textContent='Firebase: '+authError+' · Puedes continuar como invitado local.';
+    }
+  );
+  if(!success&&!currentAccount){
+    if(savedGuest)localGuestAccount();
+    else openLoginGate('Conexión Firebase no disponible. Puedes probar el modo invitado local.');
+  }
+}
+async function loginGoogleFlow(){
+  el('loginStatus').textContent='Abriendo Google para iniciar sesión…';
+  try{
+    await loginGoogle();
+    localStorage.removeItem('3line57_guest_session');
+  }catch(e){
+    const msg=e?.code==='auth/unauthorized-domain'?
+      'Este dominio debe autorizarse en Firebase Authentication → Settings → Authorized domains.':
+      e?.code==='auth/popup-closed-by-user'?'Ventana de Google cerrada.':
+      ('Google no pudo iniciar sesión: '+(e?.code||e?.message||'desconocido'));
+    el('loginStatus').textContent=msg;
+  }
+}
+async function loginGuestFlow(){
+  el('loginStatus').textContent='Iniciando invitado…';
+  if(authAvailable()){
+    try{await loginGuest();return;}catch(e){authError=e?.message||String(e);}
+  }
+  localGuestAccount();
+  notify('Invitado local: se conserva el acceso en este navegador; no hay cuenta cloud.');
+}
+async function logoutGame(){
+  if(!confirm('¿Cerrar sesión de este dispositivo?'))return;
+  cleanup();localStorage.removeItem('3line57_guest_session');
+  try{await logoutFirebase();}catch{}
+  openLoginGate('Sesión cerrada. Vuelve a entrar para jugar.');
+}
 let POINTS=[]; // Escena y reglas comparten los puntos enviados por anfitrión.
 const seedRandom=seed=>{let x=seed>>>0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;}};
 function levelPoints(level,seed){
@@ -36,7 +118,7 @@ function levelPoints(level,seed){
  return pts;
 }
 function profilePacket(){return {name:String(profile.name).slice(0,30),color:profile.color,badge:profile.badge};}
-function saveProfile(){try{localStorage.setItem('3line57_profile',JSON.stringify(profile));}catch{} renderProfile();}
+function saveProfile(){try{localStorage.setItem(accountProfileKey(currentAccount?.uid||'local-guest'),JSON.stringify(profile));}catch{} renderProfile();}
 function renderProfile(){
  for(const [id,val] of [['profileName',profile.name],['profileAvatar',profile.badge],['rankLevel',profile.level],['eloValue',profile.elo]]){const elem=document.getElementById(id);if(elem)elem.textContent=val;}
  const a=document.getElementById('profileAvatar');if(a)a.style.color=profile.color;
@@ -44,11 +126,17 @@ function renderProfile(){
  document.querySelectorAll('#badges [data-badge]').forEach(x=>x.classList.toggle('current',x.dataset.badge===profile.badge));
 }
 function renderLevels(){
- const grid=document.getElementById('levelGrid');if(!grid)return;grid.replaceChildren();
- LEVELS.forEach(l=>{const b=document.createElement('button');b.textContent=l.level;b.className=l.level===selectedLevel?'active':'';
- b.title=l.count+' nodos'+(l.random?' aleatorios':' guiados');
- b.onclick=()=>{selectedLevel=l.level;renderLevels();document.getElementById('levelDescription').textContent='Nivel '+l.level+' · '+l.count+' puntos · '+(l.random?'posiciones aleatorias':'posiciones guiadas')+' · VS CPU o PvP';};
- grid.appendChild(b);});
+ const grid=el('levelGrid');if(!grid)return;grid.replaceChildren();
+ const accessible=Math.min(10,unlockedLevel),level=LEVELS[accessible-1];
+ selectedLevel=accessible;
+ const b=document.createElement('button');b.className='level-current';
+ const title=document.createElement('span');title.textContent='NIVEL '+accessible+' · '+level.count+' NODOS';
+ const icon=document.createElement('strong');icon.textContent='▶';b.append(title,icon);
+ b.addEventListener('click',()=>showCpu(accessible===1));
+ grid.appendChild(b);
+ el('levelDescription').textContent=accessible===1?'Nivel 1: aprende conectando cinco nodos frente al BOT.':'Nivel '+accessible+': '+level.count+' nodos '+(level.random?'en posiciones aleatorias':'ordenados')+'. Gana para continuar.';
+ el('tutorialBtn').textContent=accessible===1?'🎓 NIVEL 1 · APRENDER CON BOT':'🎓 REPASAR TUTORIAL';
+ el('cpuBtn').textContent='⚡ JUGAR NIVEL '+accessible+' CONTRA BOT';
 }
 function tutorials(){
  const h=document.getElementById('tutorialHint');if(!h)return;
@@ -57,8 +145,15 @@ function tutorials(){
  h.textContent=!game.rolled?'PASO 1 · Pulsa el dado luminoso de arriba.':selected<0?'PASO 2 · Toca un nodo. A continuación toca otro para construir una línea.':'PASO 3 · Escoge un segundo nodo. Cierra tres líneas para formar tu primer triángulo.';
 }
 function awardResult(){
- if(!game||game.status!=='end'||awardRecorded||game.winner!==myPlayer)return;
- awardRecorded=true;profile.elo+=12;profile.coins+=15;profile.level=Math.max(profile.level,Math.min(10,(game.level||1)+1));saveProfile();
+ if(!game||game.status!=='end'||awardRecorded)return false;
+ awardRecorded=true;
+ if(game.winner!==myPlayer || mode==='pvp')return false;
+ profile.elo=(profile.elo||1000)+12;profile.coins=(profile.coins||0)+15;
+ const next=Math.min(10,game.level+1);
+ unlockedLevel=Math.max(unlockedLevel,next);
+ profile.level=unlockedLevel;
+ try{localStorage.setItem('3line57_unlocked_'+(currentAccount?.uid||'local-guest'),String(unlockedLevel));}catch{}
+ saveProfile();renderLevels();return true;
 }
 function xy(i){return {x:POINTS[i].x,y:POINTS[i].z};}
 function area(a,b,c){return (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);}
@@ -117,7 +212,7 @@ function newState(){
  awardRecorded=false;
  return {schema:2,version:0,status:'play',turn:0,rolled:false,moves:0,dice:0,turns:0,
  lines:[],tris:[],scores:[0,0],winner:null,blocked:[],seed,level,
- players:[profilePacket(),{name:'RIVAL',color:'#ff2d7a',badge:'★'}],
+ players:[profilePacket(),{name:tutorial?'TUTOR BOT':'NEXUS BOT',color:'#ff2d7a',badge:'⚡'}],
  points:levelPoints(level,seed),maxTurns:LEVELS[level-1].count*2};
 }
 function enterGame(){
@@ -168,74 +263,97 @@ function endTurn(){
 function applyAction(type,data,player){
  if(!game||game.status!=='play'||game.turn!==player)return false;
  if(type==='ROLL'){
-   if(game.rolled)return false;
-   game.rolled=true;game.dice=1+rand(6);game.moves=Math.min(game.dice,Math.max(1,eligibleCount(game)));
+  if(game.rolled)return false;
+  const candidates=eligibleCount(game);
+  if(candidates===0){endTurn();}else{
+   game.rolled=true;game.dice=1+rand(6);game.moves=Math.min(game.dice,candidates);
+   if(player===1)game.botMovedThisTurn=false;
+  }
  }else if(type==='LINE'){
-   if(!game.rolled||game.moves<1)return false;
-   const {a,b}=data;
-   if(!validEdge(a,b,game)){if(player===myPlayer)notify(edgeError(a,b,game));return false;}
-   game.lines.push({a,b,owner:player});
-   const newTris=foundTriangles(a,b,game.lines,game.tris);
-   game.tris.push(...newTris);game.scores[player]+=newTris.length*10;
-   game.blocked=blockedNodes(game);game.moves--;
-   if(game.moves===0)endTurn();
- }else if(type==='PASS'){if(!game.rolled)return false;endTurn();}
- else if(type==='SURRENDER'){game.status='end';game.winner=1-player;}
- else return false;
+  if(!game.rolled||game.moves<1)return false;
+  const {a,b}=data;
+  if(!validEdge(a,b,game)){if(player===myPlayer)notify(edgeError(a,b,game));return false;}
+  game.lines.push({a,b,owner:player});
+  const triangles=foundTriangles(a,b,game.lines,game.tris);
+  game.tris.push(...triangles);game.scores[player]+=triangles.length*10;
+  game.blocked=blockedNodes(game);game.moves--;
+  if(player===1)game.botMovedThisTurn=true;
+  // No congelar tutorial si el dado otorga más líneas que las que quedan disponibles.
+  if(game.moves===0||eligibleCount(game)===0)endTurn();
+ }else if(type==='PASS'){
+  if(!game.rolled)return false;
+  endTurn();
+ }else if(type==='SURRENDER'){
+  game.status='end';game.winner=1-player;
+ }else return false;
  game.version++;setState(game);broadcast();
- if(mode==='cpu'||mode==='tutorial')scheduleCpu();
+ if(['cpu','tutorial'].includes(mode))scheduleCpu();
  return true;
 }
 function scheduleCpu(){
  clearTimeout(cpuTimer);
  if(!['cpu','tutorial'].includes(mode)||!game||game.status!=='play'||game.turn!==1)return;
+ const stateVersion=game.version;
  cpuTimer=setTimeout(()=>{
-  if(!game||game.status!=='play'||game.turn!==1)return;
+  if(!game||game.version!==stateVersion||game.status!=='play'||game.turn!==1)return;
   if(!game.rolled){applyAction('ROLL',{},1);return;}
-  if(mode==='tutorial'){applyAction('PASS',{},1);return;}
+  if(mode==='tutorial' && game.botMovedThisTurn){applyAction('PASS',{},1);return;}
   let best=null,bestValue=-Infinity;
   for(let a=0;a<POINTS.length;a++)for(let b=a+1;b<POINTS.length;b++){
-    if(!validEdge(a,b,game))continue;
-    const future=[...game.lines,{a,b,owner:1}];
-    const triangles=foundTriangles(a,b,future,game.tris).length;
-    const score=triangles*100-distance(a,b)+Math.random()*.12;
-    if(score>bestValue){bestValue=score;best={a,b};}
+   if(!validEdge(a,b,game))continue;
+   const future=[...game.lines,{a,b,owner:1}];
+   const score=foundTriangles(a,b,future,game.tris).length*100-distance(a,b)+(Math.random()*.12);
+   if(score>bestValue){bestValue=score;best={a,b};}
   }
   if(best)applyAction('LINE',best,1);
   else applyAction('PASS',{},1);
- },mode==='tutorial'?850:480);
+ },mode==='tutorial'?650:470);
 }
 function refresh(){
  if(!game)return;
  el('score0').textContent=game.scores[0];el('score1').textContent=game.scores[1];
+ el('namePlayer1').textContent=(game.players?.[0]?.name||'JUGADOR 1').slice(0,12).toUpperCase();
+ el('namePlayer2').textContent=(game.players?.[1]?.name||(mode==='tutorial'?'TUTOR BOT':'IA BOT')).slice(0,12).toUpperCase();
  el('roomDisplay').textContent=room?'SALA '+room:(mode==='cpu'?'VS CPU':'TUTORIAL');
  el('turnDisplay').textContent=game.status==='end'?'FIN DE PARTIDA':'TURNO JUGADOR '+(game.turn+1);
- el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':!game.rolled?'LANZA EL DADO':game.moves+' CONEXIONES';
- el('diceResult').textContent=game.rolled?('RESULTADO '+game.dice):'DADO 1–6';
+ el('energyDisplay').textContent=game.status==='end'?'FINALIZADO':!game.rolled?'TOCA EL DADO':game.moves+' CONEXIONES';
+ const diceNumber=Number(game.dice)||0;
+ el('diceResult').textContent=diceNumber?String(diceNumber):'TIRAR';
  el('levelTag').textContent='NIVEL '+game.level+' · '+POINTS.length+' NODOS';
  const yourTurn=game.turn===myPlayer&&game.status==='play'&&(mode!=='pvp'||connected);
  el('diceBtn').disabled=!yourTurn||game.rolled;el('passBtn').disabled=!yourTurn||!game.rolled;
  el('leaveBtn').disabled=false;
- el('selectedLabel').textContent=game.status==='end'?'Partida finalizada':!yourTurn?'Espera el turno de tu rival':!game.rolled?'Lanza el dado para conseguir conexiones':selected<0?'Selecciona el primer nodo para unir':'Nodo '+(selected+1)+' elegido. Selecciona otro.';
+ el('selectedLabel').textContent=game.status==='end'?'Partida finalizada':
+  !yourTurn?(mode==='tutorial'?'El BOT está jugando, espera un momento…':'Espera el turno del rival'):
+  !game.rolled?'Pulsa el dado del centro para lanzar':selected<0?'Selecciona el primer nodo':'Nodo '+(selected+1)+' seleccionado. Elige otro.';
  for(let i=0;i<nodes.length;i++){
-  const selectedNow=i===selected,blocked=(game.blocked||[]).includes(i);
-  nodes[i].material.color.setHex(blocked?0x5b7181:selectedNow?0xffd231:0x68dcff);
-  nodes[i].scale.setScalar(selectedNow?1.4:1);
+  const isSelected=i===selected,blocked=(game.blocked||[]).includes(i);
+  nodes[i].material.color.setHex(blocked?0x5b7181:isSelected?0xffd231:0x68dcff);
+  nodes[i].scale.setScalar(isSelected?1.45:1);
  }
  tutorials();
 }
 function finishGame(){
  if(!game)return;
- awardResult();
- const result=game.winner===-1?'EMPATE':('GANA JUGADOR '+(game.winner+1));
- el('resultTitle').textContent=result;
- el('resultSummary').textContent='Nivel '+game.level+' · Puntos: '+game.scores[0]+' vs '+game.scores[1]+'. Triángulos: '+game.tris.length+'.';
+ const didWin=game.winner===myPlayer,solo=['tutorial','cpu'].includes(mode);
  if(arSession)arSession.end().catch(()=>{});
+ const won=awardResult();
+ el('resultTitle').textContent=game.winner===-1?'EMPATE':(didWin?'¡VICTORIA!':'PARTIDA TERMINADA');
+ el('resultSummary').textContent='Nivel '+game.level+' · Puntos '+game.scores[0]+' vs '+game.scores[1]+' · '+game.tris.length+' zonas conquistadas.';
+ el('levelWinNotice').textContent=won?
+  (game.level>=10?'¡Has completado los 10 niveles iniciales!':
+  '¡Nivel '+Math.min(10,game.level+1)+' desbloqueado! El anuncio se mostrará entre niveles cuando la cuenta publicitaria esté aprobada.'):
+  (game.winner===-1?'Empate: practica de nuevo.':'Puedes repetir el nivel para mejorarlo.');
+ el('continueBtn').classList.toggle('hidden',!solo||!didWin||game.level>=10);
  screen('results');
+ if(won)requestLevelInterstitial();
 }
 function showCpu(teach=false){
+ if(!currentAccount){openLoginGate('Inicia sesión primero.');return;}
  cleanup();tutorial=!!teach;mode=teach?'tutorial':'cpu';host=true;connected=true;myPlayer=0;
- networkStatus(teach?'TUTORIAL':'MODO CPU',true);setState(newState());scheduleCpu();
+ if(teach)selectedLevel=1;else selectedLevel=unlockedLevel;
+ networkStatus(teach?'TUTORIAL':'MODO CPU',true);
+ setState(newState());scheduleCpu();
 }
 function hostConnection(c){
  if(conn?.open){c.on('open',()=>{c.send({type:'ERROR',message:'La sala está ocupada'});c.close();});return;}
@@ -307,8 +425,8 @@ function badgeSprite(badge,color){
 }
 function scaleBoard(mult){
  if(!arSession||!board){notify('La escala se usa después de iniciar AR.');return;}
- const scale=Math.max(.1,Math.min(1.4,board.scale.x*mult));
- board.scale.setScalar(scale);notify('Escala AR '+Math.round(scale*100)+'%');
+ const scale=Math.max(.12,Math.min(1.4,board.scale.x*mult));
+ board.scale.setScalar(scale);syncARSlider();notify('Escala AR '+Math.round(scale*100)+'%');
 }
 function initBackground(){
  const canvas=el('bg-canvas');if(!canvas)return;const ctx=canvas.getContext('2d');let points=[];
@@ -327,31 +445,6 @@ function initBackground(){
  }
  resize();addEventListener('resize',resize);requestAnimationFrame(tick);
 }
-let googleClientId='';
-async function initGoogleConfig(){
- try{
-  const response=await fetch('./auth-config.json',{cache:'no-store'});if(!response.ok)return;
-  const value=await response.json();
-  if(typeof value.clientId==='string'&&value.clientId.endsWith('.apps.googleusercontent.com'))googleClientId=value.clientId;
-  if(googleClientId)el('googleNote').textContent='Google Identity listo para probar identificación visual; se requiere backend para verificar las credenciales y guardar progreso multidispositivo.';
- }catch{}
-}
-function tryGoogleLogin(){
- if(!googleClientId){notify('Para activar Google debes configurar el Client ID en auth-config.json.');return;}
- if(!window.google?.accounts?.id){notify('No se cargó Google Identity Services.');return;}
- window.google.accounts.id.initialize({client_id:googleClientId,callback:response=>{
-  // Este JWT se decodifica SOLO para mostrar nombre: NO reemplaza una verificación segura en servidor.
-  try{
-   const jwt=response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-   const bytes=Uint8Array.from(atob(jwt),c=>c.charCodeAt(0));
-   const data=JSON.parse(new TextDecoder().decode(bytes));
-   profile.name=String(data.name||data.given_name||'AGENTE').slice(0,30).toUpperCase();
-   saveProfile();notify('Nombre de Google cargado localmente. Todavía falta autenticación verificada en servidor.');
-  }catch{notify('No fue posible leer el perfil.');}
- }});
- window.google.accounts.id.prompt();
-}
-
 function initialize3D(){
  if(renderer){resize3D();return;}
  const viewport=el('viewport');scene=new THREE.Scene();scene.background=new THREE.Color(0x03121d);
@@ -442,11 +535,11 @@ async function startAR(){
  try{
   const session=await navigator.xr.requestSession('immersive-ar',{optionalFeatures:['hit-test','dom-overlay','local-floor','bounded-floor'],domOverlay:{root:document.body}});
   arSession=session;arPlaced=false;lastHit=null;scene.background=null;orbit.enabled=false;
-  board.visible=false;document.body.classList.add('xr-active');el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
+  board.visible=false;document.body.classList.add('xr-active');el('arSizeControl').classList.remove('hidden');syncARSlider();el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
   session.addEventListener('end',()=>{
    arSession=null;arPlaced=false;lastHit=null;
    if(hitSource){try{hitSource.cancel();}catch{}hitSource=null;}
-   scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');
+   scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');el('arSizeControl').classList.add('hidden');
    el('placeBtn').classList.add('hidden');el('exitArBtn').classList.add('hidden');el('arBtn').classList.remove('hidden');
    if(reticle)reticle.visible=false;board.visible=true;resetBoard();orbit.enabled=true;resize3D();
   });
@@ -465,7 +558,7 @@ async function startAR(){
    hitSource=await session.requestHitTestSource({space:viewer});
    notify('Busca una superficie con la cámara y pulsa FIJAR TABLERO.');
   }catch{
-   hitSource=null;board.visible=true;arPlaced=true;board.position.set(0,-.25,-1.2);board.scale.setScalar(.26);
+   hitSource=null;board.visible=true;arPlaced=true;board.position.set(0,-.25,-1.2);board.scale.setScalar(.26);syncARSlider();
    el('placeBtn').classList.add('hidden');
    notify('AR en modo holograma sin seguimiento de suelo. Puedes ajustar la escala; no es un ancla fija.');
   }
@@ -475,7 +568,7 @@ function placeAR(){
  if(!arSession||!lastHit){notify('Todavía no se detecta una superficie. Mueve el teléfono lentamente.');return;}
  const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();lastHit.decompose(p,q,s);
  board.position.copy(p);board.quaternion.copy(q);board.scale.setScalar(.26);
- board.visible=true;arPlaced=true;if(reticle)reticle.visible=false;
+ board.visible=true;arPlaced=true;syncARSlider();if(reticle)reticle.visible=false;
  el('placeBtn').classList.add('hidden');
  notify('Tablero fijado localmente. Los dos móviles deben alinear la posición manualmente; aún no hay anclas compartidas.');
 }
@@ -494,12 +587,30 @@ function startScanner(){
     if(c.length===6){stopScanner();el('joinCode').value=c;joinRoom(c);}
   },()=>{}).catch(()=>{notify('No se obtuvo acceso a la cámara. Usa el código de la sala.');stopScanner();});
 }
+let h5AdsEnabled=false;
+function requestLevelInterstitial(){
+ if(!h5AdsEnabled||typeof window.adBreak!=='function')return;
+ try{window.adBreak({type:'next',name:'level-completed',adBreakDone:()=>{}});}
+ catch(e){console.warn('Anuncio H5 no disponible:',e);}
+}
+function continueToNextLevel(){
+ if(!currentAccount||!game)return;
+ selectedLevel=Math.min(10,game.level+1);
+ tutorial=false;
+ showCpu(false);
+}
+function animateGalacticDice(){
+ const dice=el('diceBtn');
+ dice.classList.remove('is-rolling');void dice.offsetWidth;dice.classList.add('is-rolling');
+ setTimeout(()=>dice.classList.remove('is-rolling'),740);
+}
 function setAds(){
   // Activar solamente tras obtener la aprobación de Google H5 Games Ads.
   // Modificar en este archivo con un ID real: ca-pub-XXXXXXXXXXXXXXXX (16 dígitos).
   const PUBLISHER_ID='';
   const btn=el('rewardBtn');
   if(!/^ca-pub-\d{16}$/.test(PUBLISHER_ID))return;
+  h5AdsEnabled=true;
   const script=document.createElement('script');script.async=true;script.crossOrigin='anonymous';
   script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+PUBLISHER_ID;
   document.head.appendChild(script);
@@ -548,6 +659,29 @@ async function showDiagnostics(){
   diagnosticText+='Aviso: compartir este informe revela tipo de dispositivo y navegador, nunca contraseñas.\n';
 }
 
+let pendingJoinCode='';
+
+let pinchDistance=0,pinchScaleStart=0;
+function syncARSlider(){
+ if(board&&el('arScaleSlider'))el('arScaleSlider').value=String(Math.max(.12,Math.min(1.4,board.scale.x)));
+}
+function enablePinchScale(){
+ const root=el('viewport');
+ root.addEventListener('touchstart',e=>{
+  if(!arSession||e.touches.length!==2)return;
+  const [a,b]=e.touches;
+  pinchDistance=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  pinchScaleStart=board?.scale.x||.26;e.preventDefault();
+ },{passive:false});
+ root.addEventListener('touchmove',e=>{
+  if(!arSession||e.touches.length!==2||pinchDistance<=0||!board)return;
+  const [a,b]=e.touches,d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  board.scale.setScalar(Math.max(.12,Math.min(1.4,pinchScaleStart*d/pinchDistance)));
+  syncARSlider();e.preventDefault();
+ },{passive:false});
+ root.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDistance=0;},{passive:true});
+}
+
 function bind(){
  el('createBtn').addEventListener('click',createRoom);
  el('cpuBtn').addEventListener('click',()=>showCpu(false));
@@ -561,10 +695,11 @@ function bind(){
  el('closeScanBtn').addEventListener('click',stopScanner);
  el('copyBtn').addEventListener('click',()=>copyText(linkUrl()));
  el('cancelBtn').addEventListener('click',home);
- el('diceBtn').addEventListener('click',()=>action('ROLL'));
+ el('diceBtn').addEventListener('click',()=>{animateGalacticDice();action('ROLL');});
  el('passBtn').addEventListener('click',()=>action('PASS'));
  el('leaveBtn').addEventListener('click',()=>{if(!confirm('¿Abandonar la partida?'))return;action('SURRENDER');home();});
  el('homeBtn').addEventListener('click',home);
+ el('continueBtn').addEventListener('click',continueToNextLevel);
  el('resetViewBtn').addEventListener('click',resetView);
  el('arBtn').addEventListener('click',startAR);
  el('placeBtn').addEventListener('click',placeAR);
@@ -573,15 +708,19 @@ function bind(){
  el('exitArBtn').addEventListener('click',()=>arSession?.end().catch(()=>{}));
  el('colors').addEventListener('click',e=>{const b=e.target.closest('[data-color]');if(b){profile.color=b.dataset.color;saveProfile();}});
  el('badges').addEventListener('click',e=>{const b=e.target.closest('[data-badge]');if(b){profile.badge=b.dataset.badge;saveProfile();}});
- el('googleBtn').addEventListener('click',tryGoogleLogin);
- el('guestBtn').addEventListener('click',()=>{profile.name='INVITADO';saveProfile();notify('Modo invitado activado.');});
+ el('googleBtn').addEventListener('click',loginGoogleFlow);
+ el('guestBtn').addEventListener('click',loginGuestFlow);
  el('levelsBtn').addEventListener('click',()=>el('levelPanel').classList.toggle('hidden'));
  el('inviteBtn').addEventListener('click',()=>copyText(location.origin+location.pathname));
- el('coins').textContent=Number(localStorage.getItem('3line56_coins')||0);
+ el('coins').textContent=Number(profile.coins||0);
  setAds();screen('menu');networkStatus('SIN CONECTAR');
- renderProfile();renderLevels();initBackground();initGoogleConfig();
- const startCode=new URLSearchParams(location.search).get('room');
- if(startCode&&/^[A-Z0-9]{6}$/i.test(startCode)){el('joinCode').value=startCode.toUpperCase();setTimeout(()=>joinRoom(startCode),650);}
+ renderProfile();renderLevels();initBackground();enablePinchScale();beginLogin();
+ el('signGoogleBtn').addEventListener('click',loginGoogleFlow);
+ el('signGuestBtn').addEventListener('click',loginGuestFlow);
+ el('logoutBtn').addEventListener('click',logoutGame);
+ el('arScaleSlider').addEventListener('input',e=>{if(board&&arSession)board.scale.setScalar(Math.max(.12,Math.min(1.4,Number(e.target.value)||.26)));});
+ pendingJoinCode=new URLSearchParams(location.search).get('room')||'';
+ if(!/^[A-Z0-9]{6}$/i.test(pendingJoinCode))pendingJoinCode='';
 }
 bind();
 // Exposición limitada para pruebas automatizadas sin alterar el juego desde consola.
