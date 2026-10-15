@@ -1,0 +1,36 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+const js=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
+test('la aplicación carga archivos identificados por la versión 56',()=>{
+  assert.match(html,/V56\.0\.0/);
+  assert.match(html,/game\.js\?v=56\.0\.0/);
+  assert.match(js,/const VERSION='56\.0\.0-beta\.1'/);
+});
+test('JavaScript del juego compila después de eliminar imports de navegador',()=>{
+  const body=js.replace(/^import .*?;\s*$/gm,'');
+  assert.doesNotThrow(()=>new vm.Script(body,{filename:'game.js'}));
+});
+test('todos los IDs usados mediante el(id) existen en index',()=>{
+  const refs=[...js.matchAll(/\bel\('([^']+)'\)/g)].map(m=>m[1]);
+  assert.ok(refs.length>20);
+  for(const id of new Set(refs))assert.match(html,new RegExp('id="'+id+'"'),id);
+});
+test('controles PvP, QR, 3D, CPU y AR están presentes',()=>{
+  for(const id of ['createBtn','joinCode','joinBtn','scanBtn','cpuBtn','viewport','diceBtn','arBtn','placeBtn','roomCode'])assert.ok(html.includes('id="'+id+'"'),id);
+  for(const term of ["'HELLO'","'ACTION'","'STATE'","foundTriangles","validEdge","requestHitTestSource","new Peer"])assert.ok(js.includes(term),term);
+});
+test('no anuncia ingresos simulados ni concede monedas sin evento adViewed',()=>{
+  assert.equal(js.includes('ca-pub-0000000000000000'),false);
+  assert.match(js,/adViewed:/);
+  assert.match(js,/const PUBLISHER_ID='';/);
+  assert.match(html,/rewardBtn" disabled/);
+});
+test('los estilos CSS se incluyeron y hay indicadores de pantalla',()=>{
+  assert.match(css,/\.menu\{/);
+  assert.match(css,/\.arena\{/);
+  assert.match(css,/\.hidden\{/);
+});
