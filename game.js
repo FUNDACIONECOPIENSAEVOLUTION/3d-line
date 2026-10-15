@@ -43,6 +43,7 @@ function enterAccount(account){
   if(!PLAYER_BADGES.includes(profile.badge))profile.badge='◆';
   unlockedLevel=Math.max(1,Math.min(10,Number(localStorage.getItem('3line57_unlocked_'+account.uid))||1));
   profile.level=unlockedLevel;selectedLevel=unlockedLevel;
+  loadModeWins();
   loadCosmetics();
   localStorage.setItem(key,JSON.stringify(profile));
   el('loginGate').classList.add('hidden');el('app').classList.remove('auth-locked');
@@ -204,7 +205,11 @@ function renderLevels(){
  const icon=document.createElement('strong');icon.textContent='▶';b.append(title,icon);
  b.addEventListener('click',()=>showCpu(accessible===1));
  grid.appendChild(b);
- el('levelDescription').textContent=accessible===1?'Nivel 1: aprende conectando cinco nodos frente al BOT.':'Nivel '+accessible+': '+level.count+' nodos '+(level.random?'en posiciones aleatorias':'ordenados')+'. Gana para continuar.';
+ const wins=modesWonAtLevel(accessible);
+ el('levelDescription').textContent='NIVEL '+accessible+' · '+level.count+' NODOS · '+
+  '⚄ GALÁCTICO '+(wins.random?'✓':'PENDIENTE')+' · '+
+  '↗ ASCENSO '+(wins.ascenso?'✓':'PENDIENTE')+
+  '. Debes ganar en los dos modos para avanzar.';
  el('tutorialBtn').textContent=accessible===1?'🎓 NIVEL 1 · APRENDER CON BOT':'🎓 REPASAR TUTORIAL';
  el('cpuBtn').textContent='⚡ JUGAR NIVEL '+accessible+' CONTRA BOT';
 }
@@ -318,11 +323,18 @@ function awardResult(){
  awardRecorded=true;
  if(game.winner!==myPlayer || mode==='pvp')return false;
  profile.elo=(profile.elo||1000)+12;profile.coins=(profile.coins||0)+15;
- const next=Math.min(10,game.level+1);
- unlockedLevel=Math.max(unlockedLevel,next);
- profile.level=unlockedLevel;
- try{localStorage.setItem('3line57_unlocked_'+(currentAccount?.uid||'local-guest'),String(unlockedLevel));}catch{}
- saveProfile();renderLevels();return true;
+ const rule=normalizeTurnRule(game.ruleMode),key=String(game.level);
+ if(!completedModesByLevel[key])completedModesByLevel[key]={};
+ completedModesByLevel[key][rule]=true;saveModeWins();
+ const completedBoth=completedBothRules(game.level);
+ if(completedBoth){
+  const next=Math.min(10,game.level+1);
+  unlockedLevel=Math.max(unlockedLevel,next);
+  profile.level=unlockedLevel;
+  try{localStorage.setItem('3line57_unlocked_'+(currentAccount?.uid||'local-guest'),String(unlockedLevel));}catch{}
+ }
+ saveProfile();renderLevels();
+ return completedBoth;
 }
 function xy(i){return {x:POINTS[i].x,y:POINTS[i].z};}
 function area(a,b,c){return (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);}
@@ -524,6 +536,27 @@ function edgeError(a,b,s){
 const el=id=>document.getElementById(id);
 let mode='none', myPlayer=0, host=false, room='', connected=false, peer=null,conn=null,game=null;
 let selectedRuleMode=localStorage.getItem('3line57_turn_rule')==='ascenso'?'ascenso':'random';
+let completedModesByLevel={};
+function modeWinsStorageKey(){return '3line57_mode_wins_'+(currentAccount?.uid||'local-guest');}
+function loadModeWins(){
+ try{
+  const raw=JSON.parse(localStorage.getItem(modeWinsStorageKey())||'{}');
+  completedModesByLevel=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
+ }catch{completedModesByLevel={};}
+}
+function saveModeWins(){
+ try{localStorage.setItem(modeWinsStorageKey(),JSON.stringify(completedModesByLevel));}catch{}
+}
+function modesWonAtLevel(level){return completedModesByLevel[String(level)]||{};}
+function completedBothRules(level){
+ const wins=modesWonAtLevel(level);
+ return wins.random===true&&wins.ascenso===true;
+}
+function pendingModeAtLevel(level){
+ const wins=modesWonAtLevel(level);
+ return wins.random===true&&!wins.ascenso?'ascenso':wins.ascenso===true&&!wins.random?'random':null;
+}
+
 function renderTurnRuleChooser(){
  const asc=selectedRuleMode==='ascenso';
  el('ruleRandomBtn').classList.toggle('rule-current',!asc);
@@ -776,14 +809,16 @@ function finishGame(){
  if(!game)return;
  const didWin=game.winner===myPlayer,solo=['tutorial','cpu'].includes(mode);
  if(arSession)arSession.end().catch(()=>{});
- const won=awardResult();
- el('resultTitle').textContent=game.winner===-1?'EMPATE':(didWin?'¡VICTORIA!':'PARTIDA TERMINADA');
+ const complete=awardResult();
+ const pending=solo&&didWin?pendingModeAtLevel(game.level):null;
+ el('resultTitle').textContent=game.winner===-1?'EMPATE':didWin?'¡VICTORIA!':'PARTIDA TERMINADA';
  el('resultSummary').textContent='Nivel '+game.level+' · Puntos '+game.scores[0]+' vs '+game.scores[1]+' · '+game.tris.length+' zonas conquistadas.';
- el('levelWinNotice').textContent=won?
-  (game.level>=10?'¡Has completado los 10 niveles iniciales!':
-  '¡Nivel '+Math.min(10,game.level+1)+' desbloqueado! El anuncio se mostrará entre niveles cuando la cuenta publicitaria esté aprobada.'):
+ el('levelWinNotice').textContent=didWin&&solo?
+  (complete?(game.level>=10?'¡Completaste Galáctico y Ascenso en los diez niveles!':'¡Ambos modos superados! Nivel '+Math.min(10,game.level+1)+' desbloqueado.'):'¡Modo '+(normalizeTurnRule(game.ruleMode)==='ascenso'?'Ascenso':'Galáctico')+' completado! Falta superar '+(pending==='ascenso'?'Ascenso':'Galáctico')+' para desbloquear el siguiente nivel.'):
   (game.winner===-1?'Empate: practica de nuevo.':'Puedes repetir el nivel para mejorarlo.');
- el('continueBtn').classList.toggle('hidden',!solo||!didWin||game.level>=10);
+ const canContinue=solo&&didWin&&(pending!==null||game.level<10&&complete);
+ el('continueBtn').classList.toggle('hidden',!canContinue);
+ el('continueBtn').textContent=pending?'JUGAR '+(pending==='ascenso'?'MODO ASCENSO':'MODO GALÁCTICO'):'SIGUIENTE NIVEL';
  el('restartLevelBtn').classList.toggle('hidden',!solo);
  el('restartLevelBtn').textContent=rewardedAds.enabled?'🎬 VER VIDEO Y REINICIAR':'↻ REINTENTAR NIVEL (BETA)';
  el('restartAdHint').classList.toggle('hidden',!solo);
@@ -791,7 +826,7 @@ function finishGame(){
   'El video es voluntario. También puedes volver al menú y repetir gratis.':
   'Todavía no hay videos publicitarios aprobados: puedes repetir directamente durante las pruebas.';
  screen('results');
- if(won)requestLevelInterstitial();
+ if(complete)requestLevelInterstitial();
 }
 function showCpu(teach=false){
  if(!currentAccount){openLoginGate('Inicia sesión primero.');return;}
@@ -1211,7 +1246,12 @@ function requestLevelInterstitial(){
 }
 function continueToNextLevel(){
  if(!currentAccount||!game)return;
- selectedLevel=Math.min(10,game.level+1);
+ const nextRule=pendingModeAtLevel(game.level);
+ if(nextRule)chooseTurnRule(nextRule);
+ else if(!completedBothRules(game.level)){
+  notify('Completa ambos modos de este nivel antes de avanzar.');return;
+ }
+ selectedLevel=completedBothRules(game.level)?Math.min(10,game.level+1):game.level;
  tutorial=false;
  showCpu(false);
 }
