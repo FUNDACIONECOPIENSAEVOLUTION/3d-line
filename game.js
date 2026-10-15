@@ -57,7 +57,7 @@ function tutorials(){
  h.textContent=!game.rolled?'PASO 1 · Pulsa el dado luminoso de arriba.':selected<0?'PASO 2 · Toca un nodo. A continuación toca otro para construir una línea.':'PASO 3 · Escoge un segundo nodo. Cierra tres líneas para formar tu primer triángulo.';
 }
 function awardResult(){
- if(!game||game.status!=='end'||awardRecorded||game.winner!==0||mode==='pvp'&&!host)return;
+ if(!game||game.status!=='end'||awardRecorded||game.winner!==myPlayer)return;
  awardRecorded=true;profile.elo+=12;profile.coins+=15;profile.level=Math.max(profile.level,Math.min(10,(game.level||1)+1));saveProfile();
 }
 function xy(i){return {x:POINTS[i].x,y:POINTS[i].z};}
@@ -127,12 +127,12 @@ function enterGame(){
 }
 function setState(state){
  if(!state||state.schema!==2||!Array.isArray(state.points)||!Array.isArray(state.lines)||!Array.isArray(state.tris)||!Array.isArray(state.scores))return;
- const previous=game?.version;
+ /* los mensajes PvP se validan por esquema y versión */
  game=state;POINTS=state.points.map(p=>new THREE.Vector3(...p));
  if(!el('game').classList.contains('hidden')){
    rebuildBoard();refresh();
  }else if(state.status==='play')enterGame();
- if(state.status==='end'&&previous!==state.version)finishGame();
+ if(state.status==='end'&&!(!el('results').classList.contains('hidden')))finishGame();
 }
 function broadcast(){if(mode==='pvp'&&host&&conn?.open){try{conn.send({type:'STATE',state:game});}catch{notify('No se pudo enviar el estado');}}}
 function action(type,data={}){
@@ -265,7 +265,7 @@ function showHostRoom(){
 }
 function createRoom(){
   cleanup();if(typeof Peer==='undefined'){notify('No pudo cargarse PeerJS. Verifica la conexión a Internet.');return;}
-  mode='pvp';host=true;myPlayer=0;room=roomId();showHostRoom();networkStatus('CONECTANDO…');
+  tutorial=false;awardRecorded=false;mode='pvp';host=true;myPlayer=0;room=roomId();showHostRoom();networkStatus('CONECTANDO…');
   try{
     peer=new Peer(PEER_PREFIX+room,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
     peer.on('open',()=>{networkStatus('SALA ABIERTA',true);el('waitingNote').textContent='Sala abierta. Tu rival puede escribir el código o escanear el QR.';});
@@ -278,7 +278,7 @@ function joinRoom(codeInput){
   const code=String(codeInput||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(code.length!==6){notify('El código debe tener seis letras o números.');return;}
   cleanup();if(typeof Peer==='undefined'){notify('No pudo cargarse PeerJS.');return;}
-  mode='pvp';host=false;myPlayer=1;room=code;networkStatus('CONECTANDO…');el('joinBtn').disabled=true;el('joinBtn').textContent='CONECTANDO…';
+  tutorial=false;awardRecorded=false;mode='pvp';host=false;myPlayer=1;room=code;networkStatus('CONECTANDO…');el('joinBtn').disabled=true;el('joinBtn').textContent='CONECTANDO…';
   try{
     peer=new Peer(undefined,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
     peer.on('open',()=>{
@@ -436,7 +436,7 @@ function updateAR(frame){
  if(!pose){reticle.visible=false;lastHit=null;return;}
  reticle.visible=true;reticle.matrix.fromArray(pose.transform.matrix);lastHit=reticle.matrix.clone();
 }
-async async function startAR(){
+async function startAR(){
  if(!renderer||!game||arSession)return;
  if(!navigator.xr){notify('Este navegador no ofrece WebXR AR. Continúa en 3D.');return;}
  try{
@@ -549,29 +549,39 @@ async function showDiagnostics(){
 }
 
 function bind(){
-  el('createBtn').addEventListener('click',createRoom);
-  el('cpuBtn').addEventListener('click',showCpu);
-  el('joinBtn').addEventListener('click',()=>joinRoom(el('joinCode').value));
-  el('joinCode').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom(el('joinCode').value);});
-  el('scanBtn').addEventListener('click',startScanner);
-  el('diagnoseBtn').addEventListener('click',showDiagnostics);
-  el('diagCloseBtn').addEventListener('click',()=>el('diagnostics').classList.add('hidden'));
-  el('diagCopyBtn').addEventListener('click',()=>copyText(diagnosticText));
-  el('closeScanBtn').addEventListener('click',stopScanner);
-  el('copyBtn').addEventListener('click',()=>copyText(linkUrl()));
-  el('cancelBtn').addEventListener('click',home);
-  el('diceBtn').addEventListener('click',()=>action('ROLL'));
-  el('passBtn').addEventListener('click',()=>action('PASS'));
-  el('leaveBtn').addEventListener('click',()=>{if(!confirm('¿Abandonar la partida?'))return;action('SURRENDER');home();});
-  el('homeBtn').addEventListener('click',home);
-  el('resetViewBtn').addEventListener('click',resetView);
-  el('arBtn').addEventListener('click',startAR);
-  el('placeBtn').addEventListener('click',placeAR);
-  el('exitArBtn').addEventListener('click',()=>arSession?.end().catch(()=>{}));
-  el('coins').textContent=Number(localStorage.getItem('3line56_coins')||0);
-  setAds();screen('menu');networkStatus('SIN CONECTAR');
-  const startCode=new URLSearchParams(location.search).get('room');
-  if(startCode&&/^[A-Z0-9]{6}$/i.test(startCode)){el('joinCode').value=startCode.toUpperCase();setTimeout(()=>joinRoom(startCode),650);}
+ el('createBtn').addEventListener('click',createRoom);
+ el('cpuBtn').addEventListener('click',()=>showCpu(false));
+ el('tutorialBtn').addEventListener('click',()=>{selectedLevel=1;renderLevels();showCpu(true);});
+ el('joinBtn').addEventListener('click',()=>joinRoom(el('joinCode').value));
+ el('joinCode').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom(el('joinCode').value);});
+ el('scanBtn').addEventListener('click',startScanner);
+ el('diagnoseBtn').addEventListener('click',showDiagnostics);
+ el('diagCloseBtn').addEventListener('click',()=>el('diagnostics').classList.add('hidden'));
+ el('diagCopyBtn').addEventListener('click',()=>copyText(diagnosticText));
+ el('closeScanBtn').addEventListener('click',stopScanner);
+ el('copyBtn').addEventListener('click',()=>copyText(linkUrl()));
+ el('cancelBtn').addEventListener('click',home);
+ el('diceBtn').addEventListener('click',()=>action('ROLL'));
+ el('passBtn').addEventListener('click',()=>action('PASS'));
+ el('leaveBtn').addEventListener('click',()=>{if(!confirm('¿Abandonar la partida?'))return;action('SURRENDER');home();});
+ el('homeBtn').addEventListener('click',home);
+ el('resetViewBtn').addEventListener('click',resetView);
+ el('arBtn').addEventListener('click',startAR);
+ el('placeBtn').addEventListener('click',placeAR);
+ el('scaleDownBtn').addEventListener('click',()=>scaleBoard(.87));
+ el('scaleUpBtn').addEventListener('click',()=>scaleBoard(1.15));
+ el('exitArBtn').addEventListener('click',()=>arSession?.end().catch(()=>{}));
+ el('colors').addEventListener('click',e=>{const b=e.target.closest('[data-color]');if(b){profile.color=b.dataset.color;saveProfile();}});
+ el('badges').addEventListener('click',e=>{const b=e.target.closest('[data-badge]');if(b){profile.badge=b.dataset.badge;saveProfile();}});
+ el('googleBtn').addEventListener('click',tryGoogleLogin);
+ el('guestBtn').addEventListener('click',()=>{profile.name='INVITADO';saveProfile();notify('Modo invitado activado.');});
+ el('levelsBtn').addEventListener('click',()=>el('levelPanel').classList.toggle('hidden'));
+ el('inviteBtn').addEventListener('click',()=>copyText(location.origin+location.pathname));
+ el('coins').textContent=Number(localStorage.getItem('3line56_coins')||0);
+ setAds();screen('menu');networkStatus('SIN CONECTAR');
+ renderProfile();renderLevels();initBackground();initGoogleConfig();
+ const startCode=new URLSearchParams(location.search).get('room');
+ if(startCode&&/^[A-Z0-9]{6}$/i.test(startCode)){el('joinCode').value=startCode.toUpperCase();setTimeout(()=>joinRoom(startCode),650);}
 }
 bind();
 // Exposición limitada para pruebas automatizadas sin alterar el juego desde consola.
