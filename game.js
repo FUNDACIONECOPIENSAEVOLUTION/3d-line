@@ -263,7 +263,17 @@ function closedTriangleShells(tris){
     counts.set(key,(counts.get(key)||0)+1);
    }
   }
-  if(vertices.size>=4&&[...counts.values()].every(c=>c===2))result.push(part.map(j=>tris[j]));
+  if(vertices.size>=4&&[...counts.values()].every(c=>c===2)){
+   // Una lámina plana cubierta por dos lados no es un sólido con interior.
+   const ids=[...vertices],p0=POINTS[ids[0]];
+   let spansVolume=false;
+   outer: for(let a=1;a<ids.length;a++)for(let b=a+1;b<ids.length;b++)for(let c=b+1;c<ids.length;c++){
+    const triple=dot3(sub3(POINTS[ids[a]],p0),
+      cross3(sub3(POINTS[ids[b]],p0),sub3(POINTS[ids[c]],p0)));
+    if(Math.abs(triple)>1e-5){spansVolume=true;break outer;}
+   }
+   if(spansVolume)result.push(part.map(j=>tris[j]));
+  }
  }
  return result;
 }
