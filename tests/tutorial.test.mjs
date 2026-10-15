@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
+const turnModeSource=await readFile(new URL('../turn-modes.js',import.meta.url),'utf8');
+const turnMode=await import('data:text/javascript,'+encodeURIComponent(turnModeSource));
 const source=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 function grab(name){
  const start=source.indexOf('function '+name+'(');
@@ -15,6 +18,10 @@ function grab(name){
 const body=['endTurn','applyAction','scheduleCpu'].map(grab).join('\n');
 const queue=[],allowed=['0-1','1-2','2-3','3-4','0-4','1-4'];
 const context={
+ normalizeTurnRule:turnMode.normalizeTurnRule,
+ turnMoveAllowance:turnMode.turnMoveAllowance,
+ completedTurnsForPlayer:turnMode.completedTurnsForPlayer,
+ nextTurnCounts:turnMode.nextTurnCounts,
  game:{status:'play',turn:0,rolled:true,moves:1,dice:1,turns:0,maxTurns:12,version:0,
  lines:[],tris:[],scores:[0,0],winner:null,blocked:[],level:1},
  POINTS:[0,1,2,3,4],mode:'tutorial',myPlayer:0,cpuTimer:null,
