@@ -322,6 +322,7 @@ function edgeError(a,b,s){
 }
 const el=id=>document.getElementById(id);
 let mode='none', myPlayer=0, host=false, room='', connected=false, peer=null,conn=null,game=null;
+let reconnectTimer=null,pendingSyncTimer=null,reconnectAttempts=0;
 let renderer,scene,camera,orbit,board,staticGroup,linesGroup,triGroup,nodes=[],raycaster=new THREE.Raycaster();
 let selected=-1, pointerStart=null, cpuTimer=null, joinTimer=null, scanner=null,toastTimer=null;
 let arSession=null,hitSource=null,arSpace=null,lastHit=null,reticle=null,arPlaced=false;
@@ -336,10 +337,49 @@ function screen(id){for(const n of ['menu','waiting','game','results'])el(n).cla
 function networkStatus(message,on=false){el('connection').textContent=message;el('connection').classList.toggle('online',on);}
 function linkUrl(){const u=new URL(location.href);u.search='';u.hash='';u.searchParams.set('room',room);return u.href;}
 function cleanup(){
-  clearTimeout(cpuTimer);clearTimeout(joinTimer);selected=-1;connected=false;game=null;
+  clearTimeout(cpuTimer);clearTimeout(joinTimer);clearTimeout(reconnectTimer);clearTimeout(pendingSyncTimer);reconnectTimer=null;pendingSyncTimer=null;reconnectAttempts=0;selected=-1;connected=false;game=null;
   if(conn){try{conn.close();}catch{}conn=null;}
   if(peer){try{peer.destroy();}catch{}peer=null;}
   room='';mode='none';host=false;networkStatus('SIN CONECTAR');
+}
+function scheduleGuestReconnection(){
+ if(mode!=='pvp'||host||!room||reconnectTimer||document.visibilityState==='hidden')return;
+ const code=room;
+ const delay=Math.min(8000,700*Math.pow(1.7,Math.min(reconnectAttempts,6)));
+ reconnectTimer=setTimeout(()=>{
+  reconnectTimer=null;
+  if(mode!=='pvp'||host||room!==code||document.visibilityState==='hidden'||conn?.open)return;
+  reconnectAttempts++;networkStatus('RECONEXIÓN '+reconnectAttempts+'…');
+  joinRoom(code,true);
+ },delay);
+}
+function askHostForFreshState(){
+ if(mode!=='pvp'||host||!room)return;
+ if(!conn?.open){scheduleGuestReconnection();return;}
+ clearTimeout(pendingSyncTimer);
+ try{
+  conn.send({type:'SYNC_REQUEST',knownVersion:game?.version??-1});
+  networkStatus('SINCRONIZANDO…');
+  pendingSyncTimer=setTimeout(()=>{
+   pendingSyncTimer=null;
+   if(mode==='pvp'&&!host&&room){
+    connected=false;
+    if(conn){try{conn.close();}catch{}conn=null;}
+    networkStatus('RECUPERANDO PARTIDA…');
+    scheduleGuestReconnection();
+   }
+  },4500);
+ }catch{
+  connected=false;networkStatus('RECUPERANDO PARTIDA…');scheduleGuestReconnection();
+ }
+}
+function restoreNetworkAfterPause(){
+ if(mode!=='pvp'||!room||document.visibilityState==='hidden')return;
+ if(peer?.disconnected&&!peer?.destroyed)try{peer.reconnect();}catch{}
+ if(host){
+  if(conn?.open)broadcast();
+  else networkStatus('ESPERANDO AL RIVAL…');
+ }else askHostForFreshState();
 }
 function newState(){
  const seed=rand(0x7fffffff),level=tutorial?1:selectedLevel;
@@ -357,7 +397,9 @@ function enterGame(){
 function setState(state){
  if(!state||state.schema!==2||!Array.isArray(state.points)||!Array.isArray(state.lines)||!Array.isArray(state.tris)||!Array.isArray(state.scores))return;
  /* los mensajes PvP se validan por esquema y versión */
+ if(mode==='pvp'&&!host&&game&&state.version<game.version)return;
  game=state;POINTS=state.points.map(p=>new THREE.Vector3(...p));
+ if(game.turn!==myPlayer)selected=-1;
  if(!el('game').classList.contains('hidden')){
    rebuildBoard();refresh();
  }else if(state.status==='play')enterGame();
@@ -502,11 +544,13 @@ function hostConnection(c){
       game.players[1]={name:String(p.name||'RIVAL').slice(0,30),color:/^#[0-9a-fA-F]{6}$/.test(p.color)?p.color:'#ff2d7a',badge:PLAYER_BADGES.includes(p.badge)?p.badge:'★'};
     }
     setState(game);broadcast();
+  }else if(m.type==='SYNC_REQUEST'&&game){
+    broadcast();
   }else if(m.type==='ACTION'&&connected&&game&&game.status==='play'){
     applyAction(m.action,m.data||{},1);
   }
  });
- c.on('close',()=>{if(conn===c){conn=null;connected=false;networkStatus('RIVAL DESCONECTADO');refresh();notify('Rival desconectado. Puede volver con el mismo código.');}});
+ c.on('close',()=>{if(conn===c){conn=null;connected=false;networkStatus('ESPERANDO RECONEXIÓN');refresh();notify('El rival puede reconectarse a la misma sala; la partida sigue guardada.');}});
  c.on('error',()=>networkStatus('ERROR DE CONEXIÓN'));
 }
 function showHostRoom(){
@@ -526,26 +570,76 @@ function createRoom(){
     peer.on('disconnected',()=>networkStatus('RECONECTANDO…'));
   }catch(e){notify('No se pudo crear sala: '+e.message);cleanup();screen('menu');}
 }
-function joinRoom(codeInput){
-  const code=String(codeInput||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(code.length!==6){notify('El código debe tener seis letras o números.');return;}
-  cleanup();if(typeof Peer==='undefined'){notify('No pudo cargarse PeerJS.');return;}
-  tutorial=false;awardRecorded=false;mode='pvp';host=false;myPlayer=1;room=code;networkStatus('CONECTANDO…');el('joinBtn').disabled=true;el('joinBtn').textContent='CONECTANDO…';
-  try{
-    peer=new Peer(undefined,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
-    peer.on('open',()=>{
-      conn=peer.connect(PEER_PREFIX+code,{reliable:true,serialization:'json'});
-      conn.on('open',()=>{connected=true;networkStatus('CONECTADO',true);conn.send({type:'HELLO',version:VERSION,profile:profilePacket()});});
-      conn.on('data',m=>{
-        if(m?.type==='STATE'&&m.state){clearTimeout(joinTimer);el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';setState(m.state);}
-        else if(m?.type==='ERROR'){notify(m.message);home();}
-      });
-      conn.on('close',()=>{connected=false;networkStatus('RIVAL DESCONECTADO');refresh();notify('Se perdió la conexión con el anfitrión.');});
-      conn.on('error',()=>networkStatus('ERROR DE ENLACE'));
-    });
-    peer.on('error',e=>{clearTimeout(joinTimer);notify('No se encontró la sala o falló la conexión: '+(e.type||e.message));home();});
-    joinTimer=setTimeout(()=>{if(!game){notify('No hubo respuesta. Verifica código y conexión en ambos dispositivos.');home();}},18000);
-  }catch(e){notify('No se pudo unir: '+e.message);home();}
+function joinRoom(codeInput,keepState=false){
+ const code=String(codeInput||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ if(code.length!==6){notify('El código debe tener seis letras o números.');return;}
+ if(keepState){
+  clearTimeout(joinTimer);clearTimeout(pendingSyncTimer);
+  if(conn){try{conn.close();}catch{}conn=null;}
+  if(peer){try{peer.destroy();}catch{}peer=null;}
+  connected=false;
+ }else cleanup();
+ if(typeof Peer==='undefined'){
+  notify('No pudo cargarse la conexión de salas. Verifica internet.');
+  if(keepState)scheduleGuestReconnection();
+  return;
+ }
+ tutorial=false;mode='pvp';host=false;myPlayer=1;room=code;
+ networkStatus(keepState?'RECONECTANDO…':'CONECTANDO…');
+ el('joinBtn').disabled=true;el('joinBtn').textContent='CONECTANDO…';
+ try{
+  const newPeer=new Peer(undefined,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
+  peer=newPeer;
+  newPeer.on('open',()=>{
+   if(peer!==newPeer)return;
+   const newConn=newPeer.connect(PEER_PREFIX+code,{reliable:true,serialization:'json'});
+   conn=newConn;
+   newConn.on('open',()=>{
+    if(conn!==newConn)return;
+    clearTimeout(reconnectTimer);reconnectTimer=null;reconnectAttempts=0;
+    connected=true;networkStatus('CONECTADO',true);
+    newConn.send({type:'HELLO',version:VERSION,profile:profilePacket(),resume:Boolean(keepState)});
+    // El anfitrión conserva la autoridad: siempre envía STATE completo.
+    if(keepState)askHostForFreshState();
+   });
+   newConn.on('data',m=>{
+    if(conn!==newConn)return;
+    if(m?.type==='STATE'&&m.state){
+     clearTimeout(joinTimer);clearTimeout(pendingSyncTimer);pendingSyncTimer=null;
+     el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';
+     connected=true;reconnectAttempts=0;networkStatus('SINCRONIZADO',true);
+     setState(m.state);
+    }else if(m?.type==='ERROR'){notify(m.message);home();}
+   });
+   newConn.on('close',()=>{
+    if(conn!==newConn)return;
+    conn=null;connected=false;networkStatus('PARTIDA EN PAUSA');
+    refresh();notify('Conexión interrumpida. Se intentará recuperar la misma sala.');
+    scheduleGuestReconnection();
+   });
+   newConn.on('error',()=>{if(conn===newConn){connected=false;networkStatus('RECONEXIÓN PENDIENTE');scheduleGuestReconnection();}});
+  });
+  newPeer.on('error',e=>{
+   if(peer!==newPeer)return;
+   networkStatus('ERROR DE ENLACE');
+   if(keepState||game){
+    notify('Reconectando a la partida…');scheduleGuestReconnection();
+   }else{
+    clearTimeout(joinTimer);
+    notify('No se encontró la sala o falló la conexión: '+(e.type||e.message));
+    home();
+   }
+  });
+  newPeer.on('disconnected',()=>{if(peer===newPeer&&!newPeer.destroyed)try{newPeer.reconnect();}catch{}});
+  joinTimer=setTimeout(()=>{
+   if(peer!==newPeer||conn?.open)return;
+   if(keepState||game){networkStatus('BUSCANDO ANFITRIÓN');scheduleGuestReconnection();}
+   else{notify('La sala no respondió. Revisa el código y la conexión.');home();}
+  },14000);
+ }catch(e){
+  notify('No se pudo establecer la conexión: '+e.message);
+  if(keepState)scheduleGuestReconnection();else home();
+ }
 }
 function home(){if(arSession)arSession.end().catch(()=>{});cleanup();el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';screen('menu');}
 
@@ -935,6 +1029,11 @@ function enablePinchScale(){
 }
 
 function bind(){
+ // En dispositivos móviles la suspensión de pantalla puede interrumpir WebRTC.
+ // Al regresar se solicita snapshot completo sin reiniciar la partida ni nivel.
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')restoreNetworkAfterPause();});
+ window.addEventListener('pageshow',()=>{if(mode==='pvp')restoreNetworkAfterPause();});
+ window.addEventListener('online',()=>{if(mode==='pvp')restoreNetworkAfterPause();});
  document.addEventListener('pointerdown',onARPointerDown,true);
  document.addEventListener('pointerup',onARPointerUp,true);
  document.addEventListener('pointercancel',e=>{arPointers.delete(e.pointerId);arPointerStart=null;},true);
