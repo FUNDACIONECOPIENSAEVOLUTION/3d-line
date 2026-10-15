@@ -45,17 +45,19 @@ El modo AR y el modo 3D pueden mostrar una partida compartida, pero **todavía n
 
 ## Google, guardado y monetización
 
-`auth-config.json` trae `clientId` vacío. Para habilitar Google Identity hay que crear un Client ID de aplicación web en Google Cloud y autorizar el origen `https://fundacionecopiensaevolution.github.io`. La nueva sesión Firebase es una identidad autenticada por Firebase; para proteger recompensas, ranking y progreso en la nube aún hacen falta reglas de acceso y validación de operaciones: hay que validar el token en un backend o usar un proveedor de autenticación verificada (Firebase, etc.) antes de proteger rankings, premios o progreso multi-dispositivo.
+La autenticación real se implementa en `auth.js`, recuperando la configuración web pública de Firebase del archivo V51.2 entregado por el usuario. Usa **Firebase Authentication** con `GoogleAuthProvider`, usuario invitado anónimo y `browserLocalPersistence`. No requiere inventar un Client ID adicional: el proyecto Firebase original ya proporciona la configuración web. El antiguo `auth-config.json` se conserva únicamente como referencia heredada y **no controla** este nuevo flujo.
 
-No es necesario ni apropiado conectar Google Drive personal como backend de las partidas. No se solicita ninguna contraseña.
+Para que el acceso Google funcione desde GitHub Pages, el administrador debe comprobar en la consola del proyecto `ar-3lilne`: **Authentication → Sign-in method → Google / Anonymous habilitados** y **Authentication → Settings → Authorized domains → fundacionecopiensaevolution.github.io**. En caso contrario la interfaz muestra un error de autorización y permite una sesión de invitado explícita. No se puede verificar ese permiso solo leyendo la configuración del HTML.
 
-El anuncio recompensado permanece desactivado hasta contar con ID publicitario real y aprobación de un programa publicitario apto para juegos HTML5. No se anuncian ingresos inexistentes ni se entregan monedas por anuncios falsos. El ELO y las monedas del navegador son solo progreso local de beta y aún no forman una economía segura.
+Aunque Firebase valida la identidad, la progresión, ELO y monedas aún se guardan **localmente por UID y dispositivo**. No hay sincronización de progreso multi-dispositivo ni un sistema antitrampas económico. No es necesario conectar Google Drive al juego.
+
+La publicidad de Google H5 Games Ads debe estar **aprobada** y tener un ID real de editor. El juego incluye un `adBreak({type:'next'})` intersticial en las pausas entre niveles, que solo se invoca con la integración aprobada. Si no hay un anuncio servido, no se bloquea el avance de la beta ni se finge que se ha visto publicidad. Las recompensas por anuncios requieren eventos reales de visualización. <https://support.google.com/adsense/answer/9959170?hl=es>
 
 ## Calidad, versión y despliegue
 
 - La versión en cabecera es **V57.1.0** y la versión interna es **57.1.0-beta.1**.
 - Cada cambio debe actualizar `version.json`, `CHANGELOG.md` y las etiquetas de recursos del HTML.
-- Las pruebas automáticas de CI están en `tests/static.test.mjs` y `tests/rules.test.mjs`.
+- Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs` y `tests/tutorial.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
 
 ## AWS
