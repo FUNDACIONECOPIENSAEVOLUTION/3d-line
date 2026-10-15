@@ -46,6 +46,7 @@ function enterAccount(account){
    'Conectado con Google a través de Firebase. La sesión se conserva en este navegador; el progreso del juego sigue siendo local.':
    'Sesión de invitado persistente en este dispositivo. Puedes jugar sin correo.';
   renderProfile();renderLevels();screen('menu');
+  if(pendingJoinCode){const code=pendingJoinCode.toUpperCase();pendingJoinCode='';el('joinCode').value=code;setTimeout(()=>joinRoom(code),250);}
 }
 function localGuestAccount(){
   localStorage.setItem('3line57_guest_session','yes');
@@ -656,6 +657,7 @@ async function showDiagnostics(){
   diagnosticText+='Aviso: compartir este informe revela tipo de dispositivo y navegador, nunca contraseñas.\n';
 }
 
+let pendingJoinCode='';
 function bind(){
  el('createBtn').addEventListener('click',createRoom);
  el('cpuBtn').addEventListener('click',()=>showCpu(false));
@@ -682,15 +684,18 @@ function bind(){
  el('exitArBtn').addEventListener('click',()=>arSession?.end().catch(()=>{}));
  el('colors').addEventListener('click',e=>{const b=e.target.closest('[data-color]');if(b){profile.color=b.dataset.color;saveProfile();}});
  el('badges').addEventListener('click',e=>{const b=e.target.closest('[data-badge]');if(b){profile.badge=b.dataset.badge;saveProfile();}});
- el('googleBtn').addEventListener('click',tryGoogleLogin);
- el('guestBtn').addEventListener('click',()=>{profile.name='INVITADO';saveProfile();notify('Modo invitado activado.');});
+ el('googleBtn').addEventListener('click',loginGoogleFlow);
+ el('guestBtn').addEventListener('click',loginGuestFlow);
  el('levelsBtn').addEventListener('click',()=>el('levelPanel').classList.toggle('hidden'));
  el('inviteBtn').addEventListener('click',()=>copyText(location.origin+location.pathname));
- el('coins').textContent=Number(localStorage.getItem('3line56_coins')||0);
+ el('coins').textContent=Number(profile.coins||0);
  setAds();screen('menu');networkStatus('SIN CONECTAR');
- renderProfile();renderLevels();initBackground();initGoogleConfig();
- const startCode=new URLSearchParams(location.search).get('room');
- if(startCode&&/^[A-Z0-9]{6}$/i.test(startCode)){el('joinCode').value=startCode.toUpperCase();setTimeout(()=>joinRoom(startCode),650);}
+ renderProfile();renderLevels();initBackground();beginLogin();
+ el('signGoogleBtn').addEventListener('click',loginGoogleFlow);
+ el('signGuestBtn').addEventListener('click',loginGuestFlow);
+ el('logoutBtn').addEventListener('click',logoutGame);
+ pendingJoinCode=new URLSearchParams(location.search).get('room')||'';
+ if(!/^[A-Z0-9]{6}$/i.test(pendingJoinCode))pendingJoinCode='';
 }
 bind();
 // Exposición limitada para pruebas automatizadas sin alterar el juego desde consola.
