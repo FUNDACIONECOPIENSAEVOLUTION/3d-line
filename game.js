@@ -296,36 +296,78 @@ function joinRoom(codeInput){
   }catch(e){notify('No se pudo unir: '+e.message);home();}
 }
 function home(){if(arSession)arSession.end().catch(()=>{});cleanup();el('joinBtn').disabled=false;el('joinBtn').textContent='UNIRME';screen('menu');}
-function initialize3D(){
-  if(renderer){resize3D();return;}
-  const viewport=el('viewport');
-  scene=new THREE.Scene();scene.background=new THREE.Color(0x061522);
-  camera=new THREE.PerspectiveCamera(55,1,.01,100);
-  camera.position.set(2.85,2.85,3.6);
-  renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.xr.enabled=true;
-  viewport.appendChild(renderer.domElement);
-  orbit=new OrbitControls(camera,renderer.domElement);
-  orbit.enableDamping=true;orbit.dampingFactor=.09;orbit.minDistance=1.5;orbit.maxDistance=8;
-  orbit.target.set(0,.42,0);orbit.update();
-  scene.add(new THREE.HemisphereLight(0xffffff,0x194f70,2.3));
-  const light=new THREE.DirectionalLight(0x8ceeff,2.8);light.position.set(3,5,2);scene.add(light);
-  board=new THREE.Group();scene.add(board);
-  staticGroup=new THREE.Group();linesGroup=new THREE.Group();triGroup=new THREE.Group();
-  board.add(staticGroup,triGroup,linesGroup);
-  const pgeo=new THREE.SphereGeometry(.071,16,12);
-  for(let i=0;i<POINTS.length;i++){
-    const node=new THREE.Mesh(pgeo,new THREE.MeshStandardMaterial({color:0x68dcff,emissive:0x0686b9,emissiveIntensity:.45,metalness:.25,roughness:.2}));
-    node.position.copy(POINTS[i]);node.userData.nodeId=i;staticGroup.add(node);nodes.push(node);
+
+function badgeSprite(badge,color){
+ const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
+ const ctx=canvas.getContext('2d');ctx.fillStyle='#081c30';ctx.beginPath();ctx.arc(64,64,43,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle=color;ctx.lineWidth=5;ctx.stroke();
+ ctx.fillStyle=color;ctx.font='bold 56px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(badge,64,66);
+ const texture=new THREE.CanvasTexture(canvas),mat=new THREE.SpriteMaterial({map:texture,transparent:true});
+ const spr=new THREE.Sprite(mat);spr.scale.set(.42,.42,1);return spr;
+}
+function scaleBoard(mult){
+ if(!arSession||!board){notify('La escala se usa después de iniciar AR.');return;}
+ const scale=Math.max(.1,Math.min(1.4,board.scale.x*mult));
+ board.scale.setScalar(scale);notify('Escala AR '+Math.round(scale*100)+'%');
+}
+function initBackground(){
+ const canvas=el('bg-canvas');if(!canvas)return;const ctx=canvas.getContext('2d');let points=[];
+ function resize(){canvas.width=innerWidth;canvas.height=innerHeight;points=Array.from({length:Math.min(70,Math.floor(innerWidth/24))},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,dx:(Math.random()-.5)*.28,dy:(Math.random()-.5)*.28}));}
+ function tick(){
+  if(document.hidden){requestAnimationFrame(tick);return;}
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=0;i<points.length;i++){const p=points[i];p.x+=p.dx;p.y+=p.dy;
+   if(p.x<0||p.x>canvas.width)p.dx=-p.dx;if(p.y<0||p.y>canvas.height)p.dy=-p.dy;
+   ctx.beginPath();ctx.arc(p.x,p.y,1.7,0,6.283);ctx.fillStyle='#0ab9dd';ctx.fill();
+   for(let j=i+1;j<points.length;j++){const q=points[j],d=Math.hypot(p.x-q.x,p.y-q.y);
+    if(d<125){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle='rgba(0,222,255,'+(0.13*(1-d/125))+')';ctx.stroke();}
+   }
   }
-  const frameMat=new THREE.LineBasicMaterial({color:0x18516e,transparent:true,opacity:.46});
-  const bounds=new THREE.Box3(new THREE.Vector3(-1.12,-.28,-1.12),new THREE.Vector3(1.12,1.14,1.12));
-  const helper=new THREE.Box3Helper(bounds,0x26566c);helper.material=frameMat;staticGroup.add(helper);
-  renderer.domElement.addEventListener('pointerdown',e=>{pointerStart=[e.clientX,e.clientY];});
-  renderer.domElement.addEventListener('pointerup',e=>{if(!pointerStart)return;const delta=Math.hypot(e.clientX-pointerStart[0],e.clientY-pointerStart[1]);pointerStart=null;if(delta<8)pickNode(e);});
-  window.addEventListener('resize',resize3D);
-  renderer.setAnimationLoop((time,frame)=>{if(orbit&&!arSession)orbit.update();updateAR(frame);renderer.render(scene,camera);});
-  resize3D();
+  requestAnimationFrame(tick);
+ }
+ resize();addEventListener('resize',resize);requestAnimationFrame(tick);
+}
+let googleClientId='';
+async function initGoogleConfig(){
+ try{
+  const response=await fetch('./auth-config.json',{cache:'no-store'});if(!response.ok)return;
+  const value=await response.json();
+  if(typeof value.clientId==='string'&&value.clientId.endsWith('.apps.googleusercontent.com'))googleClientId=value.clientId;
+  if(googleClientId)el('googleNote').textContent='Google Identity listo para probar identificación visual; se requiere backend para verificar las credenciales y guardar progreso multidispositivo.';
+ }catch{}
+}
+function tryGoogleLogin(){
+ if(!googleClientId){notify('Para activar Google debes configurar el Client ID en auth-config.json.');return;}
+ if(!window.google?.accounts?.id){notify('No se cargó Google Identity Services.');return;}
+ window.google.accounts.id.initialize({client_id:googleClientId,callback:response=>{
+  // Este JWT se decodifica SOLO para mostrar nombre: NO reemplaza una verificación segura en servidor.
+  try{
+   const jwt=response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+   const bytes=Uint8Array.from(atob(jwt),c=>c.charCodeAt(0));
+   const data=JSON.parse(new TextDecoder().decode(bytes));
+   profile.name=String(data.name||data.given_name||'AGENTE').slice(0,30).toUpperCase();
+   saveProfile();notify('Nombre de Google cargado localmente. Todavía falta autenticación verificada en servidor.');
+  }catch{notify('No fue posible leer el perfil.');}
+ }});
+ window.google.accounts.id.prompt();
+}
+
+function initialize3D(){
+ if(renderer){resize3D();return;}
+ const viewport=el('viewport');scene=new THREE.Scene();scene.background=new THREE.Color(0x03121d);
+ camera=new THREE.PerspectiveCamera(55,1,.01,100);camera.position.set(2.85,3.15,4.1);
+ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.xr.enabled=true;viewport.appendChild(renderer.domElement);
+ orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.minDistance=1.5;orbit.maxDistance=12;orbit.target.set(0,.45,0);orbit.update();
+ scene.add(new THREE.HemisphereLight(0xffffff,0x18405b,2.2));
+ const light=new THREE.DirectionalLight(0x8ceeff,2.7);light.position.set(3,5,2);scene.add(light);
+ board=new THREE.Group();scene.add(board);staticGroup=new THREE.Group();linesGroup=new THREE.Group();triGroup=new THREE.Group();
+ board.add(staticGroup,triGroup,linesGroup);
+ renderer.domElement.addEventListener('pointerdown',e=>{pointerStart=[e.clientX,e.clientY];});
+ renderer.domElement.addEventListener('pointerup',e=>{if(!pointerStart)return;const delta=Math.hypot(e.clientX-pointerStart[0],e.clientY-pointerStart[1]);pointerStart=null;if(delta<9)pickNode(e);});
+ window.addEventListener('resize',resize3D);
+ renderer.setAnimationLoop((time,frame)=>{if(orbit&&!arSession)orbit.update();updateAR(frame);renderer.render(scene,camera);});
+ resize3D();
 }
 function resize3D(){if(!renderer||arSession)return;const rect=el('viewport').getBoundingClientRect();if(!rect.width||!rect.height)return;camera.aspect=rect.width/rect.height;camera.updateProjectionMatrix();renderer.setSize(rect.width,rect.height,false);}
 function clearGroup(gr){for(const o of [...gr.children]){gr.remove(o);o.traverse?.(m=>{if(m.isMesh){m.geometry?.dispose();if(Array.isArray(m.material))m.material.forEach(x=>x.dispose());else m.material?.dispose();}});}}
@@ -336,74 +378,106 @@ function lineMesh(a,b,color){
   return mesh;
 }
 function rebuildBoard(){
-  if(!game||!board)return;
-  clearGroup(linesGroup);clearGroup(triGroup);
-  for(const t of game.tris){
-    const geom=new THREE.BufferGeometry().setFromPoints([POINTS[t.a],POINTS[t.b],POINTS[t.c]]);
-    geom.setIndex([0,1,2]);geom.computeVertexNormals();
-    triGroup.add(new THREE.Mesh(geom,new THREE.MeshBasicMaterial({color:t.owner===0?0x00d7ff:0xff5c90,transparent:true,opacity:.16,side:THREE.DoubleSide,depthWrite:false})));
-  }
-  for(const l of game.lines)linesGroup.add(lineMesh(l.a,l.b,l.owner===0?0x23d9ff:0xff5e96));
+ if(!game||!board)return;
+ clearGroup(linesGroup);clearGroup(triGroup);clearGroup(staticGroup);
+ nodes=[];
+ // Base inferior holográfica: sin cubo envolvente, con guías al nivel del piso.
+ const ring=new THREE.Mesh(new THREE.RingGeometry(1.7,1.75,80),new THREE.MeshBasicMaterial({color:0x00ccff,transparent:true,opacity:.40,side:THREE.DoubleSide}));
+ ring.rotation.x=-Math.PI/2;staticGroup.add(ring);
+ const grid=new THREE.GridHelper(3.35,12,0x286985,0x164057);grid.position.y=0;staticGroup.add(grid);
+ const mat=new THREE.MeshStandardMaterial({color:0x68dcff,emissive:0x0c9cbc,emissiveIntensity:.55,metalness:.15,roughness:.3});
+ const geo=new THREE.SphereGeometry(.073,16,12);
+ for(let i=0;i<POINTS.length;i++){
+  const p=POINTS[i];
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,p.y,6),new THREE.MeshBasicMaterial({color:0x37bdd5,transparent:true,opacity:.42}));
+  post.position.set(p.x,p.y/2,p.z);staticGroup.add(post);
+  const node=new THREE.Mesh(geo,mat.clone());node.position.copy(p);node.userData.nodeId=i;staticGroup.add(node);nodes.push(node);
+ }
+ for(const t of game.tris){
+   const geom=new THREE.BufferGeometry().setFromPoints([POINTS[t.a],POINTS[t.b],POINTS[t.c]]);
+   geom.setIndex([0,1,2]);geom.computeVertexNormals();
+   const color=game.players?.[t.owner]?.color|| (t.owner===0?'#00eaff':'#ff2d7a');
+   triGroup.add(new THREE.Mesh(geom,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.25,side:THREE.DoubleSide,depthWrite:false})));
+   const center=POINTS[t.a].clone().add(POINTS[t.b]).add(POINTS[t.c]).multiplyScalar(1/3);center.y+=.10;
+   const badge=badgeSprite(game.players?.[t.owner]?.badge||'◆',color);badge.position.copy(center);triGroup.add(badge);
+ }
+ for(const l of game.lines){
+  const color=game.players?.[l.owner]?.color||(l.owner===0?'#00eaff':'#ff2d7a');
+  linesGroup.add(lineMesh(l.a,l.b,color));
+ }
 }
 function pickNode(e){
-  if(!game||game.status!=='play'||game.turn!==myPlayer||!game.rolled||!game.moves)return;
-  if(mode==='pvp'&&!connected)return;
-  const rect=renderer.domElement.getBoundingClientRect();
-  const mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-  raycaster.setFromCamera(mouse,camera);
-  const hits=raycaster.intersectObjects(nodes,false);if(!hits.length)return;
-  const id=hits[0].object.userData.nodeId;
-  if(selected===-1){selected=id;refresh();return;}
-  if(selected===id){selected=-1;refresh();return;}
-  const a=selected;selected=-1;
-  if(!validEdge(a,id,game)){notify('Enlace inválido: nodos alejados o conexión ya utilizada.');refresh();return;}
-  action('LINE',{a,b:id});refresh();
+ if(!game||game.status!=='play'||game.turn!==myPlayer||!game.rolled||!game.moves)return;
+ if(mode==='pvp'&&!connected)return;
+ const rect=renderer.domElement.getBoundingClientRect();
+ const mouse=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+ raycaster.setFromCamera(mouse,renderer.xr.isPresenting?renderer.xr.getCamera():camera);
+ const hits=raycaster.intersectObjects(nodes,false);if(!hits.length)return;
+ const id=hits[0].object.userData.nodeId;
+ if((game.blocked||[]).includes(id)){notify('Este punto ya está encerrado y no se puede usar.');return;}
+ if(selected===-1){selected=id;refresh();return;}
+ if(selected===id){selected=-1;refresh();return;}
+ const a=selected;selected=-1;
+ if(!validEdge(a,id,game)){notify(edgeError(a,id,game)||'No se puede construir esa línea.');refresh();return;}
+ action('LINE',{a,b:id});refresh();
 }
 function resetView(){
-  if(!camera||arSession){notify('Sal del modo AR para centrar la vista 3D.');return;}
-  camera.position.set(2.85,2.85,3.6);orbit.target.set(0,.42,0);orbit.update();
+ if(!camera||arSession){notify('En AR puedes ajustar el tamaño con ESCALA.');return;}
+ camera.position.set(2.85,3.15,4.1);orbit.target.set(0,.42,0);orbit.update();
 }
 function resetBoard(){
   board.position.set(0,0,0);board.quaternion.identity();board.scale.setScalar(1);
 }
 function updateAR(frame){
-  if(!frame||!arSession||!hitSource||arPlaced)return;
-  const hits=frame.getHitTestResults(hitSource);
-  if(!hits.length){reticle.visible=false;lastHit=null;return;}
-  const pose=hits[0].getPose(arSpace);
-  if(!pose){reticle.visible=false;lastHit=null;return;}
-  reticle.visible=true;reticle.matrix.fromArray(pose.transform.matrix);
-  lastHit=reticle.matrix.clone();
+ if(!frame||!arSession||!hitSource||arPlaced)return;
+ const hits=frame.getHitTestResults(hitSource);
+ if(!hits.length){reticle.visible=false;lastHit=null;return;}
+ const pose=hits[0].getPose(arSpace);
+ if(!pose){reticle.visible=false;lastHit=null;return;}
+ reticle.visible=true;reticle.matrix.fromArray(pose.transform.matrix);lastHit=reticle.matrix.clone();
 }
-async function startAR(){
-  if(!renderer||!game||arSession)return;
-  if(!navigator.xr){notify('Este navegador no ofrece WebXR AR. Continúa en 3D.');return;}
+async async function startAR(){
+ if(!renderer||!game||arSession)return;
+ if(!navigator.xr){notify('Este navegador no ofrece WebXR AR. Continúa en 3D.');return;}
+ try{
+  const session=await navigator.xr.requestSession('immersive-ar',{optionalFeatures:['hit-test','dom-overlay','local-floor','bounded-floor'],domOverlay:{root:document.body}});
+  arSession=session;arPlaced=false;lastHit=null;scene.background=null;orbit.enabled=false;
+  board.visible=false;document.body.classList.add('xr-active');el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
+  session.addEventListener('end',()=>{
+   arSession=null;arPlaced=false;lastHit=null;
+   if(hitSource){try{hitSource.cancel();}catch{}hitSource=null;}
+   scene.background=new THREE.Color(0x03121d);document.body.classList.remove('xr-active');
+   el('placeBtn').classList.add('hidden');el('exitArBtn').classList.add('hidden');el('arBtn').classList.remove('hidden');
+   if(reticle)reticle.visible=false;board.visible=true;resetBoard();orbit.enabled=true;resize3D();
+  });
+  if(!reticle){reticle=new THREE.Mesh(new THREE.RingGeometry(.065,.083,40).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0x00ffbb,side:THREE.DoubleSide}));reticle.matrixAutoUpdate=false;scene.add(reticle);}
+  reticle.visible=false;
+  // Corrección de referenceSpace: probar compatibilidad antes de pasar sesión a Three.js.
+  let spaceType=null;
+  for(const type of ['local','local-floor','viewer']){
+   try{arSpace=await session.requestReferenceSpace(type);spaceType=type;break;}catch{}
+  }
+  if(!spaceType)throw new Error('Ningún espacio de referencia AR compatible.');
+  renderer.xr.setReferenceSpaceType(spaceType);
+  await renderer.xr.setSession(session);
   try{
-    // DOM overlay obligatorio: evita iniciar AR si los controles no van a ser accesibles.
-    const session=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay'],domOverlay:{root:document.body}});
-    arSession=session;arPlaced=false;lastHit=null;scene.background=null;orbit.enabled=false;
-    board.visible=false;document.body.classList.add('xr-active');el('placeBtn').classList.remove('hidden');el('exitArBtn').classList.remove('hidden');el('arBtn').classList.add('hidden');
-    if(!reticle){
-      reticle=new THREE.Mesh(new THREE.RingGeometry(.065,.08,40).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0x00ffbb,side:THREE.DoubleSide}));
-      reticle.matrixAutoUpdate=false;scene.add(reticle);
-    }
-    reticle.visible=false;
-    session.addEventListener('end',()=>{arSession=null;arPlaced=false;lastHit=null;if(hitSource){hitSource.cancel();hitSource=null;}scene.background=new THREE.Color(0x061522);document.body.classList.remove('xr-active');el('placeBtn').classList.add('hidden');el('exitArBtn').classList.add('hidden');el('arBtn').classList.remove('hidden');if(reticle)reticle.visible=false;board.visible=true;resetBoard();orbit.enabled=true;resize3D();});
-    await renderer.xr.setSession(session);
-    arSpace=await session.requestReferenceSpace('local');
-    const viewer=await session.requestReferenceSpace('viewer');
-    hitSource=await session.requestHitTestSource({space:viewer});
-    notify('Mueve el celular hasta detectar una superficie y pulsa FIJAR.');
-  }catch(e){notify('AR no disponible: '+(e.message||'hardware no compatible'));if(arSession)arSession.end().catch(()=>{});}
+   const viewer=await session.requestReferenceSpace('viewer');
+   hitSource=await session.requestHitTestSource({space:viewer});
+   notify('Busca una superficie con la cámara y pulsa FIJAR TABLERO.');
+  }catch{
+   hitSource=null;board.visible=true;arPlaced=true;board.position.set(0,-.25,-1.2);board.scale.setScalar(.26);
+   el('placeBtn').classList.add('hidden');
+   notify('AR en modo holograma sin seguimiento de suelo. Puedes ajustar la escala; no es un ancla fija.');
+  }
+ }catch(e){notify('AR no disponible: '+(e.message||'equipo incompatible'));if(arSession)try{await arSession.end();}catch{}}
 }
 function placeAR(){
-  if(!arSession||!lastHit){notify('Todavía no se detecta una superficie. Mueve el teléfono lentamente.');return;}
-  const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();
-  lastHit.decompose(p,q,s);
-  board.position.copy(p);board.quaternion.copy(q);board.scale.setScalar(.28);
-  board.visible=true;arPlaced=true;if(reticle)reticle.visible=false;
-  el('placeBtn').classList.add('hidden');
-  notify('Tablero fijado localmente. Para coincidir en dos celulares ambos deben alinearlo manualmente; no es un ancla espacial compartida.');
+ if(!arSession||!lastHit){notify('Todavía no se detecta una superficie. Mueve el teléfono lentamente.');return;}
+ const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();lastHit.decompose(p,q,s);
+ board.position.copy(p);board.quaternion.copy(q);board.scale.setScalar(.26);
+ board.visible=true;arPlaced=true;if(reticle)reticle.visible=false;
+ el('placeBtn').classList.add('hidden');
+ notify('Tablero fijado localmente. Los dos móviles deben alinear la posición manualmente; aún no hay anclas compartidas.');
 }
 async function stopScanner(){
   el('scanner').classList.add('hidden');
