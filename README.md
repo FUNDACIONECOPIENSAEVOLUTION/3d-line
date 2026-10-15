@@ -1,8 +1,20 @@
-# 3 LINE-AR — V57.4.0 beta 7
+# 3 LINE-AR — V57.5.0 beta 8
 
 **Juega en:** https://fundacionecopiensaevolution.github.io/3d-line/
 
 Juego 3D táctico por turnos para computador y celular, con sala privada WebRTC por código o QR, IA rival y realidad aumentada experimental.
+
+## V57.5: colisiones tridimensionales, recuperación tras bloqueo y mensajes de videojuego
+
+El juego **ya no usa solo la sombra XZ** para decidir qué conexiones atraviesan zonas. Calcula las intersecciones geométricas en los tres ejes (X,Y,Z).
+
+- Un punto situado por encima o debajo de una cara triangular abierta **permanece libre**. Una única cara conquistada no equivale a una caja ni bloquea automáticamente todos los puntos bajo su proyección.
+- Una conexión no puede atravesar físicamente otra línea ni una cara triangular conquistada en 3D; una conexión que cruza su proyección en otra altura sí puede pasar si no existe contacto real.
+- Solo se considera encerrado un nodo situado dentro de un **volumen de caras triangulares completamente cerrado**. El motor exige un grupo de al menos cuatro caras, con cada arista compartida por exactamente dos caras, e interior comprobado por tres rayos 3D. Esta comprobación geométrica es apropiada para envolventes cerradas simples; aún deben probarse mallas auto-intersecadas o topologías complejas.
+- El anfitrión sigue teniendo autoridad sobre jugadas y snapshots. El cliente del celular pide un `SYNC_REQUEST` al regresar de segundo plano y, si no hay respuesta, intenta reconectarse a la **misma sala y partida**, sin borrar el tablero anterior. Esto mitiga la pérdida de conexiones al bloquear el teléfono; si el sistema finaliza toda la pestaña no se garantiza la recuperación automática.
+- Los avisos del juego siguen el estilo neón; las confirmaciones para salir y cerrar sesión utilizan una ventana propia. Si no hay permiso para copiar, el enlace aparece en un cuadro gamer con texto seleccionable.
+
+**Cómo comprobar:** abre PvP entre PC y celular, construye 1 o 2 líneas, bloquea/desbloquea el móvil y comprueba que tras regresar aparezcan TODAS las jugadas del anfitrión. En AR, intenta conectar un punto elevado con uno libre sin atravesar la cara, y confirma que un nodo se bloquea solamente con una envolvente 3D sellada. Los cambios todavía requieren validación física sobre los dispositivos.
 
 ## V57.4: dos métodos de selección AR y barreras de líneas y territorios
 
@@ -87,7 +99,7 @@ La publicidad H5 Games Ads necesita aprobación e ID auténtico. No se habilitar
 
 ## Calidad, versión y despliegue
 
-- La versión en cabecera es **V57.4.0** y la versión interna es **57.4.0-beta.1**.
+- La versión en cabecera es **V57.5.0** y la versión interna es **57.5.0-beta.1**.
 - Cada cambio debe actualizar `version.json`, `CHANGELOG.md` y las etiquetas de recursos del HTML.
 - Las pruebas automáticas de CI están en `tests/static.test.mjs`, `tests/rules.test.mjs`, `tests/tutorial.test.mjs` y `tests/ar-picking.test.mjs`.
 - `.github/workflows/pages.yml` prepara GitHub Pages. El estado del despliegue se consulta en la pestaña Actions.
