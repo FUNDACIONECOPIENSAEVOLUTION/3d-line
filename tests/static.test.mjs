@@ -20,7 +20,7 @@ test('todos los IDs usados mediante el(id) existen en index',()=>{
   for(const id of new Set(refs))assert.match(html,new RegExp('id="'+id+'"'),id);
 });
 test('controles PvP, QR, 3D, CPU y AR están presentes',()=>{
-  for(const id of ['createBtn','joinCode','joinBtn','scanBtn','cpuBtn','viewport','diceBtn','arBtn','placeBtn','roomCode'])assert.ok(html.includes('id="'+id+'"'),id);
+  for(const id of ['createBtn','joinCode','joinBtn','scanBtn','cpuBtn','viewport','diceBtn','arBtn','placeBtn','roomCode','diagnoseBtn','diagCopyBtn','diagResults'])assert.ok(html.includes('id="'+id+'"'),id);
   for(const term of ["'HELLO'","'ACTION'","'STATE'","foundTriangles","validEdge","requestHitTestSource","new Peer"])assert.ok(js.includes(term),term);
 });
 test('no anuncia ingresos simulados ni concede monedas sin evento adViewed',()=>{
@@ -33,4 +33,12 @@ test('los estilos CSS se incluyeron y hay indicadores de pantalla',()=>{
   assert.match(css,/\.menu\{/);
   assert.match(css,/\.arena\{/);
   assert.match(css,/\.hidden\{/);
+});
+
+test('el diagnóstico comprueba las API sin pedir cámara por adelantado',()=>{
+  assert.match(js,/async function showDiagnostics/);
+  assert.match(js,/isSessionSupported\('immersive-ar'\)/);
+  assert.match(js,/typeof RTCPeerConnection/);
+  assert.match(js,/navigator\.mediaDevices\?\.getUserMedia/);
+  assert.match(js,/diagnosticText/);
 });
