@@ -1,5 +1,12 @@
 # Registro de versiones — 3 LINE-AR
 
+## Infraestructura Firebase Hosting para AdMob — 2026-10-15 (sin cambio jugable)
+
+- Preparada configuración Firebase Hosting clásico y página de desarrollador en carpeta independiente `firebase-admob-site/`, para el proyecto existente `d-line-g`, sin dominio adquirido.
+- Añadido script PowerShell con diagnóstico y confirmación antes de despliegue y generación del archivo `app-ads.txt` **únicamente con Publisher ID real**.
+- No se desplegó a Firebase, no se modificó Authentication ni Firestore y no se publicaron anuncios ni IDs ficticios.
+- Nueva guía `docs/FIREBASE_HOSTING_ADMOB.md` y test de configuración. Se conserva la V57.8 del juego en GitHub Pages.
+
 ## 57.8.0-beta.1 — 2026-10-15
 
 - Nuevo selector previo a la partida con **MODO GALÁCTICO** (dado 1–6, modo original) y **MODO ASCENSO** (1, 2, 3… conexiones en el turno propio de cada jugador, sin azar).
