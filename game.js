@@ -37,7 +37,7 @@ function enterAccount(account){
   profile=readProfile(saved?key:localGuest?'3line57_profile':key);
   profile.name=account.provider==='google'?String(account.name||'AGENTE').toUpperCase().slice(0,30):profile.name||'INVITADO';
   if(!['#00eaff','#ff2d7a','#50ff65','#ffd231','#b35aff'].includes(profile.color))profile.color='#00eaff';
-  if(!['◆','⚡','★','✦','☣'].includes(profile.badge))profile.badge='◆';
+  if(!PLAYER_BADGES.includes(profile.badge))profile.badge='◆';
   unlockedLevel=Math.max(1,Math.min(10,Number(localStorage.getItem('3line57_unlocked_'+account.uid))||1));
   profile.level=unlockedLevel;selectedLevel=unlockedLevel;
   localStorage.setItem(key,JSON.stringify(profile));
@@ -117,6 +117,7 @@ function levelPoints(level,seed){
  }
  return pts;
 }
+const PLAYER_BADGES=['◆','⚡','★','✦','☣','🛡','👑','🐉','🦅','🤖','👾','🔥','❄','⚔','☯','♜'];
 function profilePacket(){return {name:String(profile.name).slice(0,30),color:profile.color,badge:profile.badge};}
 function saveProfile(){try{localStorage.setItem(accountProfileKey(currentAccount?.uid||'local-guest'),JSON.stringify(profile));}catch{} renderProfile();}
 function renderProfile(){
@@ -195,6 +196,12 @@ function edgeError(a,b,s){
  // La distancia no limita el juego; únicamente las zonas coloreadas impiden cruzar.
  const A=xy(a),B=xy(b);
  for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&nearSegment(xy(i),A,B)<.075)return 'La línea atraviesa otro nodo.';
+ // Una conexión existente también es una barrera, aunque aún no cierre una zona.
+ // Los segmentos con extremos comunes pueden salir del mismo nodo sin bloquearse.
+ for(const line of s.lines){
+  if(a===line.a||a===line.b||b===line.a||b===line.b)continue;
+  if(segmentsCross(A,B,xy(line.a),xy(line.b)))return 'No puedes cruzar una línea ya colocada.';
+ }
  for(const triangle of s.tris)if(crossesOwnedTriangle(a,b,triangle))return 'No puedes atravesar un triángulo ya conquistado.';
  return null;
 }
@@ -377,7 +384,7 @@ function hostConnection(c){
     if(!game)game=newState();
     if(m.profile&&typeof m.profile==='object'){
       const p=m.profile;
-      game.players[1]={name:String(p.name||'RIVAL').slice(0,30),color:/^#[0-9a-fA-F]{6}$/.test(p.color)?p.color:'#ff2d7a',badge:['◆','⚡','★','✦','☣'].includes(p.badge)?p.badge:'★'};
+      game.players[1]={name:String(p.name||'RIVAL').slice(0,30),color:/^#[0-9a-fA-F]{6}$/.test(p.color)?p.color:'#ff2d7a',badge:PLAYER_BADGES.includes(p.badge)?p.badge:'★'};
     }
     setState(game);broadcast();
   }else if(m.type==='ACTION'&&connected&&game&&game.status==='play'){
@@ -431,7 +438,7 @@ function badgeSprite(badge,color){
  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
  const ctx=canvas.getContext('2d');ctx.fillStyle='#081c30';ctx.beginPath();ctx.arc(64,64,43,0,Math.PI*2);ctx.fill();
  ctx.strokeStyle=color;ctx.lineWidth=5;ctx.stroke();
- ctx.fillStyle=color;ctx.font='bold 56px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(badge,64,66);
+ ctx.fillStyle=color;ctx.font='bold 54px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(badge,64,66);
  const texture=new THREE.CanvasTexture(canvas),mat=new THREE.SpriteMaterial({map:texture,transparent:true});
  const spr=new THREE.Sprite(mat);spr.scale.set(.42,.42,1);return spr;
 }
