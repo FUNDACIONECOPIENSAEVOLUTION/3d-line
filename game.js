@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.6.1';
+import {initializeAccountAuth, loginGoogle, loginGuest, logoutFirebase, authAvailable} from './auth.js?v=57.7.0';
+import {FREE_BADGES,BADGE_ORDER,badgeCost,initialRewards,normalizeRewards,isBadgeUnlocked,badgeProgress,applyCompletedBadgeVideo,rewardsStorageKey} from './rewards.js?v=57.7.0';
+import {RewardedVideoProvider} from './ads-rewarded.js?v=57.7.0';
 
 // v57.4.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='57.6.1-beta.1';
+const VERSION='57.7.0-beta.1';
 const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
@@ -40,6 +42,7 @@ function enterAccount(account){
   if(!PLAYER_BADGES.includes(profile.badge))profile.badge='◆';
   unlockedLevel=Math.max(1,Math.min(10,Number(localStorage.getItem('3line57_unlocked_'+account.uid))||1));
   profile.level=unlockedLevel;selectedLevel=unlockedLevel;
+  loadCosmetics();
   localStorage.setItem(key,JSON.stringify(profile));
   el('loginGate').classList.add('hidden');el('app').classList.remove('auth-locked');
   el('googleNote').textContent=account.provider==='google'?
@@ -117,14 +120,79 @@ function levelPoints(level,seed){
  }
  return pts;
 }
-const PLAYER_BADGES=['◆','⚡','★','✦','☣','🛡','👑','🐉','🦅','🤖','👾','🔥','❄','⚔','☯','♜'];
+const PLAYER_BADGES=BADGE_ORDER;
 function profilePacket(){return {name:String(profile.name).slice(0,30),color:profile.color,badge:profile.badge};}
-function saveProfile(){try{localStorage.setItem(accountProfileKey(currentAccount?.uid||'local-guest'),JSON.stringify(profile));}catch{} renderProfile();}
+// Recompensas SOLO cosméticas guardadas por UID en navegador (BETA).
+// No son una economía antifraude: Firestore + validación backend quedan pendientes.
+let cosmeticRewards=initialRewards();
+const rewardedAds=new RewardedVideoProvider(window,document,fetch);
+let badgeRewardBusy=false;
+function loadCosmetics(){
+ const uid=currentAccount?.uid||'local-guest';
+ try{cosmeticRewards=normalizeRewards(JSON.parse(localStorage.getItem(rewardsStorageKey(uid))||'{}'));}
+ catch{cosmeticRewards=initialRewards();}
+ if(!isBadgeUnlocked(profile.badge,cosmeticRewards))profile.badge='◆';
+}
+function saveCosmetics(){
+ if(!currentAccount)return;
+ try{localStorage.setItem(rewardsStorageKey(currentAccount.uid),JSON.stringify(cosmeticRewards));}catch{}
+}
+function saveProfile(){
+ try{localStorage.setItem(accountProfileKey(currentAccount?.uid||'local-guest'),JSON.stringify(profile));}catch{}
+ renderProfile();
+}
 function renderProfile(){
- for(const [id,val] of [['profileName',profile.name],['profileAvatar',profile.badge],['rankLevel',profile.level],['eloValue',profile.elo]]){const elem=document.getElementById(id);if(elem)elem.textContent=val;}
+ for(const [id,val] of [['profileName',profile.name],['profileAvatar',profile.badge],['rankLevel',profile.level],['eloValue',profile.elo]]){
+  const elem=document.getElementById(id);if(elem)elem.textContent=val;
+ }
  const a=document.getElementById('profileAvatar');if(a)a.style.color=profile.color;
  document.querySelectorAll('#colors [data-color]').forEach(x=>x.classList.toggle('current',x.dataset.color===profile.color));
- document.querySelectorAll('#badges [data-badge]').forEach(x=>x.classList.toggle('current',x.dataset.badge===profile.badge));
+ document.querySelectorAll('#badges [data-badge]').forEach(x=>{
+  const badge=x.dataset.badge,progress=badgeProgress(badge,cosmeticRewards);
+  const locked=!progress.unlocked;
+  x.classList.toggle('current',badge===profile.badge);
+  x.classList.toggle('locked-badge',locked);
+  x.setAttribute('aria-pressed',String(badge===profile.badge));
+  x.setAttribute('aria-label',locked?
+   'Insignia '+(x.title||badge)+' bloqueada, '+progress.completed+' de '+progress.required+' videos':
+   'Insignia '+(x.title||badge)+' disponible');
+  x.title=locked?
+   (badge+' · 🔒 '+progress.completed+'/'+progress.required+' videos completados'):
+   (badge+' · DESBLOQUEADA');
+ });
+ const unlocked=cosmeticRewards.unlocked.length;
+ const note=el('badgeProgressNote');
+ note.textContent='5 insignias gratuitas · '+unlocked+'/11 especiales desbloqueadas. '+
+  (rewardedAds.enabled?'Elige una insignia 🔒 para ver un video voluntario.':'Videos pendientes de aprobación de Google H5 Games Ads.');
+}
+async function chooseBadge(badge){
+ if(!PLAYER_BADGES.includes(badge)||!currentAccount)return;
+ if(isBadgeUnlocked(badge,cosmeticRewards)){
+  profile.badge=badge;saveProfile();notify('Insignia '+badge+' equipada.');return;
+ }
+ const p=badgeProgress(badge,cosmeticRewards);
+ if(badgeRewardBusy){notify('Ya hay un video en proceso.');return;}
+ if(!rewardedAds.enabled){
+  await showGameDialog({title:'INSIGNIA BLOQUEADA 🔒',
+   message:badge+' requiere '+p.required+' videos completos ('+p.completed+'/'+p.required+
+   '). Los videos reales se habilitarán cuando Google apruebe el juego y configuremos el ID publicitario.',
+   accept:'ENTENDIDO',cancel:null});
+  return;
+ }
+ const agreed=await showGameDialog({title:'DESBLOQUEAR '+badge,
+  message:'Progreso: '+p.completed+'/'+p.required+' videos. ¿Quieres ver voluntariamente un video recompensado? Solo se cuenta al terminarlo.',
+  accept:'VER VIDEO',cancel:'AHORA NO'});
+ if(!agreed)return;
+ badgeRewardBusy=true;
+ try{
+  const outcome=await rewardedAds.watch('badge-'+PLAYER_BADGES.indexOf(badge));
+  if(!outcome.viewed){notify('No se completó ningún anuncio. Tu progreso no cambia.');return;}
+  cosmeticRewards=applyCompletedBadgeVideo(badge,cosmeticRewards);
+  saveCosmetics();renderProfile();
+  const status=badgeProgress(badge,cosmeticRewards);
+  if(status.unlocked){profile.badge=badge;saveProfile();notify('¡Insignia '+badge+' desbloqueada y equipada!');}
+  else notify('Video completado: '+status.completed+'/'+status.required+' para '+badge+'.');
+ }finally{badgeRewardBusy=false;}
 }
 function renderLevels(){
  const grid=el('levelGrid');if(!grid)return;grid.replaceChildren();
@@ -680,6 +748,12 @@ function finishGame(){
   '¡Nivel '+Math.min(10,game.level+1)+' desbloqueado! El anuncio se mostrará entre niveles cuando la cuenta publicitaria esté aprobada.'):
   (game.winner===-1?'Empate: practica de nuevo.':'Puedes repetir el nivel para mejorarlo.');
  el('continueBtn').classList.toggle('hidden',!solo||!didWin||game.level>=10);
+ el('restartLevelBtn').classList.toggle('hidden',!solo);
+ el('restartLevelBtn').textContent=rewardedAds.enabled?'🎬 VER VIDEO Y REINICIAR':'↻ REINTENTAR NIVEL (BETA)';
+ el('restartAdHint').classList.toggle('hidden',!solo);
+ el('restartAdHint').textContent=rewardedAds.enabled?
+  'El video es voluntario. También puedes volver al menú y repetir gratis.':
+  'Todavía no hay videos publicitarios aprobados: puedes repetir directamente durante las pruebas.';
  screen('results');
  if(won)requestLevelInterstitial();
 }
@@ -1110,27 +1184,53 @@ function animateGalacticDice(){
  dice.classList.remove('is-rolling');void dice.offsetWidth;dice.classList.add('is-rolling');
  setTimeout(()=>dice.classList.remove('is-rolling'),740);
 }
-function setAds(){
-  // Activar solamente tras obtener la aprobación de Google H5 Games Ads.
-  // Modificar en este archivo con un ID real: ca-pub-XXXXXXXXXXXXXXXX (16 dígitos).
-  const PUBLISHER_ID='';
-  const btn=el('rewardBtn');
-  if(!/^ca-pub-\d{16}$/.test(PUBLISHER_ID))return;
-  h5AdsEnabled=true;
-  const script=document.createElement('script');script.async=true;script.crossOrigin='anonymous';
-  script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+PUBLISHER_ID;
-  document.head.appendChild(script);
-  window.adsbygoogle=window.adsbygoogle||[];
-  window.adBreak=window.adConfig=o=>window.adsbygoogle.push(o);
-  window.adConfig({preloadAdBreaks:'on',sound:'on'});
-  btn.disabled=false;btn.textContent='VER ANUNCIO (+20 MONEDAS)';
-  btn.addEventListener('click',()=>{
-    if(typeof window.adBreak!=='function')return;
-    window.adBreak({type:'reward',name:'3line-coins',beforeReward:showAd=>showAd(),
-      adViewed:()=>{const coins=Number(localStorage.getItem('3line56_coins')||0)+20;localStorage.setItem('3line56_coins',String(coins));el('coins').textContent=coins;notify('¡20 monedas obtenidas por el anuncio!');},
-      adDismissed:()=>notify('Anuncio cerrado; no se otorgan monedas.'),adBreakDone:()=>{}});
-  });
+async function setAds(){
+ const btn=el('rewardBtn');
+ btn.disabled=true;
+ btn.textContent='VIDEOS RECOMPENSADOS PENDIENTES';
+ const ready=await rewardedAds.init();
+ h5AdsEnabled=ready;
+ if(!ready){renderProfile();return;}
+ btn.disabled=false;
+ btn.textContent='VER VIDEO VOLUNTARIO (+20 MONEDAS)';
+ renderProfile();
 }
+async function earnCoinReward(){
+ if(!rewardedAds.enabled)return;
+ const agreed=await showGameDialog({title:'BONO DE 20 MONEDAS',
+  message:'¿Quieres ver un anuncio recompensado voluntario? Solo recibirás monedas cuando el video termine.',
+  accept:'VER VIDEO',cancel:'CANCELAR'});
+ if(!agreed)return;
+ const result=await rewardedAds.watch('coins');
+ if(!result.viewed){notify('No hubo video completado. No se otorgaron monedas.');return;}
+ profile.coins=(Number(profile.coins)||0)+20;
+ saveProfile();el('coins').textContent=profile.coins;
+ notify('¡20 monedas cosméticas añadidas!');
+}
+function retryCurrentSoloRound(){
+ if(!game||!['cpu','tutorial'].includes(mode)||!currentAccount)return;
+ const level=game.level,teach=mode==='tutorial';
+ cleanup();
+ tutorial=teach;selectedLevel=level;mode=teach?'tutorial':'cpu';
+ host=true;connected=true;myPlayer=0;
+ networkStatus(teach?'TUTORIAL':'MODO CPU',true);
+ setState(newState());scheduleCpu();
+}
+async function restartLevelWithReward(){
+ if(!game||!['cpu','tutorial'].includes(mode))return;
+ if(!rewardedAds.enabled){
+  // Beta sin publicidad: el usuario SIEMPRE puede continuar jugando.
+  retryCurrentSoloRound();notify('Nivel reiniciado gratuitamente (beta sin anuncios).');return;
+ }
+ const agreed=await showGameDialog({title:'REINTENTAR NIVEL',
+  message:'Puedes regresar al menú y repetir gratuitamente, o ver voluntariamente un video para reiniciar directamente aquí.',
+  accept:'VER VIDEO Y REINICIAR',cancel:'CANCELAR'});
+ if(!agreed)return;
+ const result=await rewardedAds.watch('retry-level');
+ if(result.viewed){retryCurrentSoloRound();notify('¡Reintento habilitado!');}
+ else notify('No hubo video completado. Puedes volver al menú para repetir gratis.');
+}
+
 // Diagnóstico local (no solicita permisos ni comunica datos a la red).
 let diagnosticText='';
 async function showDiagnostics(){
@@ -1246,6 +1346,7 @@ function bind(){
  el('leaveBtn').addEventListener('click',async()=>{if(!await gameConfirm('Abandonar la sala finalizará tu participación. ¿Quieres salir?','ABANDONAR PARTIDA'))return;action('SURRENDER');home();});
  el('homeBtn').addEventListener('click',home);
  el('continueBtn').addEventListener('click',continueToNextLevel);
+ el('restartLevelBtn').addEventListener('click',restartLevelWithReward);
  el('resetViewBtn').addEventListener('click',resetView);
  el('arBtn').addEventListener('click',startAR);
  el('arTouchModeBtn').addEventListener('click',()=>setARSelectionMode('touch'));
@@ -1256,12 +1357,13 @@ function bind(){
  el('scaleUpBtn').addEventListener('click',()=>scaleBoard(1.15));
  el('exitArBtn').addEventListener('click',()=>arSession?.end().catch(()=>{}));
  el('colors').addEventListener('click',e=>{const b=e.target.closest('[data-color]');if(b){profile.color=b.dataset.color;saveProfile();}});
- el('badges').addEventListener('click',e=>{const b=e.target.closest('[data-badge]');if(b){profile.badge=b.dataset.badge;saveProfile();}});
+ el('badges').addEventListener('click',e=>{const b=e.target.closest('[data-badge]');if(b)chooseBadge(b.dataset.badge);});
  el('googleBtn').addEventListener('click',loginGoogleFlow);
  el('guestBtn').addEventListener('click',loginGuestFlow);
  el('levelsBtn').addEventListener('click',()=>el('levelPanel').classList.toggle('hidden'));
  el('inviteBtn').addEventListener('click',()=>copyText(location.origin+location.pathname));
  el('coins').textContent=Number(profile.coins||0);
+ el('rewardBtn').addEventListener('click',earnCoinReward);
  setAds();screen('menu');networkStatus('SIN CONECTAR');
  renderProfile();renderLevels();initBackground();enablePinchScale();beginLogin();
  el('signGoogleBtn').addEventListener('click',loginGoogleFlow);
