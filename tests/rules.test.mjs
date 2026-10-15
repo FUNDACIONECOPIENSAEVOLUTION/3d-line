@@ -40,7 +40,7 @@ test('triángulo encierra nodos interiores pero no sus vértices',()=>{
  assert.equal(JSON.stringify(api.blockedNodes(s)),JSON.stringify([3]));
 });
 test('impide atravesar una línea existente y reutilizar nodos encerrados',()=>{
- api.setPoints([[0,0,0],[2,0,2],[0,0,2],[2,0,0]]);
+ api.setPoints([[0,0,0],[1,0,1],[0,0,1],[1,0,0]]);
  let s={lines:[{a:0,b:1}],tris:[],blocked:[],level:10};
  assert.match(api.edgeError(2,3,s),/pared o línea/);
  s={lines:[],tris:[],blocked:[0],level:10};
