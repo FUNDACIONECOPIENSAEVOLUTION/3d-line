@@ -15,7 +15,7 @@ class Vector3{
  constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;}
  distanceTo(b){return Math.hypot(this.x-b.x,this.y-b.y,this.z-b.z);}
 }
-const context={THREE:{Vector3},localStorage:{getItem:()=>null,setItem:()=>{}},document:{},console};
+const context={THREE:{Vector3},localStorage:{getItem:()=>null,setItem:()=>{}},document:{},console,BADGE_ORDER:['◆','⚡','★','✦','☣','🛡','👑','🐉','🦅','🤖','👾','🔥','❄','⚔','☯','♜']};
 vm.runInNewContext(minimal,context);
 const api=context.testAPI;
 
