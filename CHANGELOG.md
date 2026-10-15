@@ -1,5 +1,15 @@
 # Registro de versiones — 3 LINE-AR
 
+## 57.1.0-beta.1 — 2026-10-15
+
+- Recuperado el acceso previo al menú de la edición V51.2, con Google Firebase Auth, invitado anónimo y persistencia de sesión mediante `browserLocalPersistence`. El acceso sigue en modo invitado local cuando Firebase falla, con aviso explícito.
+- Recuperados del diseño V51.2 el dado galáctico animado centrado entre los dos marcadores y la barra vertical de escala AR. Añadido gesto de pinza para escalar con dos dedos.
+- Corregido el tutorial: jugador 2 es el BOT, que lanza el dado, dibuja una conexión y devuelve el turno. Además, se termina el turno cuando no quedan enlaces válidos aunque sobren movimientos del dado.
+- Ocultada la selección abierta de los diez niveles: solo se ve el nivel desbloqueado actual; al ganar contra BOT se habilita el siguiente y se conserva por perfil local.
+- Colocado un punto de inserción de anuncios H5 tipo `next` al finalizar un nivel, únicamente si hay proveedor aprobado y ID real. Si no hay anuncio, la beta no bloquea avanzar ni finge publicidad.
+- La configuración Firebase pública corresponde a la versión V51.2; hace falta autorizar el dominio nuevo `fundacionecopiensaevolution.github.io` y verificar en los dispositivos que Google sign-in está permitido. No se importó ni habilitó Firestore del código anterior ni se presupone sincronización de progreso entre dispositivos.
+- Siguen pendientes anclas AR compartidas y pruebas de uso real con dos celulares.
+
 ## 57.0.0-beta.1 — 2026-10-15
 
 - Se reconstruyó el menú retro-cyber en azul, verde, rosa y dorado, basado en el estilo V51.4 mostrado por el usuario.
