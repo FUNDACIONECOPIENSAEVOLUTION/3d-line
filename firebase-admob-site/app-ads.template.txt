@@ -1,0 +1,3 @@
+# PLANTILLA, NO PUBLICAR. Sustituir por el ID REAL de editor AdMob.
+# El archivo operativo se genera en public/app-ads.txt SOLO tras obtener el ID:
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
