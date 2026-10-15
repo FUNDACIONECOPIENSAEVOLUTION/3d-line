@@ -1,17 +1,95 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// v56.1.0-beta.2 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
+// v57.0.0-beta.1 | un único estado de reglas para CPU, PvP WebRTC, 3D y WebXR.
 // PeerJS usa su señalización pública: funcional para pruebas, NO es un backend SLA.
 // El punto AR de cada dispositivo es LOCAL: QR de sala no comparte coordenadas físicas.
-const VERSION='56.1.0-beta.2';
-const PEER_PREFIX='3line-beta56-';
+const VERSION='57.0.0-beta.1';
+const PEER_PREFIX='3line-beta57-';
 const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_TURNS=18;
-const MAX_LINK=1.24;
-const POINTS=[];
-for(let layer=0;layer<2;layer++)for(let row=-1;row<=1;row++)for(let col=-1;col<=1;col++){
-  POINTS.push(new THREE.Vector3(col*.84,layer*.84,row*.84));
+const MAX_LINK=2.5;
+// Niveles jugables: 1-4 composición guiada, 5-10 disposición por semilla del anfitrión.
+const LEVELS=[
+ {level:1,count:5,random:false,range:1.9},{level:2,count:6,random:false,range:1.9},
+ {level:3,count:7,random:false,range:1.95},{level:4,count:9,random:false,range:2.1},
+ {level:5,count:9,random:true,range:2.15},{level:6,count:12,random:true,range:2.2},
+ {level:7,count:16,random:true,range:2.25},{level:8,count:20,random:true,range:2.35},
+ {level:9,count:25,random:true,range:2.4},{level:10,count:30,random:true,range:2.5}
+];
+const DEFAULT_PROFILE={name:'INVITADO',color:'#00eaff',badge:'◆',level:1,elo:1000,coins:0};
+function readProfile(){try{return {...DEFAULT_PROFILE,...JSON.parse(localStorage.getItem('3line57_profile')||'{}')}}catch{return {...DEFAULT_PROFILE}}}
+let profile=readProfile(),selectedLevel=Math.min(10,Math.max(1,profile.level||1)),tutorial=false,awardRecorded=false;
+let POINTS=[]; // Escena y reglas comparten los puntos enviados por anfitrión.
+const seedRandom=seed=>{let x=seed>>>0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;}};
+function levelPoints(level,seed){
+ const l=LEVELS[level-1]||LEVELS[0],pts=[];
+ if(level===1)return [[-.85,.15,.25],[0,.75,-.28],[.85,.15,.25],[.1,1.05,.65],[-.05,.2,.85]];
+ if(level===2)return [[-.88,.12,-.6],[0,.75,-.75],[.88,.14,-.6],[-.88,.13,.65],[0,.9,.5],[.88,.13,.65]];
+ if(level===3)return [[-.9,.15,-.8],[0,.65,-.8],[.9,.12,-.8],[-.9,.15,.8],[0,.95,.8],[.9,.15,.8],[0,.45,0]];
+ if(level===4){for(let z=-1;z<=1;z++)for(let x=-1;x<=1;x++)pts.push([x*.82,.2+((x+z+4)%3)*.34,z*.82]);return pts;}
+ const rng=seedRandom(seed),side=level>8?1.7:level>6?1.5:1.15;
+ let attempts=0;while(pts.length<l.count&&attempts++<5000){
+  const p=[(rng()*2-1)*side,.12+rng()*.95,(rng()*2-1)*side];
+  if(pts.every(q=>Math.hypot(q[0]-p[0],q[2]-p[2])>.42))pts.push(p);
+ }
+ return pts;
+}
+function profilePacket(){return {name:String(profile.name).slice(0,30),color:profile.color,badge:profile.badge};}
+function saveProfile(){try{localStorage.setItem('3line57_profile',JSON.stringify(profile));}catch{} renderProfile();}
+function renderProfile(){
+ for(const [id,val] of [['profileName',profile.name],['profileAvatar',profile.badge],['rankLevel',profile.level],['eloValue',profile.elo]]){const elem=document.getElementById(id);if(elem)elem.textContent=val;}
+ const a=document.getElementById('profileAvatar');if(a)a.style.color=profile.color;
+ document.querySelectorAll('#colors [data-color]').forEach(x=>x.classList.toggle('current',x.dataset.color===profile.color));
+ document.querySelectorAll('#badges [data-badge]').forEach(x=>x.classList.toggle('current',x.dataset.badge===profile.badge));
+}
+function renderLevels(){
+ const grid=document.getElementById('levelGrid');if(!grid)return;grid.replaceChildren();
+ LEVELS.forEach(l=>{const b=document.createElement('button');b.textContent=l.level;b.className=l.level===selectedLevel?'active':'';
+ b.title=l.count+' nodos'+(l.random?' aleatorios':' guiados');
+ b.onclick=()=>{selectedLevel=l.level;renderLevels();document.getElementById('levelDescription').textContent='Nivel '+l.level+' · '+l.count+' puntos · '+(l.random?'posiciones aleatorias':'posiciones guiadas')+' · VS CPU o PvP';};
+ grid.appendChild(b);});
+}
+function tutorials(){
+ const h=document.getElementById('tutorialHint');if(!h)return;
+ h.classList.toggle('hidden',!tutorial||!game||game.status!=='play');
+ if(!tutorial||!game)return;
+ h.textContent=!game.rolled?'PASO 1 · Pulsa el dado luminoso de arriba.':selected<0?'PASO 2 · Toca un nodo. A continuación toca otro para construir una línea.':'PASO 3 · Escoge un segundo nodo. Cierra tres líneas para formar tu primer triángulo.';
+}
+function awardResult(){
+ if(!game||game.status!=='end'||awardRecorded||game.winner!==0||mode==='pvp'&&!host)return;
+ awardRecorded=true;profile.elo+=12;profile.coins+=15;profile.level=Math.max(profile.level,Math.min(10,(game.level||1)+1));saveProfile();
+}
+function xy(i){return {x:POINTS[i].x,y:POINTS[i].z};}
+function area(a,b,c){return (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);}
+function pointInsideTriangle(p,a,b,c){
+ const v1=area(a,b,p),v2=area(b,c,p),v3=area(c,a,p);
+ return (v1>1e-5&&v2>1e-5&&v3>1e-5)||(v1< -1e-5&&v2< -1e-5&&v3< -1e-5);
+}
+function blockedNodes(s){
+ const blocked=new Set();
+ for(const t of s.tris){const a=xy(t.a),b=xy(t.b),c=xy(t.c);
+ for(let i=0;i<POINTS.length;i++)if(![t.a,t.b,t.c].includes(i)&&pointInsideTriangle(xy(i),a,b,c))blocked.add(i);}
+ return [...blocked];
+}
+function segmentsCross(a,b,c,d){
+ const A=area(a,b,c),B=area(a,b,d),C=area(c,d,a),D=area(c,d,b);
+ return ((A>1e-6&&B< -1e-6)||(A< -1e-6&&B>1e-6))&&((C>1e-6&&D< -1e-6)||(C< -1e-6&&D>1e-6));
+}
+function nearSegment(p,a,b){
+ const dx=b.x-a.x,dy=b.y-a.y;
+ const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+ return Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t);
+}
+function edgeError(a,b,s){
+ if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=POINTS.length||b>=POINTS.length||a===b)return 'Puntos inválidos.';
+ if((s.blocked||[]).includes(a)||(s.blocked||[]).includes(b))return 'Ese nodo quedó dentro de una zona cerrada.';
+ if(s.lines.some(x=>linkKey(x.a,x.b)===linkKey(a,b)))return 'Esta línea ya existe.';
+ if(distance(a,b)>(LEVELS[(s.level||1)-1]?.range||2))return 'Conexión demasiado larga.';
+ const A=xy(a),B=xy(b);
+ for(let i=0;i<POINTS.length;i++)if(i!==a&&i!==b&&nearSegment(xy(i),A,B)<.075)return 'La línea atraviesa otro nodo.';
+ for(const l of s.lines)if(![a,b].includes(l.a)&&![a,b].includes(l.b)&&segmentsCross(A,B,xy(l.a),xy(l.b)))return 'No puedes atravesar una pared o línea.';
+ return null;
 }
 const el=id=>document.getElementById(id);
 let mode='none', myPlayer=0, host=false, room='', connected=false, peer=null,conn=null,game=null;
@@ -20,7 +98,7 @@ let selected=-1, pointerStart=null, cpuTimer=null, joinTimer=null, scanner=null,
 let arSession=null,hitSource=null,arSpace=null,lastHit=null,reticle=null,arPlaced=false;
 const linkKey=(a,b)=>[a,b].sort((x,y)=>x-y).join('-');
 const distance=(a,b)=>POINTS[a].distanceTo(POINTS[b]);
-const validEdge=(a,b,s)=>Number.isInteger(a)&&Number.isInteger(b)&&a>=0&&b>=0&&a<POINTS.length&&b<POINTS.length&&a!==b&&distance(a,b)<=MAX_LINK&&!s.lines.some(q=>linkKey(q.a,q.b)===linkKey(a,b));
+const validEdge=(a,b,s)=>!edgeError(a,b,s);
 const rand=n=>{const v=new Uint32Array(1);crypto.getRandomValues(v);return v[0]%n;};
 const roomId=()=>Array.from({length:6},()=>CODE_CHARS[rand(CODE_CHARS.length)]).join('');
 const copyText=async s=>{try{await navigator.clipboard.writeText(s);notify('Enlace copiado al portapapeles.');}catch{prompt('Copia el enlace de invitación:',s);}};
