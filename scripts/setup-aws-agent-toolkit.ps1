@@ -63,6 +63,32 @@ if($LASTEXITCODE -ne 0){throw 'Falló el asistente de Agent Toolkit.'}
 aws agent-toolkit list-available-skills --region us-east-1 --profile $ProfileName
 if($LASTEXITCODE -ne 0){throw 'No se pudo listar el catálogo del toolkit.'}
 Write-Host ''
+# Paso 7: incorporar las reglas oficiales en AGENTS.md sin borrar las existentes.
+$rulesUrl=if($AwsExperience -eq 'new'){
+  'https://raw.githubusercontent.com/aws/agent-toolkit-for-aws/refs/heads/main/rules/aws-starter-rules.md'
+}else{
+  'https://raw.githubusercontent.com/aws/agent-toolkit-for-aws/refs/heads/main/rules/aws-agent-rules.md'
+}
+Write-Host ('Descargando reglas del agente desde '+$rulesUrl)
+$rules=(Invoke-WebRequest -UseBasicParsing -Uri $rulesUrl -TimeoutSec 30).Content
+$startMarker='<!-- BEGIN AWS Agent Toolkit rules -->'
+$endMarker='<!-- END AWS Agent Toolkit rules -->'
+$newBlock=$startMarker+"`r`n"+$rules.Trim()+"`r`n"+$endMarker
+$root=Split-Path -Parent $PSScriptRoot
+$agentFile=Join-Path $root 'AGENTS.md'
+$previous=if(Test-Path -LiteralPath $agentFile){Get-Content -LiteralPath $agentFile -Raw -Encoding UTF8}else{''}
+$start=$previous.IndexOf($startMarker)
+$end=$previous.IndexOf($endMarker)
+if(($start -ge 0) -xor ($end -ge 0)){throw 'Marcadores AWS incompletos en AGENTS.md. Revise antes de continuar.'}
+if($start -ge 0){
+  if($end -lt $start){throw 'Los marcadores AWS están en orden incorrecto.'}
+  $updated=$previous.Substring(0,$start)+$newBlock+$previous.Substring($end+$endMarker.Length)
+}else{
+  $updated=$previous.TrimEnd()+"`r`n`r`n"+$newBlock+"`r`n"
+}
+Set-Content -LiteralPath $agentFile -Value $updated -Encoding UTF8
+Write-Host ('Reglas AWS preservando existentes: '+$agentFile) -ForegroundColor Green
+
 Write-Host 'IMPORTANTE: Revise el MCP aws-mcp generado. Agregue en su bloque env:' -ForegroundColor Yellow
 Write-Host ('AWS_MCP_PROXY_PROFILES = '+$ProfileName)
 Write-Host 'NO reemplace ni borre otros servidores MCP. Para Codex, respetar el formato TOML.'
