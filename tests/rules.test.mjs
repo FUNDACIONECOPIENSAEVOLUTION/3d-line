@@ -8,7 +8,7 @@ if(start<0||end<0)throw new Error('No se encontró el motor geométrico');
 const minimal = js.slice(start,end)+`
 const linkKey=(a,b)=>[a,b].sort((x,y)=>x-y).join('-');
 const distance=(a,b)=>POINTS[a].distanceTo(POINTS[b]);
-globalThis.testAPI={LEVELS,levelPoints,segmentsCross,pointInsideTriangle,blockedNodes,crossesOwnedTriangle,edgeError,
+globalThis.testAPI={LEVELS,levelPoints,segmentsCross,pointInsideTriangle,blockedNodes,crossesOwnedTriangle,edgeError,segmentDistance3,segmentIntersectsFace3D,closedTriangleShells,
 setPoints(p){POINTS=p.map(q=>new THREE.Vector3(...q))}};
 `;
 class Vector3{
@@ -34,16 +34,47 @@ test('cruces proyectados se detectan y los segmentos separados no se bloquean',(
  assert.equal(api.segmentsCross(p(0,0),p(2,2),p(0,2),p(2,0)),true);
  assert.equal(api.segmentsCross(p(0,0),p(2,0),p(0,1),p(2,1)),false);
 });
-test('triángulo encierra nodos interiores pero no sus vértices',()=>{
- api.setPoints([[0,0,0],[2,0,0],[0,0,2],[.5,.3,.5],[3,0,3]]);
- const s={tris:[{a:0,b:1,c:2}],lines:[],blocked:[],level:1};
- assert.equal(JSON.stringify(api.blockedNodes(s)),JSON.stringify([3]));
+test('un punto SOBRE un triángulo, a mayor altura, queda libre',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[.5,.8,.5]]);
+ const state={tris:[{a:0,b:1,c:2,owner:0}],lines:[],blocked:[],level:1};
+ assert.equal(JSON.stringify(api.blockedNodes(state)),'[]');
+ assert.equal(api.edgeError(3,0,state),null);
 });
-test('una línea previa impide cruces incluso sin triángulos sombreados',()=>{
- api.setPoints([[0,0,0],[2,0,0],[0,0,2],[-.6,0,.8],[1.6,0,.8]]);
- const state={lines:[{a:0,b:2,owner:0}],tris:[],blocked:[],level:1};
- assert.match(api.edgeError(3,4,state),/cruzar una línea ya colocada/);
+test('triángulos abiertos NO encapsulan un nodo, aunque esté bajo su proyección',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[.5,-.3,.5]]);
+ const state={tris:[{a:0,b:1,c:2}],lines:[],blocked:[],level:1};
+ assert.equal(api.blockedNodes(state).length,0);
 });
+test('una línea en altura distinta puede cruzar su proyección 2D sin colisión',()=>{
+ api.setPoints([[0,0,0],[2,0,2],[0,1,2],[2,1,0]]);
+ const state={lines:[{a:0,b:1}],tris:[],blocked:[],level:1};
+ assert.equal(api.edgeError(2,3,state),null);
+});
+test('dos segmentos que se cruzan de verdad en XYZ se bloquean',()=>{
+ api.setPoints([[0,0,0],[2,0,2],[0,0,2],[2,0,0]]);
+ const state={lines:[{a:0,b:1}],tris:[],blocked:[],level:1};
+ assert.match(api.edgeError(2,3,state),/espacio 3D/);
+});
+test('una cara conquistada impide atravesarla, no pasar POR ENCIMA',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,0,2],[.4,-1,.4],[.4,1,.4],[1,1,1]]);
+ const state={lines:[],tris:[{a:0,b:1,c:2,owner:0}],blocked:[],level:1};
+ assert.match(api.edgeError(3,4,state),/cara conquistada/);
+ assert.equal(api.edgeError(4,5,state),null);
+});
+test('solo una envolvente tetraédrica cerrada bloquea puntos en su interior',()=>{
+ api.setPoints([[0,0,0],[2,0,0],[0,2,0],[0,0,2],[.3,.3,.3],[.6,2.5,.6]]);
+ const faces=[{a:0,b:1,c:2},{a:0,b:1,c:3},{a:0,b:2,c:3},{a:1,b:2,c:3}];
+ const state={tris:faces,lines:[],blocked:[],level:1};
+ assert.equal(api.closedTriangleShells(faces).length,1);
+ assert.equal(JSON.stringify(api.blockedNodes(state)),'[4]');
+ const open={...state,tris:faces.slice(0,3)};
+ assert.equal(api.blockedNodes(open).length,0);
+});
+test('distancia entre puntos no es por sí sola un bloqueo',()=>{
+ api.setPoints([[0,0,0],[20,0,0]]);
+ assert.equal(api.edgeError(0,1,{lines:[],tris:[],blocked:[],level:1}),null);
+});
+
 test('las líneas desde un nodo común son válidas sin cruces',()=>{
  api.setPoints([[0,0,0],[1,0,0],[0,0,1]]);
  const state={lines:[{a:0,b:1}],tris:[],blocked:[],level:1};
@@ -52,11 +83,6 @@ test('las líneas desde un nodo común son válidas sin cruces',()=>{
 test('la longitud por sí sola no impide conexiones',()=>{
  api.setPoints([[0,0,0],[20,0,0]]);
  assert.equal(api.edgeError(0,1,{lines:[],tris:[],blocked:[],level:1}),null);
-});
-test('el interior coloreado bloquea cruzar el triángulo cerrado',()=>{
- api.setPoints([[0,0,0],[2,0,0],[0,0,2],[-.6,0,.8],[1.6,0,.8]]);
- const s={lines:[],tris:[{a:0,b:1,c:2,owner:0}],blocked:[],level:1};
- assert.match(api.edgeError(3,4,s),/triángulo ya conquistado/);
 });
 test('bloquea nodos encerrados, aun cuando están cerca',()=>{
  api.setPoints([[0,0,0],[1,0,1],[0,0,1],[1,0,0]]);
