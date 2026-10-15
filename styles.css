@@ -276,3 +276,28 @@ body.xr-active .academy-overlay{z-index:130}
  .academy-example svg{max-height:96px}
  .academy-description{font-size:11px}
 }
+
+/* V57.7 · insignias recompensadas y reintento de nivel */
+.badge-choices .locked-badge{
+ position:relative;opacity:.69;filter:saturate(.47);
+ background:linear-gradient(130deg,#101926,#2a263c);
+ border:1px dashed #6e789b;color:#afbdd3
+}
+.badge-choices .locked-badge::after{
+ content:"🔒";position:absolute;bottom:-4px;right:-4px;
+ font-size:10px;line-height:1;background:#071829;
+ padding:3px;border-radius:6px;border:1px solid #536a8d
+}
+.badge-choices .locked-badge:hover,.badge-choices .locked-badge:focus-visible{
+ opacity:1;border-color:#ffd231;filter:saturate(.9)
+}
+.badge-progress-note{font-size:11px;color:#a0d8ef;text-align:left;line-height:1.5;margin:7px 0 12px;padding:7px 10px;border-left:2px solid #ffd231;background:#07182980}
+.reward-retry{border:1px solid #ffdc4d;color:#ffecb0;background:linear-gradient(135deg,#19364d,#49320f);font-weight:900;box-shadow:0 0 15px #ffd23136}
+.reward-retry:hover{box-shadow:0 0 22px #ffcb2e85}
+.reward-detail{font-size:11px;color:#b4d8e5;line-height:1.5;text-align:center;margin:9px 0 1px}
+#monetization p{line-height:1.45}
+@media(max-width:420px){
+ .badge-progress-note{font-size:10px}
+ #results .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #results .actions button{white-space:normal;min-width:0;font-size:11px;padding:9px 6px}
+}
