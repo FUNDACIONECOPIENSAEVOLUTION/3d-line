@@ -1,0 +1,3590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: content:; style-src * 'self' 'unsafe-inline'; script-src * 'self' 'unsafe-inline' 'unsafe-eval';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050a14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>3 LINE-AR | V55.0 P2P MULTIPLAYER & UNIVERSAL AR</title>
+    
+    <!-- ========================================================================= -->
+    <!-- GOOGLE H5 GAMES ADS SDK (AdSense para Juegos HTML5)                       -->
+    <!-- REEMPLAZA 'ca-pub-0000000000000000' CON TU ID DE EDITOR DE GOOGLE ADSENSE -->
+    <!-- ========================================================================= -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000" crossorigin="anonymous"></script>
+    <script>
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adBreak = window.adConfig = function(o) { window.adsbygoogle.push(o); };
+        // Inicialización de Google H5 Games Ads
+        window.adConfig({
+            preloadAdBreaks: 'on',
+            sound: 'on',
+            onReady: () => { console.log("Google H5 Games Ads SDK Ready"); }
+        });
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { 
+                        glass: 'rgba(6, 11, 22, 0.92)', 
+                        cyber: '#00f3ff', 
+                        neon: '#39ff14', 
+                        hot: '#ff0055', 
+                        warn: '#ffcc00', 
+                        gold: '#ffd700',
+                        purple: '#b829ff'
+                    },
+                    fontFamily: { orbitron: ['Orbitron', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    animation: { 
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite', 
+                        'spin-slow': 'spin 6s linear infinite',
+                        'float': 'float 3s ease-in-out infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-6px)' }
+                        }
+                    }
+                } 
+            } 
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Noto+Sans+SC:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- MOTOR DE CONEXIÓN DIRECTA ENTRE CELULARES (WebRTC P2P) Y ESCÁNER DE CÁMARA QR -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <style>
+        html, body { background-color: #03060c; height: 100%; width: 100%; overflow: hidden; touch-action: none; overscroll-behavior: none; } 
+        body { margin: 0; user-select: none; -webkit-user-select: none; font-family: 'Orbitron', 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body.lang-zh, body.lang-ru { font-family: 'Noto Sans SC', sans-serif, 'Orbitron'; letter-spacing: 0; font-weight: bold; }
+        
+        body.ar-active { background-color: transparent !important; }
+        body.ar-active #bg-canvas { display: none !important; }
+        
+        /* Video de Cámara AR Universal para todos los celulares */
+        #ar-camera-video {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 0; display: none; pointer-events: none;
+        }
+        body.ar-camera-mode #ar-camera-video { display: block !important; }
+        body.ar-camera-mode #bg-canvas { display: none !important; }
+        
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        canvas { display: block; outline: none; } 
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+        .interactive { pointer-events: auto; }
+        
+        /* Efectos Cyberpunk Comerciales */
+        .glass-panel { 
+            background: linear-gradient(145deg, rgba(10, 16, 30, 0.94), rgba(4, 8, 16, 0.96)); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 243, 255, 0.28); 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 243, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1); 
+            border-radius: 16px; 
+        }
+        
+        .btn-neon { 
+            background: linear-gradient(180deg, rgba(0,243,255,0.16), rgba(0,243,255,0.03)); 
+            border: 1px solid #00f3ff; 
+            color: #00f3ff; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.18); 
+            cursor: pointer; 
+            border-radius: 10px;
+        }
+        .btn-neon:hover { box-shadow: 0 0 22px rgba(0, 243, 255, 0.4); border-color: #fff; }
+        .btn-neon:active { transform: scale(0.95); background: #00f3ff; color: #000; }
+        .btn-neon.danger { border-color: #ff0055; color: #ff0055; background: linear-gradient(180deg, rgba(255,0,85,0.15), rgba(255,0,85,0.02)); box-shadow: 0 0 15px rgba(255, 0, 85, 0.15); }
+        .btn-neon.danger:active { background: #ff0055; color: #fff; }
+        .btn-neon.gold { border-color: #ffd700; color: #ffd700; background: linear-gradient(180deg, rgba(255,215,0,0.18), rgba(255,215,0,0.03)); box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
+        .btn-disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); cursor: not-allowed; }
+
+        /* Dado Holográfico */
+        .dice-wrap { perspective: 800px; width: 68px; height: 68px; pointer-events: auto; cursor: pointer; }
+        .dice-cube { 
+            width: 100%; height: 100%; position: relative; transform-style: preserve-3d; 
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            background: radial-gradient(circle, rgba(0,243,255,0.2) 0%, rgba(5,10,20,0.95) 80%); 
+            border: 2px solid #00f3ff; border-radius: 16px; 
+            display: flex; justify-content: center; align-items: center; 
+            font-size: 32px; color: #00f3ff; text-shadow: 0 0 15px #00f3ff; 
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.3);
+        }
+        .dice-cube.my-turn-pulse { animation: dicePulse 1.5s infinite alternate; }
+        @keyframes dicePulse { 0% { box-shadow: 0 0 10px #00f3ff, inset 0 0 5px #00f3ff; transform: scale(1); } 100% { box-shadow: 0 0 30px #39ff14, inset 0 0 15px #39ff14; border-color: #39ff14; color: #39ff14; transform: scale(1.08); } }
+        .rolling { animation: shake 0.35s infinite !important; background: #00f3ff !important; color: #000 !important; text-shadow: none !important; }
+        @keyframes shake { 0%,100% { transform: rotate(0deg) scale(1.1); } 25% { transform: rotate(18deg) scale(1.15); } 75% { transform: rotate(-18deg) scale(1.15); } }
+
+        /* Notificaciones Toast */
+        .toast-box { background: rgba(5, 10, 20, 0.95); border: 1px solid #00f3ff; border-left-width: 5px; border-radius: 8px; padding: 12px 24px; color: white; font-size: 11px; font-family: monospace; transform: translateY(60px); opacity: 0; transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .toast-box.show { transform: translateY(0); opacity: 1; }
+        #game-toast { background: rgba(6, 11, 22, 0.92); backdrop-filter: blur(10px); border: 1px solid rgba(0, 243, 255, 0.4); border-radius: 10px; box-shadow: 0 4px 20px rgba(0, 243, 255, 0.25); min-width: 190px; max-width: 90%; padding: 6px 14px; opacity: 0; transform: translateY(-5px); transition: all 0.25s ease; pointer-events: none; }
+        #game-toast.show { opacity: 1; transform: translateY(0); }
+
+        #mini-loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; pointer-events: none; }
+        #win-screen { position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(8,16,32,0.96) 0%, rgba(0,0,0,0.99) 100%); z-index: 60; pointer-events: auto; display: none !important; flex-direction: column; justify-content: center; align-items: center; }
+        #win-screen.active { display: flex !important; }
+
+        .opt { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #333; cursor: pointer; transition: 0.2s; transform: scale(0.9); pointer-events: auto; }
+        .opt.active { border-color: white; transform: scale(1.18); box-shadow: 0 0 18px currentColor; border-width: 2px; }
+        .opt-i { font-size: 22px; color: #555; transition: 0.2s; cursor: pointer; pointer-events: auto; }
+        .opt-i.active { color: #00f3ff; transform: scale(1.25); text-shadow: 0 0 15px #00f3ff; }
+
+        #ar-zone button { display: none !important; }
+
+        .ar-sync-btn { background: rgba(5, 10, 20, 0.9) !important; border: 2px solid #39ff14 !important; color: #39ff14 !important; font-family: 'Orbitron' !important; padding: 12px 20px !important; border-radius: 10px !important; text-transform: uppercase !important; font-size: 11px; font-weight: bold; box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); }
+        .ar-sync-btn:active { transform: scale(0.95); background: #39ff14 !important; color: #000 !important; }
+        
+        #custom-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); z-index: 100; display: none; justify-content: center; align-items: center; padding: 16px; }
+        #modal-content { background: linear-gradient(145deg, rgba(10, 16, 30, 0.98), rgba(5, 8, 16, 0.99)); border: 1px solid #00f3ff; border-radius: 16px; padding: 22px; max-width: 360px; width: 100%; text-align: center; color: white; box-shadow: 0 0 50px rgba(0, 243, 255, 0.25); position: relative; max-height: 88vh; overflow-y: auto; }
+        
+        #ar-instructions { position: absolute; top: 26%; left: 0; width: 100%; text-align: center; pointer-events: none; z-index: 45; display: none; }
+        .instr-card { background: rgba(5, 10, 20, 0.85); border: 1px solid #00f3ff; color: #00f3ff; padding: 10px 22px; border-radius: 999px; display: inline-block; backdrop-filter: blur(8px); font-size: 11px; font-weight: bold; box-shadow: 0 0 20px rgba(0, 243, 255, 0.3); }
+
+        #s-waiting { position: absolute; inset: 0; background: rgba(3, 6, 12, 0.96); z-index: 55; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 16px; }
+        #s-waiting.active { display: flex; }
+        
+        #size-slider-container { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 40; height: 190px; display: none; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px 6px; background: rgba(5,10,20,0.8); border: 1px solid rgba(0,243,255,0.3); border-radius: 99px; pointer-events: auto; }
+        #size-slider { -webkit-appearance: none; width: 120px; height: 6px; background: rgba(0, 243, 255, 0.3); border-radius: 3px; outline: none; transform: rotate(-90deg); margin: 50px -50px; }
+        #size-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #00f3ff; cursor: pointer; box-shadow: 0 0 10px #00f3ff; border: 2px solid white; }
+        .size-icon { color: #00f3ff; font-size: 11px; }
+
+        /* Tabla de Ranking */
+        .rank-header { display: flex; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(0,243,255,0.4); font-size: 9px; color: #00f3ff; font-weight: bold; margin-bottom: 4px; }
+        .rank-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 10px; }
+        .rank-row.is-me { background: rgba(0, 243, 255, 0.15); border: 1px solid rgba(0, 243, 255, 0.4); border-radius: 6px; }
+        .rank-pos { width: 25px; font-weight: bold; text-align: left; }
+        .rank-name { flex-grow: 1; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 110px; }
+        .rank-stats { width: 55px; text-align: center; color: #aaa; font-family: monospace; font-size: 9px; }
+        .rank-pts { width: 55px; text-align: right; font-family: monospace; color: #00f3ff; font-weight: bold; }
+        .rank-1 .rank-pos { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
+        .rank-2 .rank-pos { color: #e0e0e0; }
+        .rank-3 .rank-pos { color: #cd7f32; }
+
+        /* Barra Superior (Idioma, Sonido, Monedas) */
+        .top-bar-pill { background: rgba(6, 11, 22, 0.85); border: 1px solid rgba(0, 243, 255, 0.35); padding: 5px 11px; border-radius: 999px; font-size: 10px; color: #fff; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px); cursor: pointer; transition: 0.2s; }
+        .top-bar-pill:hover { border-color: #00f3ff; background: rgba(0, 243, 255, 0.15); }
+        
+        .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .lang-opt { padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: center; font-size: 11px; }
+        .lang-opt.active { background: #00f3ff; color: black; border-color: #00f3ff; font-weight: bold; }
+
+        /* Logo Oficial con Resplandor Holográfico */
+        .official-logo {
+            filter: drop-shadow(0 0 15px rgba(0, 243, 255, 0.55));
+            transition: transform 0.3s ease;
+        }
+        .official-logo:hover { transform: scale(1.04); }
+
+        /* Overlay de Anuncio H5 (Fallback / Previsualización Comercial) */
+        #h5-ad-overlay {
+            position: fixed; inset: 0; background: rgba(2, 5, 12, 0.98);
+            z-index: 200; display: none; flex-direction: column;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        
+        /* Scrollbar estilizado */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #00f3ff; border-radius: 4px; }
+    </style>
+
+    <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+    <!-- Video en vivo para Realidad Aumentada Universal en cualquier celular -->
+    <video id="ar-camera-video" autoplay playsinline muted></video>
+
+    <!-- Lienzo de red neuronal animado para los menús -->
+    <canvas id="bg-canvas"></canvas>
+    
+    <!-- MODAL DE ESCÁNER DE CÓDIGO QR CON CÁMARA -->
+    <div id="qr-scanner-modal" class="interactive fixed inset-0 bg-black/95 z-[150] hidden flex-col justify-center items-center p-4">
+        <div class="glass-panel p-5 w-full max-w-xs text-center border-2 border-neon relative">
+            <button onclick="window.stopQRScanner()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-hot/20 border border-hot text-hot flex items-center justify-center">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-sm font-black text-neon mb-1"><i class="fas fa-camera mr-1"></i> ESCANEAR QR DE SALA</h3>
+            <p class="text-[10px] text-gray-300 mb-3">Apunta con tu cámara al código QR que aparece en el otro celular:</p>
+            <div id="qr-reader" class="w-full rounded-xl overflow-hidden border-2 border-cyber bg-black min-h-[220px] mb-3"></div>
+            <p class="text-[10px] text-gray-400 mb-2">¿O prefieres escribir el código de 4 letras?</p>
+            <div class="flex gap-2">
+                <input id="scanner-code-in" class="bg-black/90 border border-cyber rounded-lg text-white w-full text-center p-2 uppercase font-mono text-base tracking-widest" placeholder="ABCD" maxlength="4">
+                <button onclick="window.joinFromScannerInput()" class="btn-neon px-4 text-xs">ENTRAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAY DE PUBLICIDAD GOOGLE H5 GAMES ADS (Simulador activo hasta vincular ID real) -->
+    <div id="h5-ad-overlay" class="interactive">
+        <div class="glass-panel p-6 max-w-xs w-full text-center border-2 border-gold relative">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-4">
+                <span class="bg-gold text-black text-[9px] font-black px-2 py-0.5 rounded uppercase">ANUNCIO PATROCINADO</span>
+                <span id="ad-timer-badge" class="text-[10px] font-mono text-cyber">5s</span>
+            </div>
+            <img src="https://raw.githubusercontent.com/instructorandradedcc/3-line-AR/main/3line-ar-logo.png" alt="3 LINE-AR" class="w-24 h-24 object-contain mx-auto mb-3 official-logo" onerror="this.style.display='none'">
+            <h3 id="ad-modal-title" class="text-sm font-black text-white mb-1">GOOGLE H5 GAMES ADS</h3>
+            <p id="ad-modal-desc" class="text-[10px] text-gray-300 mb-4 leading-relaxed">Espacio publicitario conectado a la API <code class="text-neon">adBreak()</code> de Google AdSense.</p>
+            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mb-4">
+                <div id="ad-progress-bar" class="bg-gold h-full w-0 transition-all duration-300"></div>
+            </div>
+            <button id="btn-close-ad" onclick="window.finishSimulatedAd()" class="btn-neon gold py-2.5 px-6 text-xs w-full btn-disabled">
+                ESPERANDO ANUNCIO...
+            </button>
+        </div>
+    </div>
+
+    <!-- BARRA DE ESTADO SUPERIOR GLOBAL -->
+    <div class="fixed top-3 left-3 right-3 flex justify-between items-center z-50 pointer-events-none">
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <button onclick="window.showLangPicker()" class="top-bar-pill">
+                <i class="fas fa-globe text-cyber"></i> <span id="cur-lang-code">ES</span>
+            </button>
+            <button onclick="window.toggleMute()" class="top-bar-pill" title="Audio">
+                <i id="sound-icon" class="fas fa-volume-up text-cyber"></i>
+            </button>
+            <button onclick="window.showTutorial()" class="top-bar-pill" title="Cómo jugar">
+                <i class="fas fa-question-circle text-warn"></i>
+            </button>
+        </div>
+
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <div onclick="window.showShop()" class="top-bar-pill !border-gold/60 shadow-[0_0_12px_rgba(255,215,0,0.2)]">
+                <i class="fas fa-coins text-gold"></i>
+                <span id="top-coins" class="font-mono font-bold text-gold">250</span>
+                <i class="fas fa-plus-circle text-neon text-[10px] ml-1"></i>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-layer" class="flex flex-col justify-between p-4 h-full">
+        
+        <!-- MODAL MULTIUSO (Tienda, Reglas, QR, Confirmaciones) -->
+        <div id="custom-modal" class="interactive">
+            <div id="modal-content">
+                <button onclick="document.getElementById('custom-modal').style.display='none'" class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/5 text-gray-400 hover:text-white flex items-center justify-center"><i class="fas fa-times"></i></button>
+                <div id="modal-body-content"></div>
+            </div>
+        </div>
+
+        <!-- 1. PANTALLA DE LOGIN -->
+        <div id="s-login" class="interactive absolute inset-0 flex items-center justify-center bg-black/80 z-40 p-4">
+            <div class="glass-panel p-7 text-center w-full max-w-xs flex flex-col items-center gap-4">
+                <div class="relative">
+                    <img src="https://raw.githubusercontent.com/instructorandradedcc/3-line-AR/main/3line-ar-logo.png" 
+                         alt="3 LINE-AR Logo" 
+                         class="w-36 h-36 object-contain official-logo animate-float mx-auto"
+                         onerror="this.outerHTML='<div class=\'w-20 h-20 rounded-full bg-cyber/10 border border-cyber/40 flex items-center justify-center animate-float\'><i class=\'fas fa-project-diagram text-4xl text-cyber\'></i></div>'">
+                    <span class="absolute -bottom-1 right-0 bg-hot text-white text-[8px] font-black px-2 py-0.5 rounded-full tracking-wider shadow-lg">AR / 3D</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-white italic tracking-tighter">3 LINE<span class="text-cyber">-AR</span></h1>
+                    <p class="text-cyber/70 text-[9px] font-mono tracking-[0.22em] mt-0.5">TACTICAL NEXUS EDITION</p>
+                </div>
+                
+                <button id="btn-login-google" onclick="window.doLogin()" class="btn-neon w-full py-3.5 flex justify-center items-center gap-3 text-xs">
+                    <i class="fab fa-google text-base"></i> <span id="login-btn-txt" data-i18n="login">CONECTAR CON GOOGLE</span>
+                </button>
+                
+                <button onclick="window.doGuestLogin()" class="btn-neon gold w-full py-3 flex justify-center items-center gap-2 text-xs">
+                    <i class="fas fa-bolt"></i> <span data-i18n="guest_login">JUGAR AHORA (INVITADO)</span>
+                </button>
+                
+                <p id="login-msg" class="text-[9px] text-cyber font-mono hidden animate-pulse" data-i18n="connecting">CONECTANDO...</p>
+                <button id="btn-cancel-login" onclick="window.cancelLogin()" class="hidden btn-neon danger py-1.5 px-4 text-[9px]" data-i18n="cancel">CANCELAR</button>
+            </div>
+        </div>
+
+        <!-- 2. MENÚ PRINCIPAL COMERCIAL -->
+        <div id="s-menu" class="interactive absolute inset-0 flex items-center justify-center z-30 hidden p-4 pt-14">
+            <div class="glass-panel p-5 w-full max-w-xs flex flex-col gap-3 relative max-h-[90vh] overflow-y-auto">
+                
+                <!-- Cabecera con el Logo Oficial e Info del Agente -->
+                <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <img src="https://raw.githubusercontent.com/instructorandradedcc/3-line-AR/main/3line-ar-logo.png" 
+                             alt="Logo" 
+                             class="w-10 h-10 object-contain rounded-lg bg-black/50 p-0.5 border border-cyber/40"
+                             onerror="this.style.display='none'">
+                        <div class="w-9 h-9 rounded-lg bg-cyber/15 border border-cyber hidden items-center justify-center text-cyber font-black text-sm" id="u-avatar">A</div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[8px] text-cyber tracking-widest uppercase" data-i18n="agent">AGENTE</span>
+                                <span id="vip-badge" class="hidden bg-gold text-black text-[7px] font-black px-1.5 rounded">PRO</span>
+                            </div>
+                            <span id="u-name" class="text-white font-bold text-sm block leading-tight">...</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <div class="text-right mr-1">
+                            <span class="text-[8px] text-gray-400 block">ELO</span>
+                            <span id="menu-elo" class="text-xs font-mono text-neon font-bold">1000</span>
+                        </div>
+                        <button onclick="window.confirmLogout()" class="w-7 h-7 rounded-lg border border-hot/50 text-hot flex items-center justify-center hover:bg-hot hover:text-white transition text-xs"><i class="fas fa-power-off"></i></button>
+                    </div>
+                </div>
+
+                <!-- Selector de Color y Marca -->
+                <div class="bg-black/40 p-3 rounded-xl border border-white/10">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[9px] text-gray-400 font-bold" data-i18n="color">LÁSER</span>
+                        <div class="flex gap-2.5" id="c-pick">
+                            <div onclick="window.setProf('c','#00f3ff',this)" class="opt bg-[#00f3ff] active" style="box-shadow:0 0 15px #00f3ff"></div>
+                            <div onclick="window.setProf('c','#ff0055',this)" class="opt bg-[#ff0055]"></div>
+                            <div onclick="window.setProf('c','#39ff14',this)" class="opt bg-[#39ff14]"></div>
+                            <div onclick="window.setProf('c','#ffd700',this)" class="opt bg-[#ffd700]"></div>
+                            <div onclick="window.setProf('c','#b829ff',this)" class="opt bg-[#b829ff]"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] text-gray-400 font-bold" data-i18n="mark">INSIGNIA</span>
+                        <div class="flex gap-4 text-base" id="i-pick">
+                            <i onclick="window.setProf('i','gem',this)" class="opt-i fas fa-gem active"></i>
+                            <i onclick="window.setProf('i','bolt',this)" class="opt-i fas fa-bolt"></i>
+                            <i onclick="window.setProf('i','star',this)" class="opt-i fas fa-star"></i>
+                            <i onclick="window.setProf('i','atom',this)" class="opt-i fas fa-atom"></i>
+                            <i onclick="window.setProf('i','biohazard',this)" class="opt-i fas fa-biohazard"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Principal: Partida Online Automática (Conecta 2 celulares buscando partida al instante) -->
+                <button id="btn-quick-match" onclick="window.quickMatch()" class="btn-neon py-3.5 text-xs shadow-lg relative overflow-hidden group">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        <i class="fas fa-satellite-dish animate-pulse"></i> 
+                        <span data-i18n="quick_match">BUSCAR RIVAL ONLINE</span>
+                    </span>
+                </button>
+                
+                <!-- Crear Sala con QR / Escanear QR o Código desde otro Celular -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button id="btn-create-room" onclick="window.createRoom()" class="btn-neon py-3 text-[10px] flex flex-col items-center justify-center gap-1 !border-neon !text-neon">
+                        <i class="fas fa-qrcode text-base"></i>
+                        <span data-i18n="create_room">CREAR SALA (QR)</span>
+                    </button>
+                    <button id="btn-join-room" onclick="window.openConnectModal()" class="btn-neon py-3 text-[10px] flex flex-col items-center justify-center gap-1 !border-cyber !text-cyber">
+                        <i class="fas fa-camera text-base"></i>
+                        <span data-i18n="join_room">ESCANEAR / CÓDIGO</span>
+                    </button>
+                </div>
+                
+                <!-- Caja desplegable rápida para meter código manual -->
+                <div id="join-box" class="hidden flex gap-2 animate-fade-in">
+                    <input id="code-in" class="bg-black/80 border border-cyber rounded-lg text-white w-full text-center p-2.5 uppercase font-mono text-base tracking-widest focus:outline-none focus:ring-2 focus:ring-cyber" placeholder="CÓDIGO (4)" maxlength="4">
+                    <button onclick="window.joinRoom()" class="btn-neon px-4"><i class="fas fa-arrow-right"></i></button>
+                </div>
+                
+                <!-- VS IA BOT -->
+                <div class="grid grid-cols-1 gap-2">
+                    <button id="btn-vs-cpu" onclick="window.vsCpu()" class="btn-neon danger py-2.5 text-[11px] flex items-center justify-center gap-2">
+                        <i class="fas fa-robot"></i> <span data-i18n="vs_cpu">ENTRENAR CONTRA IA BOT (AR / 3D)</span>
+                    </button>
+                </div>
+
+                <!-- Tienda Comercial, Ranking y Compartir -->
+                <div class="grid grid-cols-3 gap-2 pt-1">
+                    <button onclick="window.showShop()" class="btn-neon gold py-2.5 text-[9px] flex flex-col items-center gap-1">
+                        <i class="fas fa-gift text-sm"></i> <span data-i18n="shop">MEJORAS</span>
+                    </button>
+                    <button onclick="window.showLeaderboard()" class="btn-neon py-2.5 text-[9px] flex flex-col items-center gap-1">
+                        <i class="fas fa-trophy text-sm text-gold"></i> <span data-i18n="ranking">RANKING</span>
+                    </button>
+                    <button onclick="window.shareApp()" class="btn-neon py-2.5 text-[9px] flex flex-col items-center gap-1 !border-neon !text-neon">
+                        <i class="fas fa-share-alt text-sm"></i> <span data-i18n="invite">INVITAR</span>
+                    </button>
+                </div>
+
+                <!-- Espacio de Banner AdSense Integrado (Monetización Pasiva en Menú) -->
+                <div onclick="window.triggerH5Ad('reward', () => { window.claimFreeAdCoins(); })" class="bg-gradient-to-r from-cyber/10 via-black to-gold/10 border border-gold/40 rounded-lg p-2 flex items-center justify-between cursor-pointer hover:border-gold transition">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-gold text-black text-[8px] font-black px-1.5 py-0.5 rounded">AD</span>
+                        <span class="text-[9px] text-gray-200 font-bold">Ver anuncio corto = <strong class="text-gold">+100 Monedas Gratis</strong></span>
+                    </div>
+                    <i class="fas fa-play-circle text-gold text-sm animate-pulse"></i>
+                </div>
+
+                <div id="ar-status" class="text-center text-[8px] text-gray-400 font-mono" data-i18n="check_hw">VERIFICANDO HARDWARE AR...</div>
+            </div>
+        </div>
+
+        <!-- PANTALLA DE BÚSQUEDA MATCHMAKING -->
+        <div id="s-matchmaking" class="interactive absolute inset-0 flex items-center justify-center bg-black/95 z-50 hidden p-4">
+            <div class="glass-panel p-8 text-center w-full max-w-xs">
+                <div class="relative w-20 h-20 mx-auto mb-5">
+                    <div class="absolute inset-0 border-4 border-cyber/30 rounded-full animate-ping"></div>
+                    <div class="absolute inset-0 border-4 border-t-cyber border-r-transparent border-b-neon border-l-transparent rounded-full animate-spin"></div>
+                    <i class="fas fa-satellite text-3xl text-cyber absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></i>
+                </div>
+                <h2 class="text-xl font-black text-white italic" id="match-status-title" data-i18n="searching">BUSCANDO RIVAL</h2>
+                <p class="text-cyber font-mono text-[10px] tracking-widest mt-2 animate-pulse" id="match-status-desc" data-i18n="scanning">ESCANEANDO SERVIDORES...</p>
+                <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-4">
+                    <div id="match-progress" class="bg-gradient-to-r from-cyber to-neon h-full w-1/3 animate-pulse"></div>
+                </div>
+                <button onclick="window.cancelMatchmaking()" class="mt-6 btn-neon danger py-2.5 px-6 text-xs w-full" data-i18n="cancel">CANCELAR</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA DE SALA PRIVADA (Con QR y Link directo para enlazar sin fallos) -->
+        <div id="s-waiting" class="interactive">
+            <div class="glass-panel p-6 text-center w-full max-w-xs flex flex-col items-center gap-4 relative">
+                <button class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/5 text-gray-400 hover:text-white" onclick="window.cancelWaitingRoom()"><i class="fas fa-times"></i></button>
+                <h2 class="text-lg font-black text-white tracking-wider" data-i18n="private_room">SALA MULTIJUGADOR</h2>
+                
+                <div class="text-[10px] text-gray-300" data-i18n="share_code">CÓDIGO PARA EL OTRO CELULAR:</div>
+                <div onclick="window.copyRoomCode()" id="waiting-code" class="text-4xl font-black text-neon tracking-[0.25em] border-2 border-dashed border-neon/80 py-2.5 px-6 rounded-xl bg-black/80 cursor-pointer hover:bg-neon/10 transition shadow-[0_0_20px_rgba(57,255,20,0.2)]">----</div>
+                
+                <!-- Código QR generado dinámicamente para que el otro celular lo escanee con el botón ESCANEAR QR -->
+                <div class="bg-white p-2.5 rounded-xl shadow-[0_0_25px_rgba(0,243,255,0.4)]">
+                    <img id="room-qr-img" src="" alt="QR Sala" class="w-36 h-36 block">
+                </div>
+                <p class="text-[10px] text-cyber font-bold leading-tight">En el otro celular toca "ESCANEAR / CÓDIGO" y apunta a este QR o escribe las 4 letras.</p>
+
+                <div class="flex gap-2 w-full">
+                    <button onclick="window.shareRoomDirect()" class="btn-neon flex-1 py-2.5 text-[10px] flex items-center justify-center gap-1.5">
+                        <i class="fas fa-paper-plane"></i> ENVIAR LINK
+                    </button>
+                    <button onclick="window.copyRoomCode()" class="btn-neon gold py-2.5 px-3 text-[10px]" title="Copiar Código">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 mt-1">
+                    <div class="w-2.5 h-2.5 rounded-full bg-neon animate-ping"></div>
+                    <span id="waiting-status-lbl" class="text-[10px] text-neon font-mono" data-i18n="waiting_player">CANAL P2P LISTO. ESPERANDO RIVAL...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. HUD DE JUEGO (3D Y REALIDAD AUMENTADA) -->
+        <div id="s-game" class="hidden flex flex-col justify-between h-full pointer-events-none relative z-10 pt-10">
+            
+            <!-- Slider de Escala Holográfica (Disponible para cualquier jugador en AR o 3D) -->
+            <div id="size-slider-container">
+                <i class="fas fa-search-plus size-icon"></i>
+                <input type="range" id="size-slider" min="0.25" max="2.2" step="0.05" value="1" oninput="window.manualScale(this.value)">
+                <i class="fas fa-search-minus size-icon"></i>
+            </div>
+
+            <!-- Marcador Superior -->
+            <div class="interactive glass-panel p-3 flex justify-between items-center mt-2 mx-1">
+                <div class="text-center w-24">
+                    <div class="flex items-center justify-center gap-1">
+                        <span id="p1-turn-dot" class="w-2 h-2 rounded-full bg-neon hidden animate-ping"></span>
+                        <span id="p1-name-hud" class="text-[9px] text-cyber font-bold truncate max-w-[75px]" data-i18n="score">TÚ</span>
+                    </div>
+                    <span id="sc-p1" class="text-3xl text-white font-black leading-none">0</span>
+                </div>
+
+                <!-- Dado Central y Toast de Estado -->
+                <div class="flex flex-col items-center -mt-7 z-20">
+                    <div class="dice-wrap" onclick="window.rollDice()">
+                        <div id="dice-vis" class="dice-cube"><i class="fas fa-dice-d20"></i></div>
+                    </div>
+                    
+                    <div id="mov-hud" class="bg-black/90 px-3 py-1 mt-2 rounded-full border border-cyber text-center opacity-0 transition-opacity flex items-center gap-3 shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[8px] text-gray-400" data-i18n="lines">ENERGÍA:</span>
+                            <span id="mov-cnt" class="text-base text-neon font-black leading-none">0</span>
+                        </div>
+                        <button onclick="window.skipTurn()" class="text-[8px] bg-hot/20 text-hot border border-hot px-2 py-0.5 rounded-full hover:bg-hot hover:text-white transition font-bold" data-i18n="skip">PASAR</button>
+                    </div>
+                </div>
+
+                <div class="text-center w-24">
+                    <div class="flex items-center justify-center gap-1">
+                        <span id="p2-turn-dot" class="w-2 h-2 rounded-full bg-hot hidden animate-ping"></span>
+                        <span id="p2-name-hud" class="text-[9px] text-gray-400 font-bold truncate max-w-[75px]" data-i18n="rival">RIVAL</span>
+                    </div>
+                    <span id="sc-p2" class="text-3xl text-white font-black leading-none">0</span>
+                </div>
+            </div>
+
+            <!-- Sub-barra informativa de turno y sala -->
+            <div class="flex justify-between items-center px-2 mt-1">
+                <span class="bg-black/60 border border-white/10 rounded px-2 py-0.5 text-[9px] text-gray-400 font-mono">SALA: <strong id="room-lbl" class="text-cyber">--</strong></span>
+                <div id="game-toast" class="text-center">
+                    <span id="t-head" class="font-bold text-cyber text-[9px] uppercase mr-1.5">INFO:</span>
+                    <span id="t-body" class="text-[10px] text-white">Lanza el dado</span>
+                </div>
+            </div>
+
+            <div id="mini-loader" class="hidden text-center">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-cyber mx-auto mb-2"></div>
+                    <div id="toast" class="toast-box text-center">
+                        <p id="s-head" class="font-bold text-cyber text-xs mb-0.5 uppercase tracking-widest">SISTEMA</p>
+                        <p id="s-body" class="text-xs">Mensaje</p>
+                    </div>
+                </div>
+
+                <!-- Instrucciones flotantes de escaneo de superficie AR -->
+                <div id="ar-instructions">
+                    <div class="instr-card" id="ar-instr-txt">
+                        <span class="text-neon">ESCANEA LA SUPERFICIE</span><br>Apunta a la mesa o piso y pulsa FIJAR AQUÍ
+                    </div>
+                </div>
+
+                <!-- Botón Flotante para entrar a Realidad Aumentada desde cualquier partida -->
+                <div class="interactive flex flex-col gap-2 w-full">
+                    <div id="btn-start-ar-float" class="flex justify-center mb-1">
+                        <button onclick="window.toggleARMode()" class="btn-neon py-2.5 px-5 text-xs shadow-[0_0_20px_rgba(0,243,255,0.4)] bg-black/90 flex items-center gap-2">
+                            <i class="fas fa-camera text-neon"></i> <span id="ar-btn-txt" data-i18n="start_ar">VER EN REALIDAD AUMENTADA (AR)</span>
+                        </button>
+                    </div>
+
+                    <!-- Controles cuando está dentro de Realidad Aumentada -->
+                    <div id="ar-controls" class="hidden flex-col gap-2 w-full z-50">
+                        <!-- Barra de Calibración de Mesa Compartida (Para 2 celulares en la misma habitación) -->
+                        <div class="glass-panel px-3 py-2 flex items-center justify-between gap-2 border border-neon/50">
+                            <span class="text-[9px] text-neon font-bold uppercase leading-tight"><i class="fas fa-compass mr-1"></i>ORIENTACIÓN<br>Y ESCALA AR:</span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="window.rotateARBoard(-15)" class="btn-neon px-2.5 py-1.5 text-[10px]" title="Girar Izquierda"><i class="fas fa-undo"></i></button>
+                                <button onclick="window.rotateARBoard(15)" class="btn-neon px-2.5 py-1.5 text-[10px]" title="Girar Derecha"><i class="fas fa-redo"></i></button>
+                                <button onclick="window.toggleScaleSlider()" class="btn-neon gold px-2.5 py-1.5 text-[9px]"><i class="fas fa-search-plus"></i> TAMAÑO</button>
+                                <button onclick="window.syncSharedARWithRival()" class="btn-neon !border-neon !text-neon px-2.5 py-1.5 text-[9px]"><i class="fas fa-sync"></i> IGUALAR</button>
+                            </div>
+                        </div>
+                        <div class="flex justify-center gap-2 w-full">
+                            <button onclick="window.placeOrLockAR()" id="btn-ar-accept" class="ar-sync-btn flex-1 !py-3.5 !text-xs animate-pulse">
+                                <i class="fas fa-map-pin mr-1"></i> <span id="btn-ar-accept-txt">📌 FIJAR JUEGO AQUÍ</span>
+                            </button>
+                            <button onclick="window.recalibrateAR()" id="btn-ar-recal" class="ar-sync-btn flex-1 !border-warn !text-warn !py-3.5 !text-xs hidden">
+                                <i class="fas fa-arrows-alt mr-1"></i> <span data-i18n="move">MOVER LUGAR</span>
+                            </button>
+                            <button onclick="window.exitAROnly()" class="ar-sync-btn !border-hot !text-hot px-4 !py-3.5 !text-xs">
+                                <i class="fas fa-times mr-1"></i> 3D
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Controles Estándar de Partida -->
+                    <div class="flex justify-between items-center glass-panel px-4 py-2.5" id="pc-controls">
+                        <button onclick="window.confirmFinishGame()" class="btn-neon danger py-2 px-3 text-[10px] flex items-center gap-1.5">
+                            <i class="fas fa-flag"></i> <span data-i18n="surrender">RENDIRSE</span>
+                        </button>
+                        
+                        <button onclick="window.recenter()" id="btn-rec" class="btn-neon py-2 px-4 text-[10px] flex items-center gap-1.5">
+                            <i class="fas fa-crosshairs"></i> <span data-i18n="recenter">CENTRAR VISTA</span>
+                        </button>
+
+                        <button onclick="window.toggleScaleSlider()" class="btn-neon gold py-2 px-3 text-[10px] flex items-center gap-1">
+                            <i class="fas fa-expand-arrows-alt"></i> ESCALA
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        <!-- 4. PANTALLA DE FIN DE PARTIDA Y RECOMPENSAS -->
+        <div id="win-screen" class="p-4">
+            <div class="text-5xl mb-2" id="win-icon">🏆</div>
+            <h1 id="win-title" class="text-4xl font-black text-cyber mb-1 tracking-wider text-center" data-i18n="victory">VICTORIA</h1>
+            <p id="win-msg" class="text-gray-300 font-mono mb-3 tracking-widest text-center text-xs">DOMINIO TÁCTICO COMPLETADO</p>
+            
+            <div class="flex gap-3 mb-5">
+                <span id="elo-change" class="bg-neon/20 border border-neon text-neon font-bold text-xs px-3 py-1 rounded-full">+25 ELO</span>
+                <span id="coins-earned" class="bg-gold/20 border border-gold text-gold font-bold text-xs px-3 py-1 rounded-full">+50 MONEDAS</span>
+            </div>
+            
+            <div class="glass-panel p-5 mb-6 w-full max-w-xs">
+                <div class="flex justify-around items-center text-center">
+                    <div>
+                        <span class="text-cyber text-[10px] block tracking-widest mb-1 font-bold" data-i18n="score">TÚ</span>
+                        <span id="final-p1" class="text-5xl font-black text-white">0</span>
+                    </div>
+                    <div class="text-gray-600 font-black text-xl">VS</div>
+                    <div>
+                        <span class="text-hot text-[10px] block tracking-widest mb-1 font-bold" data-i18n="rival">RIVAL</span>
+                        <span id="final-p2" class="text-5xl font-black text-white">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 w-full max-w-xs">
+                <button id="btn-double-reward" onclick="window.watchAdForDoubleCoins()" class="btn-neon gold py-3 px-5 text-xs w-full flex items-center justify-center gap-2 animate-pulse">
+                    <i class="fas fa-play-circle text-base"></i> DUPLICAR MONEDAS (VIDEO BONUS)
+                </button>
+                <button onclick="window.rematchOrMenu()" class="btn-neon py-3.5 px-6 text-xs w-full">
+                    <i class="fas fa-home mr-2"></i> <span data-i18n="back_menu">VOLVER AL CENTRO DE MANDO</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ar-zone"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { ARButton } from 'three/addons/webxr/ARButton.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, getDoc, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, signInAnonymously, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithCustomToken, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // ==========================================
+        // 1. DICCIONARIO MULTI-IDIOMA (I18N)
+        // ==========================================
+        const TR = {
+            es: {
+                login: "CONECTAR CON GOOGLE", guest_login: "JUGAR AHORA (INVITADO)", connecting: "CONECTANDO...", cancel: "CANCELAR",
+                agent: "AGENTE", color: "LÁSER", mark: "INSIGNIA", quick_match: "BUSCAR RIVAL ONLINE", create_room: "CREAR SALA (QR)",
+                join_room: "ESCANEAR / CÓDIGO", vs_cpu: "ENTRENAR CONTRA IA BOT (AR / 3D)", invite: "INVITAR", ranking: "RANKING",
+                shop: "MEJORAS", check_hw: "SISTEMA AR / 3D LISTO", searching: "BUSCANDO RIVAL", scanning: "ESCANEANDO SERVIDORES...",
+                private_room: "SALA MULTIJUGADOR", share_code: "CÓDIGO PARA EL OTRO CELULAR:", waiting_player: "CANAL P2P LISTO. ESPERANDO RIVAL...",
+                score: "TÚ", lines: "ENERGÍA:", skip: "PASAR", rival: "RIVAL", loading: "CARGANDO...", surrender: "RENDIRSE",
+                recenter: "CENTRAR VISTA", start_ar: "VER EN REALIDAD AUMENTADA (AR)", move: "MOVER LUGAR", victory: "VICTORIA",
+                defeat: "DERROTA", draw: "EMPATE", back_menu: "VOLVER AL CENTRO DE MANDO", wait_turn: "Turno del Rival",
+                play_turn: "Usa tus líneas activas", roll_dice: "Toca el dado para lanzar", energy: "ENERGÍA", pass: "PASO",
+                turn_skipped: "Turno cedido", error: "ACCIÓN INVÁLIDA", login_req: "Inicia sesión primero",
+                ar_floor: "SUPERFICIE DETECTADA", ar_air: "MODO HOLOGRAMA FLOTANTE", ar_tap_fix: "Pulsa FIJAR JUEGO AQUÍ",
+                win_msg: "DOMINIO TÁCTICO COMPLETADO", lose_msg: "BUENA BATALLA, INTÉNTALO DE NUEVO", draw_msg: "EQUILIBRIO PERFECTO",
+                blocked: "Cruza una pared o nodo intermedio", range: "Fuera de rango", occupied: "Esa línea ya existe",
+                encapsulated: "¡Zona Encapsulada! Prohibido formar triángulos adentro"
+            },
+            en: {
+                login: "SIGN IN WITH GOOGLE", guest_login: "PLAY NOW (GUEST)", connecting: "CONNECTING...", cancel: "CANCEL",
+                agent: "AGENT", color: "LASER", mark: "BADGE", quick_match: "FIND ONLINE MATCH", create_room: "CREATE ROOM (QR)",
+                join_room: "SCAN QR / CODE", vs_cpu: "TRAIN VS AI BOT (AR / 3D)", invite: "INVITE", ranking: "RANKING",
+                shop: "UPGRADES", check_hw: "AR / 3D SYSTEM READY", searching: "SEARCHING RIVAL", scanning: "SCANNING NETWORK...",
+                private_room: "MULTIPLAYER ROOM", share_code: "ROOM CODE:", waiting_player: "WAITING FOR PLAYER...",
+                score: "YOU", lines: "ENERGY:", skip: "SKIP", rival: "RIVAL", loading: "LOADING...", surrender: "SURRENDER",
+                recenter: "RE-CENTER", start_ar: "VIEW IN AUGMENTED REALITY (AR)", move: "MOVE BOARD", victory: "VICTORY",
+                defeat: "DEFEAT", draw: "DRAW", back_menu: "RETURN TO COMMAND CENTER", wait_turn: "Opponent's Turn",
+                play_turn: "Use your active lines", roll_dice: "Tap dice to roll", energy: "ENERGY", pass: "SKIP",
+                turn_skipped: "Turn skipped", error: "INVALID MOVE", login_req: "Login required",
+                ar_floor: "SURFACE DETECTED", ar_air: "FLOATING HOLOGRAM MODE", ar_tap_fix: "Tap LOCK BOARD HERE",
+                win_msg: "TACTICAL DOMINATION", lose_msg: "GOOD FIGHT, TRY AGAIN", draw_msg: "PERFECT BALANCE",
+                blocked: "Crosses an existing wall or node", range: "Invalid node", occupied: "Line already exists",
+                encapsulated: "Encapsulated Zone! Cannot form inner triangles"
+            }
+        };
+
+        // ==========================================
+        // 2. FONDO NEURONAL ANIMADO 2D (MENÚS)
+        // ==========================================
+        (function initBgCanvas() {
+            const c = document.getElementById('bg-canvas');
+            if (!c) return;
+            const ctx = c.getContext('2d');
+            let w, h, nodes = [];
+            function resize() {
+                w = c.width = window.innerWidth;
+                h = c.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+            for (let i = 0; i < 32; i++) {
+                nodes.push({
+                    x: Math.random() * w, y: Math.random() * h,
+                    vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6
+                });
+            }
+            function drawBg() {
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = '#00f3ff';
+                for (let i = 0; i < nodes.length; i++) {
+                    const n = nodes[i];
+                    n.x += n.vx; n.y += n.vy;
+                    if (n.x < 0 || n.x > w) n.vx *= -1;
+                    if (n.y < 0 || n.y > h) n.vy *= -1;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, 1.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const n2 = nodes[j];
+                        const dist = Math.hypot(n.x - n2.x, n.y - n2.y);
+                        if (dist < 130) {
+                            ctx.strokeStyle = `rgba(0, 243, 255, ${(1 - dist / 130) * 0.22})`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(n.x, n.y);
+                            ctx.lineTo(n2.x, n2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(drawBg);
+            }
+            drawBg();
+        })();
+
+        // ==========================================
+        // 2.5 GESTOR PUBLICITARIO GOOGLE H5 GAMES ADS
+        // ==========================================
+        let adFinishCallback = null;
+        let adCountdownInterval = null;
+
+        window.triggerH5Ad = (adType = 'next', onComplete = () => {}) => {
+            // 1. Intentar mostrar anuncio real con la API de Google H5 Games Ads (adBreak)
+            let adHandledByGoogle = false;
+            if (typeof window.adBreak === 'function') {
+                try {
+                    if (adType === 'reward') {
+                        window.adBreak({
+                            type: 'reward',
+                            name: 'bonus_coins',
+                            beforeAd: () => { adHandledByGoogle = true; },
+                            afterAd: () => {},
+                            beforeReward: (showAdFn) => { showAdFn(); },
+                            adDismissed: () => { window.systemToast("ANUNCIO", "Anuncio cancelado"); },
+                            adViewed: () => { onComplete(); },
+                            adBreakDone: (placementInfo) => {
+                                if (placementInfo.breakStatus !== 'viewed' && !adHandledByGoogle) {
+                                    window.showSimulatedAdModal(adType, onComplete);
+                                }
+                            }
+                        });
+                        return;
+                    } else {
+                        window.adBreak({
+                            type: adType, // 'start', 'next', 'browse'
+                            name: 'end_of_match_interstitial',
+                            beforeAd: () => { adHandledByGoogle = true; },
+                            afterAd: () => { onComplete(); },
+                            adBreakDone: (placementInfo) => {
+                                if (!adHandledByGoogle) {
+                                    window.showSimulatedAdModal(adType, onComplete);
+                                } else {
+                                    onComplete();
+                                }
+                            }
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("Fallback a Simulador H5 Ads:", e);
+                }
+            }
+            // 2. Mientras Google aprueba tu dominio web o pruebas localmente, mostramos el contenedor de anuncio H5
+            window.showSimulatedAdModal(adType, onComplete);
+        };
+
+        window.showSimulatedAdModal = (adType, onComplete) => {
+            adFinishCallback = onComplete;
+            const overlay = document.getElementById('h5-ad-overlay');
+            const timerBadge = document.getElementById('ad-timer-badge');
+            const progressBar = document.getElementById('ad-progress-bar');
+            const closeBtn = document.getElementById('btn-close-ad');
+            const titleEl = document.getElementById('ad-modal-title');
+            const descEl = document.getElementById('ad-modal-desc');
+
+            titleEl.innerText = adType === 'reward' ? "VIDEO BONIFICADO (H5 ADS)" : "PAUSA PUBLICITARIA (H5 ADS)";
+            descEl.innerText = adType === 'reward' 
+                ? "Mira este anuncio patrocinado durante 4 segundos para recibir tu recompensa gratuita." 
+                : "Gracias a estos anuncios, 3 LINE-AR es 100% gratuito para todos los jugadores.";
+
+            overlay.style.display = 'flex';
+            closeBtn.classList.add('btn-disabled');
+            closeBtn.innerText = "CARGANDO ANUNCIO...";
+            progressBar.style.width = '0%';
+
+            let timeLeft = 4;
+            timerBadge.innerText = `${timeLeft}s`;
+
+            if (adCountdownInterval) clearInterval(adCountdownInterval);
+            adCountdownInterval = setInterval(() => {
+                timeLeft--;
+                const pct = ((4 - timeLeft) / 4) * 100;
+                progressBar.style.width = `${pct}%`;
+                if (timeLeft > 0) {
+                    timerBadge.innerText = `${timeLeft}s`;
+                } else {
+                    clearInterval(adCountdownInterval);
+                    timerBadge.innerText = "LISTO";
+                    closeBtn.classList.remove('btn-disabled');
+                    closeBtn.innerHTML = `<i class="fas fa-check-circle mr-1"></i> CONTINUAR Y RECIBIR BONO`;
+                }
+            }, 1000);
+        };
+
+        window.finishSimulatedAd = () => {
+            document.getElementById('h5-ad-overlay').style.display = 'none';
+            if (adCountdownInterval) clearInterval(adCountdownInterval);
+            if (typeof adFinishCallback === 'function') {
+                const cb = adFinishCallback;
+                adFinishCallback = null;
+                cb();
+            }
+        };
+
+        // ==========================================
+        // 3. AUDIO SINTETIZADO Y VIBRACIÓN HÁPTICA
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isMuted = false;
+
+        window.toggleMute = () => {
+            isMuted = !isMuted;
+            const ic = document.getElementById('sound-icon');
+            ic.className = isMuted ? 'fas fa-volume-mute text-hot' : 'fas fa-volume-up text-cyber';
+        };
+
+        function vibrate(ms = 25) {
+            if (navigator.vibrate && !isMuted) {
+                try { navigator.vibrate(ms); } catch (e) {}
+            }
+        }
+
+        function playSfx(type) {
+            if (isMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                vibrate(15);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(900, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'link') {
+                vibrate(30);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(640, now + 0.14);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+                osc.start(now); osc.stop(now + 0.14);
+            } else if (type === 'win') {
+                vibrate([40, 60, 80]);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.08);
+                osc.frequency.setValueAtTime(659.25, now + 0.16);
+                osc.frequency.setValueAtTime(880, now + 0.24);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                osc.start(now); osc.stop(now + 0.45);
+            } else if (type === 'roll') {
+                vibrate(25);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(520, now + 0.15);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+                osc.start(now); osc.stop(now + 0.16);
+            } else if (type === 'error') {
+                vibrate([50, 50]);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(90, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'end') {
+                vibrate([70, 50, 120]);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
+        // ==========================================
+        // 4. FIREBASE E INICIALIZACIÓN DE ESTADO
+        // ==========================================
+        const manualConfig = { apiKey: "AIzaSyBbPYnUPaO-kzWWStS8013SOvdTSuK3KP4", authDomain: "ar-3lilne.firebaseapp.com", projectId: "ar-3lilne", appId: "1:382966716480:web:ee244825bb34bc35c667a5" };
+        const firebaseConfig = (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : manualConfig);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-ar-app';
+        
+        let app, auth, db;
+        try { 
+            app = initializeApp(firebaseConfig); 
+            auth = getAuth(app); 
+            db = getFirestore(app); 
+            if (typeof __initial_auth_token !== 'undefined') { signInWithCustomToken(auth, __initial_auth_token); } 
+        } catch(e) { console.error("Firebase Init Error:", e); }
+
+        // Estado Global enriquecido con Economía y Modos
+        let S = { 
+            user: null, room: null, role: null, 
+            cpu: false, passPlay: false, 
+            data: null, 
+            prof: { c: '#00f3ff', i: 'gem', skin: 'cyber' }, 
+            points: parseInt(localStorage.getItem('3lar_pts') || '1000'), 
+            coins: parseInt(localStorage.getItem('3lar_coins') || '250'),
+            vip: localStorage.getItem('3lar_vip') === 'true',
+            ownedSkins: JSON.parse(localStorage.getItem('3lar_skins') || '["cyber"]'),
+            wins: parseInt(localStorage.getItem('3lar_wins') || '0'), 
+            losses: parseInt(localStorage.getItem('3lar_losses') || '0'), 
+            lang: 'es',
+            lastRewardEarned: 0
+        };
+
+        let pts = [], selPt = null, placed = false, roomUnsub = null, currentScale = 1.0; 
+        let arInitialized = false, localArLocked = false; 
+        let scene, cam, ren, group, boardBaseGroup, fxGroup, ray, reticle, arHit, controls, arRefSpace, arBtn, ghostGroup;
+        let isMatchmaking = false, matchmakingFallbackTimer = null, heartbeatInterval = null, cpuThinking = false;
+        let activeParticles = [];
+        let previewLine = null; // Línea guía en tiempo real para saber exactamente qué puntos vas a unir
+
+        // Variables de Conexión Directa P2P (PeerJS) y Cámara AR Universal
+        let peer = null;
+        let peerConn = null;
+        let html5QrCode = null;
+        let arCameraStream = null;
+        let isCameraArActive = false;
+        let cameraArScanning = false; // Indica si está apuntando para elegir terreno en Cámara AR
+        let boardRotationY = 0; // Rotación del tablero para alinear 2 celulares en la misma mesa
+
+        function saveLocalEconomy() {
+            localStorage.setItem('3lar_pts', S.points);
+            localStorage.setItem('3lar_coins', S.coins);
+            localStorage.setItem('3lar_vip', S.vip);
+            localStorage.setItem('3lar_skins', JSON.stringify(S.ownedSkins));
+            localStorage.setItem('3lar_wins', S.wins);
+            localStorage.setItem('3lar_losses', S.losses);
+            const cEl = document.getElementById('top-coins');
+            if (cEl) cEl.innerText = S.coins;
+            const eEl = document.getElementById('menu-elo');
+            if (eEl) eEl.innerText = S.points;
+            const vEl = document.getElementById('vip-badge');
+            if (vEl) vEl.classList.toggle('hidden', !S.vip);
+        }
+        saveLocalEconomy();
+
+        // Limpieza automática de sala si el jugador cierra la pestaña
+        window.addEventListener('beforeunload', () => {
+            if (S.room && !S.cpu && !S.passPlay && db) {
+                try { updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${S.room}`), { stat: 'end' }); } catch (e) {}
+            }
+        });
+
+        // ==========================================
+        // 4.5 MULTIJUGADOR DUAL (P2P GOOGLE STUN + FIRESTORE EN VIVO)
+        // ==========================================
+        const ROOMS_COLL = db ? collection(db, 'artifacts', appId, 'public', 'data', 'rooms') : null;
+        const PEER_PREFIX = "3linear-v56-room-";
+        let hostWaitPollInterval = null;
+
+        // Configuración oficial de servidores STUN de Google para atravesar firewalls entre PC y Celular
+        const PEER_CONFIG = {
+            debug: 1,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
+                ]
+            }
+        };
+
+        function cleanupPeer() {
+            if (hostWaitPollInterval) {
+                clearInterval(hostWaitPollInterval);
+                hostWaitPollInterval = null;
+            }
+            if (peerConn) {
+                try { peerConn.close(); } catch (e) {}
+                peerConn = null;
+            }
+            if (peer) {
+                try { peer.destroy(); } catch (e) {}
+                peer = null;
+            }
+        }
+
+        // Modal unificado para Escanear QR con la Cámara o Escribir el Código de 4 letras
+        window.openConnectModal = () => {
+            const modal = document.getElementById('qr-scanner-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            const inputEl = document.getElementById('scanner-code-in');
+            if (inputEl) {
+                inputEl.value = '';
+                setTimeout(() => inputEl.focus(), 200);
+            }
+
+            if (typeof Html5Qrcode !== 'undefined') {
+                if (html5QrCode) {
+                    try { html5QrCode.stop().catch(()=>{}); } catch(e){}
+                }
+                html5QrCode = new Html5Qrcode("qr-reader");
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 180, height: 180 } },
+                    (decodedText) => {
+                        let code = decodedText.trim().toUpperCase();
+                        try {
+                            if (decodedText.includes('room=')) {
+                                const urlObj = new URL(decodedText);
+                                code = (urlObj.searchParams.get('room') || '').toUpperCase();
+                            }
+                        } catch (e) {
+                            const match = decodedText.match(/room=([A-Z0-9]{4})/i);
+                            if (match) code = match[1].toUpperCase();
+                        }
+                        code = code.replace(/[^A-Z0-9]/g, '').substring(0, 4);
+                        if (code && code.length === 4) {
+                            playSfx('win');
+                            window.stopQRScanner();
+                            window.join(code);
+                        }
+                    },
+                    () => {}
+                ).catch(() => {
+                    const readerEl = document.getElementById('qr-reader');
+                    if (readerEl) {
+                        readerEl.innerHTML = `
+                            <div class="p-6 text-center text-xs text-gray-300 flex flex-col items-center justify-center h-[200px]">
+                                <i class="fas fa-keyboard text-3xl text-cyber mb-3 block"></i>
+                                <span>Escribe abajo el código de 4 letras que aparece en la otra pantalla y pulsa <strong>ENTRAR</strong>.</span>
+                            </div>`;
+                    }
+                });
+            }
+        };
+
+        window.stopQRScanner = () => {
+            const modal = document.getElementById('qr-scanner-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (html5QrCode) {
+                try {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
+                        html5QrCode = null;
+                    }).catch(() => { html5QrCode = null; });
+                } catch (e) {
+                    html5QrCode = null;
+                }
+            }
+        };
+
+        window.joinFromScannerInput = () => {
+            const raw = document.getElementById('scanner-code-in').value || '';
+            const c = raw.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (c.length === 4) {
+                window.stopQRScanner();
+                window.join(c);
+            } else {
+                window.systemToast("CÓDIGO", "Escribe las 4 letras de la sala");
+            }
+        };
+
+        async function ensureFirebaseAuth() {
+            if (!auth) return;
+            if (!auth.currentUser) {
+                try {
+                    await signInAnonymously(auth);
+                } catch (e) {
+                    console.warn("Firebase Auth anónimo no disponible:", e);
+                }
+            }
+        }
+
+        window.quickMatch = async () => {
+            if (!S.user) return window.systemToast("INFO", t('login_req'));
+            S.cpu = false; S.passPlay = false; isMatchmaking = true;
+            cleanupPeer();
+
+            nav('s-matchmaking');
+            document.getElementById('match-status-title').innerText = t('searching');
+            document.getElementById('match-status-desc').innerText = "CONECTANDO AL LOBBY MUNDIAL...";
+
+            await ensureFirebaseAuth();
+
+            if (ROOMS_COLL) {
+                try {
+                    const q = await getDocs(ROOMS_COLL);
+                    const activeThreshold = Date.now() - 45000;
+                    const openRooms = [];
+                    q.forEach(d => {
+                        const r = d.data();
+                        if (r.stat === 'wait' && r.pub === true && r.host !== S.user.uid && !r.guest && r.lastUpdate > activeThreshold) {
+                            openRooms.push(d.id.replace('room_', ''));
+                        }
+                    });
+                    if (openRooms.length > 0) {
+                        const targetRoom = openRooms[0];
+                        document.getElementById('match-status-title').innerText = "¡RIVAL ENCONTRADO!";
+                        document.getElementById('match-status-desc').innerText = `ENTRANDO A SALA ${targetRoom}...`;
+                        setTimeout(() => window.join(targetRoom), 300);
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            const publicLobbyCode = "PUB1";
+            if (typeof Peer !== 'undefined') {
+                const tempPeer = new Peer(PEER_PREFIX + publicLobbyCode, PEER_CONFIG);
+                tempPeer.on('open', () => {
+                    peer = tempPeer;
+                    S.role = 'host';
+                    S.room = publicLobbyCode;
+                    S.data = {
+                        host: S.user.uid,
+                        hostName: S.user.displayName ? S.user.displayName.split(' ')[0] : "Agente 1",
+                        stat: 'wait', pub: true, turn: 'host',
+                        points: genPoints(), lines: [], tris: [],
+                        sc: { host: 0, guest: 0 }, dice: null, movs: 0, skips: 0,
+                        p1: S.prof, scale: 1.0, lastUpdate: Date.now()
+                    };
+                    setupHostPeerListeners(peer);
+
+                    if (matchmakingFallbackTimer) clearTimeout(matchmakingFallbackTimer);
+                    matchmakingFallbackTimer = setTimeout(() => {
+                        if (isMatchmaking && (!S.data || S.data.stat === 'wait')) {
+                            window.cancelMatchmaking(true);
+                            const botNames = ["CYBER_VIPER", "NEXUS_9", "KIRA_AR", "ZERO_COOL", "VALKYRIE"];
+                            const pickedBot = botNames[Math.floor(Math.random() * botNames.length)];
+                            window.vsCpu(pickedBot);
+                        }
+                    }, 10000);
+                });
+
+                tempPeer.on('error', (err) => {
+                    if (err.type === 'unavailable-id') {
+                        try { tempPeer.destroy(); } catch (e) {}
+                        document.getElementById('match-status-title').innerText = "¡RIVAL ENCONTRADO!";
+                        document.getElementById('match-status-desc').innerText = "ENLAZANDO DISPOSITIVOS...";
+                        setTimeout(() => window.join(publicLobbyCode), 400);
+                    } else {
+                        setTimeout(() => {
+                            if (isMatchmaking) {
+                                isMatchmaking = false;
+                                window.vsCpu("NEXUS_PRIME");
+                            }
+                        }, 1500);
+                    }
+                });
+            } else {
+                setTimeout(() => {
+                    if (isMatchmaking) {
+                        isMatchmaking = false;
+                        window.vsCpu("NEXUS_PRIME");
+                    }
+                }, 1500);
+            }
+        };
+
+        window.cancelMatchmaking = (silent = false) => {
+            isMatchmaking = false;
+            if (matchmakingFallbackTimer) { clearTimeout(matchmakingFallbackTimer); matchmakingFallbackTimer = null; }
+            cleanupPeer();
+            if (!silent) window.goHome();
+        };
+
+        window.cancelWaitingRoom = () => {
+            cleanupPeer();
+            if (S.room && S.role === 'host' && db) {
+                updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${S.room}`), { stat: 'end' }).catch(()=>{});
+            }
+            window.goHome();
+        };
+
+        window.createRoom = () => window.create(false);
+        window.joinRoom = () => { 
+            const raw = document.getElementById('code-in').value || '';
+            const c = raw.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(); 
+            if (c.length === 4) window.join(c); 
+            else window.systemToast("CÓDIGO", "Ingresa las 4 letras de la sala"); 
+        };
+        
+        window.vsCpu = (customBotName = "CPU TÁCTICO") => {
+            cleanupPeer();
+            S.cpu = true; S.passPlay = false; S.role = 'host'; S.room = 'IA-BOT';
+            const botColors = ['#ff0055', '#ffd700', '#b829ff'];
+            const botCol = botColors.find(c => c !== S.prof.c) || '#ff0055';
+            S.data = { 
+                stat: 'play', turn: 'host', 
+                hostName: S.user?.displayName ? S.user.displayName.split(' ')[0] : "TÚ",
+                guestName: customBotName,
+                points: genPoints(), lines: [], tris: [], 
+                sc: { host: 0, guest: 0 }, dice: null, movs: 0, skips: 0, 
+                p1: S.prof, p2: { c: botCol, i: 'atom' }, scale: 1.0 
+            };
+            window.start();
+        };
+
+        function setupHostPeerListeners(hostPeer) {
+            hostPeer.on('connection', (conn) => {
+                peerConn = conn;
+                conn.on('data', (msg) => {
+                    if (!msg) return;
+                    if (msg.type === 'JOIN_REQUEST') {
+                        let guestProf = msg.prof || { c: '#ff0055', i: 'bolt' };
+                        if (S.data.p1 && S.data.p1.c === guestProf.c) {
+                            guestProf.c = guestProf.c === '#00f3ff' ? '#ff0055' : '#00f3ff';
+                        }
+                        S.data.guest = msg.uid || 'guest_p2p';
+                        S.data.guestName = msg.name || 'AGENTE 2';
+                        S.data.p2 = guestProf;
+                        S.data.stat = 'play';
+                        S.data.lastUpdate = Date.now();
+
+                        try { conn.send({ type: 'SYNC_STATE', state: S.data }); } catch (e) {}
+
+                        if (db && S.room) {
+                            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${S.room}`), S.data, { merge: true }).catch(()=>{});
+                        }
+
+                        isMatchmaking = false;
+                        if (matchmakingFallbackTimer) { clearTimeout(matchmakingFallbackTimer); matchmakingFallbackTimer = null; }
+                        if (hostWaitPollInterval) { clearInterval(hostWaitPollInterval); hostWaitPollInterval = null; }
+                        if (document.getElementById('s-game').classList.contains('hidden')) {
+                            window.start();
+                            playSfx('win');
+                        }
+                        window.draw();
+                        window.ui();
+                    } else if (msg.type === 'STATE_PATCH') {
+                        if (!S.data) S.data = {};
+                        Object.assign(S.data, msg.patch);
+                        if (msg.patch.lines) S.data.lines = [...msg.patch.lines];
+                        if (msg.patch.tris) S.data.tris = [...msg.patch.tris];
+                        if (msg.patch.sc) S.data.sc = { ...msg.patch.sc };
+                        if (S.data.stat === 'end') window.endGame(S.data);
+                        else {
+                            window.draw();
+                            window.ui();
+                        }
+                    }
+                });
+                conn.on('close', () => {
+                    if (S.data && S.data.stat === 'play' && !db) {
+                        window.systemToast("DESCONECTADO", "El otro dispositivo cerró la conexión");
+                        window.endGame(S.data);
+                    }
+                });
+            });
+        }
+
+        window.create = async (pub) => {
+            if (!S.user) return; 
+            cleanupPeer();
+            await ensureFirebaseAuth();
+
+            S.cpu = false; S.passPlay = false; S.role = 'host'; 
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let c = '';
+            for (let i = 0; i < 4; i++) c += chars.charAt(Math.floor(Math.random() * chars.length));
+            S.room = c;
+            
+            S.data = { 
+                host: S.user.uid, 
+                hostName: S.user.displayName ? S.user.displayName.split(' ')[0] : "Agente 1", 
+                stat: 'wait', pub: pub, turn: 'host', 
+                points: genPoints(), lines: [], tris: [], 
+                sc: { host: 0, guest: 0 }, dice: null, movs: 0, skips: 0, 
+                p1: S.prof, scale: 1.0, lastUpdate: Date.now() 
+            };
+
+            if (!pub) {
+                document.getElementById('waiting-code').innerText = c;
+                const joinUrl = `${window.location.origin}${window.location.pathname}?room=${c}`;
+                document.getElementById('room-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrl)}`;
+                const statusLbl = document.getElementById('waiting-status-lbl');
+                if (statusLbl) statusLbl.innerText = "PREPARANDO SALA " + c + "...";
+                nav('s-waiting'); 
+            }
+
+            if (db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${c}`);
+                setDoc(docRef, S.data).then(() => {
+                    window.sub(c);
+                    const statusLbl = document.getElementById('waiting-status-lbl');
+                    if (statusLbl) statusLbl.innerText = `SALA ${c} ACTIVA. ESCANEA EL QR O ESCRIBE EL CÓDIGO...`;
+                }).catch((err) => {
+                    console.warn("Aviso Firestore Create:", err);
+                });
+
+                if (hostWaitPollInterval) clearInterval(hostWaitPollInterval);
+                hostWaitPollInterval = setInterval(async () => {
+                    if (!S.room || S.data?.stat === 'play') {
+                        clearInterval(hostWaitPollInterval);
+                        return;
+                    }
+                    try {
+                        const snap = await getDoc(docRef);
+                        if (snap.exists()) {
+                            const remoteData = snap.data();
+                            if (remoteData.stat === 'play' && remoteData.guest) {
+                                clearInterval(hostWaitPollInterval);
+                                S.data = remoteData;
+                                if (document.getElementById('s-game').classList.contains('hidden')) {
+                                    window.start();
+                                    playSfx('win');
+                                }
+                                window.draw();
+                                window.ui();
+                            }
+                        }
+                    } catch (e) {}
+                }, 1500);
+            }
+
+            if (typeof Peer !== 'undefined') {
+                try {
+                    peer = new Peer(PEER_PREFIX + c, PEER_CONFIG);
+                    peer.on('open', () => {
+                        const statusLbl = document.getElementById('waiting-status-lbl');
+                        if (statusLbl) statusLbl.innerText = `SALA ${c} LISTA (P2P + NUBE). ESPERANDO RIVAL...`;
+                    });
+                    setupHostPeerListeners(peer);
+                } catch (e) {
+                    console.warn("Error iniciando Peer:", e);
+                }
+            }
+        };
+
+        window.join = async (rawCode) => {
+            if (!S.user) return; 
+            const c = (rawCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (c.length !== 4) return window.systemToast("CÓDIGO", "El código debe tener 4 caracteres");
+
+            cleanupPeer();
+            await ensureFirebaseAuth();
+
+            S.cpu = false; S.passPlay = false; S.role = 'guest'; S.room = c; 
+            showLoad(true, `ENTRANDO A SALA ${c}...`);
+            
+            let gameStartedFlag = false;
+
+            const attemptFirestoreJoin = async () => {
+                if (!db || gameStartedFlag) return false;
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${c}`);
+                try {
+                    const s = await getDoc(docRef);
+                    if (!s.exists()) return false;
+                    const d = s.data();
+                    let guestProf = { ...S.prof };
+                    if (d.p1 && d.p1.c === guestProf.c) {
+                        guestProf.c = guestProf.c === '#00f3ff' ? '#ff0055' : '#00f3ff';
+                    }
+                    const up = { 
+                        guest: S.user.uid, 
+                        guestName: S.user.displayName ? S.user.displayName.split(' ')[0] : "Agente 2", 
+                        stat: 'play', 
+                        p2: guestProf,
+                        lastUpdate: Date.now()
+                    };
+                    await updateDoc(docRef, up);
+                    S.data = { ...d, ...up };
+                    gameStartedFlag = true;
+                    showLoad(false);
+                    isMatchmaking = false;
+                    window.sub(c);
+                    document.getElementById('room-lbl').innerText = c;
+                    if (document.getElementById('s-game').classList.contains('hidden')) {
+                        window.start();
+                        playSfx('win');
+                    }
+                    window.draw();
+                    window.ui();
+                    return true;
+                } catch (e) {
+                    console.warn("Intento Firestore Join:", e);
+                    return false;
+                }
+            };
+
+            const joinedFirestoreImmediately = await attemptFirestoreJoin();
+
+            if (typeof Peer !== 'undefined') {
+                try {
+                    peer = new Peer(PEER_CONFIG);
+                    peer.on('open', () => {
+                        const conn = peer.connect(PEER_PREFIX + c, { reliable: true });
+                        peerConn = conn;
+
+                        conn.on('open', () => {
+                            conn.send({
+                                type: 'JOIN_REQUEST',
+                                uid: S.user.uid,
+                                name: S.user.displayName ? S.user.displayName.split(' ')[0] : "Agente 2",
+                                prof: S.prof
+                            });
+                        });
+
+                        conn.on('data', (msg) => {
+                            if (!msg) return;
+                            if (msg.type === 'SYNC_STATE') {
+                                S.data = msg.state;
+                                gameStartedFlag = true;
+                                showLoad(false);
+                                isMatchmaking = false;
+                                if (document.getElementById('s-game').classList.contains('hidden')) {
+                                    window.start();
+                                    playSfx('win');
+                                }
+                                window.draw();
+                                window.ui();
+                            } else if (msg.type === 'STATE_PATCH') {
+                                if (!S.data) return;
+                                Object.assign(S.data, msg.patch);
+                                if (msg.patch.lines) S.data.lines = [...msg.patch.lines];
+                                if (msg.patch.tris) S.data.tris = [...msg.patch.tris];
+                                if (msg.patch.sc) S.data.sc = { ...msg.patch.sc };
+                                if (S.data.stat === 'end') window.endGame(S.data);
+                                else {
+                                    window.draw();
+                                    window.ui();
+                                }
+                            }
+                        });
+                    });
+                } catch (e) {}
+            }
+
+            if (!joinedFirestoreImmediately) {
+                setTimeout(async () => {
+                    if (!gameStartedFlag) await attemptFirestoreJoin();
+                }, 1800);
+
+                setTimeout(async () => {
+                    if (!gameStartedFlag) {
+                        const ok = await attemptFirestoreJoin();
+                        if (!ok && !gameStartedFlag) {
+                            showLoad(false);
+                            window.systemToast("SALA NO ENCONTRADA", `Verifica que el código ${c} esté abierto en el otro dispositivo`);
+                            S.room = null;
+                            nav('s-menu');
+                        }
+                    }
+                }, 5000);
+            }
+        };
+
+        // ==========================================
+        // 5. GESTIÓN DE IDIOMA Y NAVEGACIÓN DE PANTALLAS
+        // ==========================================
+        window.detectLanguage = () => {
+            const l = navigator.language || navigator.userLanguage || 'es';
+            const code = l.split('-')[0].toLowerCase();
+            return TR[code] ? code : 'es';
+        };
+
+        window.setLanguage = (lang) => {
+            S.lang = TR[lang] ? lang : 'es';
+            const codeEl = document.getElementById('cur-lang-code');
+            if (codeEl) codeEl.innerText = S.lang.toUpperCase();
+            document.body.classList.remove('lang-zh', 'lang-ru');
+            if (S.lang === 'zh') document.body.classList.add('lang-zh');
+            if (S.lang === 'ru') document.body.classList.add('lang-ru');
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (TR[S.lang] && TR[S.lang][key]) el.innerText = TR[S.lang][key];
+            });
+            const modal = document.getElementById('custom-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.t = (key) => (TR[S.lang] && TR[S.lang][key]) ? TR[S.lang][key] : key;
+
+        window.showLangPicker = () => {
+            const opts = Object.keys(TR).map(k => 
+                `<div class="lang-opt ${S.lang === k ? 'active' : ''}" onclick="window.setLanguage('${k}')">${k.toUpperCase()}</div>`
+            ).join('');
+            window.showModal(`
+                <h3 class="text-base font-bold text-cyber mb-3">IDIOMA / LANGUAGE</h3>
+                <div class="lang-grid">${opts}</div>
+            `);
+        };
+
+        function nav(id) {
+            ['s-login', 's-menu', 's-game', 's-waiting', 'win-screen', 's-matchmaking'].forEach(i => {
+                const el = document.getElementById(i);
+                if (el) {
+                    el.classList.add('hidden');
+                    if (i === 'win-screen' || i === 's-waiting') el.classList.remove('active');
+                }
+            });
+            const target = document.getElementById(id);
+            if (target) {
+                target.classList.remove('hidden');
+                if (id === 'win-screen' || id === 's-waiting') target.classList.add('active');
+            }
+        }
+
+        function onUserAuthenticated(u) {
+            S.user = u;
+            const displayName = u.displayName ? u.displayName.split(' ')[0].toUpperCase() : "AGENTE-" + u.uid.substring(0, 4).toUpperCase();
+            const uName = document.getElementById('u-name');
+            if (uName) uName.innerText = displayName;
+            const uAv = document.getElementById('u-avatar');
+            if (uAv) uAv.innerText = displayName.charAt(0);
+
+            registerUserAccess(u).catch(() => {});
+            nav('s-menu');
+            window.checkAR();
+
+            // Si el jugador entró con un link de invitación (?room=XXXX), lo une automáticamente
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoRoom = urlParams.get('room');
+            if (autoRoom && autoRoom.length === 4) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+                setTimeout(() => window.join(autoRoom.toUpperCase()), 400);
+            }
+        }
+
+        if (auth) {
+            onAuthStateChanged(auth, (u) => {
+                if (u) {
+                    onUserAuthenticated(u);
+                } else {
+                    S.user = null;
+                    nav('s-login');
+                    document.getElementById('login-btn-txt').innerText = t('login');
+                }
+            });
+        }
+        
+        window.setLanguage(window.detectLanguage());
+
+        async function registerUserAccess(u) { 
+            if (!db || u.isLocalFallback) return;
+            const userRef = doc(db, 'artifacts', appId, 'users', u.uid); 
+            const snap = await getDoc(userRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                S.points = data.points || S.points;
+                S.coins = data.coins !== undefined ? data.coins : S.coins;
+                S.wins = data.wins || S.wins;
+                S.losses = data.losses || S.losses;
+                await updateDoc(userRef, { lastLogin: Date.now() });
+            } else {
+                await setDoc(userRef, { 
+                    uid: u.uid, lastLogin: Date.now(), 
+                    displayName: u.displayName || 'Agente_' + u.uid.substring(0,4), 
+                    status: 'online', points: S.points, coins: S.coins, wins: S.wins, losses: S.losses 
+                }, { merge: true });
+            }
+            saveLocalEconomy();
+        }
+        
+        let loginTimeout;
+        window.doLogin = async () => { 
+            const btn = document.getElementById('btn-login-google');
+            const txt = document.getElementById('login-btn-txt');
+            const msg = document.getElementById('login-msg');
+            const cancelBtn = document.getElementById('btn-cancel-login');
+            
+            btn.classList.add('btn-disabled');
+            txt.innerText = t('connecting');
+            msg.classList.remove('hidden');
+            cancelBtn.classList.remove('hidden');
+
+            loginTimeout = setTimeout(() => {
+                window.cancelLogin();
+                window.doGuestLogin();
+            }, 7000);
+            
+            try { 
+                const provider = new GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                await setPersistence(auth, browserLocalPersistence); 
+                await signInWithPopup(auth, provider); 
+                clearTimeout(loginTimeout);
+            } catch(e) { 
+                clearTimeout(loginTimeout);
+                window.cancelLogin();
+                // Si el dominio web actual aún no está autorizado en Firebase Console para Google Popup, entra como invitado sin bloquear al usuario
+                window.systemToast("ACCESO RÁPIDO", "Entrando en modo Agente Invitado");
+                window.doGuestLogin();
+            } 
+        };
+
+        window.doGuestLogin = async () => { 
+            try { 
+                if (auth) {
+                    await signInAnonymously(auth); 
+                } else {
+                    throw new Error("Offline");
+                }
+            } catch(e) { 
+                // Fallback 100% garantizado si no hay red o Firebase falla
+                const localUid = localStorage.getItem('3lar_uid') || 'loc_' + Math.random().toString(36).substring(2, 8);
+                localStorage.setItem('3lar_uid', localUid);
+                onUserAuthenticated({ uid: localUid, displayName: 'AGENTE ' + localUid.substring(4, 7).toUpperCase(), isAnonymous: true, isLocalFallback: true });
+            } 
+        };
+
+        window.cancelLogin = () => {
+            clearTimeout(loginTimeout);
+            const btn = document.getElementById('btn-login-google');
+            if (btn) btn.classList.remove('btn-disabled');
+            document.getElementById('login-btn-txt').innerText = t('login');
+            document.getElementById('login-msg').classList.add('hidden');
+            document.getElementById('btn-cancel-login').classList.add('hidden');
+        };
+
+        // ==========================================
+        // 6. GEOMETRÍA TÁCTICA 3D MULTINIVEL (HORIZONTAL Y VERTICAL)
+        // ==========================================
+        function genPoints() {
+            const p = []; 
+            for (let i = 0; i < 16; i++) { 
+                let v = false, pt, att = 0; 
+                // Distribuimos los 16 nodos en 3 niveles de altura (Bajo, Medio, Alto) para permitir triángulos verticales, horizontales y diagonales
+                const layer = i % 3; 
+                const baseY = layer === 0 ? 0.04 : (layer === 1 ? 0.48 : 0.92);
+                while (!v && att < 150) { 
+                    pt = { 
+                        x: (Math.random() - 0.5) * 1.75, 
+                        y: baseY + (Math.random() - 0.5) * 0.14, 
+                        z: (Math.random() - 0.5) * 1.75 
+                    }; 
+                    let ok = true; 
+                    for (let ex of p) {
+                        // Distancia 3D real entre esferas para que nunca queden pegadas ni se tapen entre sí
+                        if (Math.hypot(ex.x - pt.x, ex.y - pt.y, ex.z - pt.z) < 0.42) { ok = false; break; }
+                    }
+                    if (ok) v = true; 
+                    att++; 
+                } 
+                p.push(pt); 
+            } 
+            return p;
+        }
+
+        // Verifica si un tercer nodo libre es atravesado exactamente por el tubo láser en el espacio 3D
+        function isNodeBlockingSegment3D(pA, pB, pNode) {
+            const ab = new THREE.Vector3().subVectors(pB, pA);
+            const ap = new THREE.Vector3().subVectors(pNode, pA);
+            const abLenSq = ab.lengthSq();
+            if (abLenSq === 0) return false;
+            const proj = ap.dot(ab) / abLenSq;
+            if (proj <= 0.05 || proj >= 0.95) return false;
+            const closest = new THREE.Vector3().copy(pA).addScaledVector(ab, proj);
+            return closest.distanceTo(pNode) < 0.065;
+        }
+
+        // ====================================================================
+        // GEOMETRÍA AVANZADA: REGLA DE ENCAPSULAMIENTO 3D Y PAREDES CERRADAS
+        // ====================================================================
+
+        // 1.Algoritmo Möller–Trumbore para detectar si un rayo o segmento perfora una pared triangular existente
+        function rayIntersectsTriangle3D(orig, dir, v0, v1, v2) {
+            const EPSILON = 0.00001;
+            const edge1 = new THREE.Vector3().subVectors(v1, v0);
+            const edge2 = new THREE.Vector3().subVectors(v2, v0);
+            const h = new THREE.Vector3().crossVectors(dir, edge2);
+            const a = edge1.dot(h);
+            if (a > -EPSILON && a < EPSILON) return null;
+            const f = 1.0 / a;
+            const s = new THREE.Vector3().subVectors(orig, v0);
+            const u = f * s.dot(h);
+            if (u < 0.001 || u > 0.999) return null;
+            const q = new THREE.Vector3().crossVectors(s, edge1);
+            const v = f * dir.dot(q);
+            if (v < 0.001 || u + v > 0.999) return null;
+            const t = f * edge2.dot(q);
+            return t > EPSILON ? t : null;
+        }
+
+        // Verifica si una nueva línea (p1 -> p2) atraviesa el interior de cualquier triángulo ya conquistado
+        function doesSegmentPierceAnyTriangle(p1Idx, p2Idx, trisList) {
+            if (!trisList || trisList.length === 0) return false;
+            const pA = pts[p1Idx].position;
+            const pB = pts[p2Idx].position;
+            const segVec = new THREE.Vector3().subVectors(pB, pA);
+            const segLen = segVec.length();
+            if (segLen < 0.001) return false;
+            const dir = segVec.clone().normalize();
+
+            for (const t of trisList) {
+                // Si el triángulo comparte alguno de los dos puntos extremos, solo se tocan en el vértice
+                if (t.p1 === p1Idx || t.p2 === p1Idx || t.p3 === p1Idx ||
+                    t.p1 === p2Idx || t.p2 === p2Idx || t.p3 === p2Idx) {
+                    continue;
+                }
+                const v0 = pts[t.p1].position;
+                const v1 = pts[t.p2].position;
+                const v2 = pts[t.p3].position;
+                const dist = rayIntersectsTriangle3D(pA, dir, v0, v1, v2);
+                if (dist !== null && dist > 0.02 && dist < segLen - 0.02) {
+                    return true; // ¡Perfora una pared triangular existente!
+                }
+            }
+            return false;
+        }
+
+        // Verifica si una coordenada 3D se proyecta dentro del área de un triángulo visto desde un plano (ej. superior/inferior)
+        function isPointInTriangle2DProj(px, pz, ax, az, bx, bz, cx, cz) {
+            const v0x = cx - ax, v0z = cz - az;
+            const v1x = bx - ax, v1z = bz - az;
+            const v2x = px - ax, v2z = pz - az;
+            const dot00 = v0x * v0x + v0z * v0z;
+            const dot01 = v0x * v1x + v0z * v1z;
+            const dot02 = v0x * v2x + v0z * v2z;
+            const dot11 = v1x * v1x + v1z * v1z;
+            const dot12 = v1x * v2x + v1z * v2z;
+            const denom = (dot00 * dot11 - dot01 * dot01);
+            if (Math.abs(denom) < 0.00001) return false;
+            const invDenom = 1 / denom;
+            const u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+            const v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+            return (u > 0.03) && (v > 0.03) && (u + v < 0.97);
+        }
+
+        // 2. Detector de Encapsulamiento Espacial 3D Estricto:
+        // Determina únicamente si un punto (o el baricentro de un nuevo triángulo) está encerrado por completo
+        // dentro de una bóveda 3D ya cerrada por todos sus lados (arriba, abajo y laterales), sin descartar
+        // triángulos múltiples legítimos que se forman al mismo tiempo.
+        function isPointEncapsulated3D(targetPos, trisList, ignoreNodes = []) {
+            if (!trisList || trisList.length < 4) return false;
+
+            const dirs = [
+                new THREE.Vector3(0, 1, 0),   // Superior (+Y)
+                new THREE.Vector3(0, -1, 0),  // Inferior (-Y)
+                new THREE.Vector3(1, 0, 0),   // Lateral Este (+X)
+                new THREE.Vector3(-1, 0, 0),  // Lateral Oeste (-X)
+                new THREE.Vector3(0, 0, 1),   // Frontal (+Z)
+                new THREE.Vector3(0, 0, -1)   // Posterior (-Z)
+            ];
+
+            let blockedDirections = 0;
+            for (const dir of dirs) {
+                for (const t of trisList) {
+                    // No contar un triángulo si comparte exactamente los mismos vértices que estamos evaluando
+                    if (ignoreNodes.length === 3 &&
+                        ignoreNodes.includes(t.p1) &&
+                        ignoreNodes.includes(t.p2) &&
+                        ignoreNodes.includes(t.p3)) {
+                        continue;
+                    }
+                    const v0 = pts[t.p1].position;
+                    const v1 = pts[t.p2].position;
+                    const v2 = pts[t.p3].position;
+                    const hitDist = rayIntersectsTriangle3D(targetPos, dir, v0, v1, v2);
+                    if (hitDist !== null && hitDist > 0.02) {
+                        blockedDirections++;
+                        break;
+                    }
+                }
+            }
+
+            // Solo se considera encapsulado cuando está encerrado en al menos 5 de las 6 direcciones espaciales (bóveda cerrada)
+            return blockedDirections >= 5;
+        }
+
+        // Verifica si un nodo específico ha quedado atrapado dentro de una cápsula 3D cerrada
+        function isNodeTrappedInCapsule(nodeIdx) {
+            if (!S.data || !S.data.tris || S.data.tris.length < 4 || !pts[nodeIdx]) return false;
+            return isPointEncapsulated3D(pts[nodeIdx].position, S.data.tris, [nodeIdx]);
+        }
+
+        // Limpiador de VRAM para evitar fugas de memoria en móviles
+        function disposeHierarchy(node) {
+            if (!node) return;
+            node.traverse((child) => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+                    } else {
+                        if (child.material.map) child.material.map.dispose();
+                        child.material.dispose();
+                    }
+                }
+            });
+        }
+
+        window.buildBoard = () => {
+            if (!S.data || !S.data.points || !group) return;
+            disposeHierarchy(group);
+            while (group.children.length > 0) group.remove(group.children[0]);
+            
+            if (ghostGroup) { 
+                disposeHierarchy(ghostGroup);
+                while (ghostGroup.children.length > 0) ghostGroup.remove(ghostGroup.children[0]); 
+            } else if (scene) { 
+                ghostGroup = new THREE.Group(); 
+                scene.add(ghostGroup); 
+            }
+
+            // Crear Base Holográfica Cyberpunk debajo de las esferas
+            boardBaseGroup = new THREE.Group();
+            const gridHelper = new THREE.GridHelper(2.2, 11, 0x00f3ff, 0x0a223a);
+            gridHelper.position.y = -0.04;
+            gridHelper.material.transparent = true;
+            gridHelper.material.opacity = 0.45;
+            boardBaseGroup.add(gridHelper);
+
+            const outerRing = new THREE.Mesh(
+                new THREE.RingGeometry(1.32, 1.35, 64).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+            );
+            outerRing.position.y = -0.03;
+            outerRing.raycast = () => {};
+            boardBaseGroup.add(outerRing);
+            gridHelper.raycast = () => {};
+
+            // Marcador de Orientación Compartida (Faro Norte AR para que 2 celulares en la misma mesa se alineen igual)
+            const northMarker = new THREE.Mesh(
+                new THREE.ConeGeometry(0.08, 0.22, 4).rotateX(Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x39ff14 })
+            );
+            northMarker.position.set(0, -0.02, 1.25);
+            northMarker.raycast = () => {};
+            boardBaseGroup.add(northMarker);
+
+            group.add(boardBaseGroup);
+
+            fxGroup = new THREE.Group();
+            group.add(fxGroup);
+
+            // Crear línea guía láser para previsualizar la jugada
+            const prevGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+            const prevMat = new THREE.LineDashedMaterial({ color: 0x39ff14, dashSize: 0.06, gapSize: 0.04, transparent: true, opacity: 0.9 });
+            previewLine = new THREE.Line(prevGeo, prevMat);
+            previewLine.visible = false;
+            previewLine.raycast = () => {}; // Ignorar en el detector de clics
+            group.add(previewLine);
+
+            pts = [];
+            const geo = new THREE.SphereGeometry(0.062, 28, 28); 
+            const ghostMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.45 }); 
+
+            S.data.points.forEach((p, i) => {
+                const mat = new THREE.MeshStandardMaterial({ 
+                    color: 0x152030, 
+                    emissive: 0x00f3ff, 
+                    emissiveIntensity: 0.85,
+                    roughness: 0.2,
+                    metalness: 0.8
+                }); 
+                const m = new THREE.Mesh(geo, mat); 
+                m.position.set(p.x, p.y, p.z); 
+                m.userData.id = i;
+                m.userData.isNodeSphere = true;
+                
+                // Hitbox táctil optimizado (0.11) para que en celular y PC detecte el toque de inmediato sin fallar
+                const hitSphere = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.11, 14, 14),
+                    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+                );
+                hitSphere.userData.id = i;
+                hitSphere.userData.isHitTarget = true;
+                m.add(hitSphere); 
+
+                // Anillo indicador de nodo conectable (ignorado por el raycaster para no desviar el toque)
+                const validRing = new THREE.Mesh(
+                    new THREE.RingGeometry(0.08, 0.10, 24),
+                    new THREE.MeshBasicMaterial({ color: 0x39ff14, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+                );
+                validRing.visible = false;
+                validRing.raycast = () => {}; // CRÍTICO: No interceptar clics
+                m.add(validRing);
+                m.userData.validRing = validRing;
+
+                // Pedestal láser vertical sutil hacia la grilla base (ignorado por el raycaster)
+                const stemGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -p.y - 0.04, 0)]);
+                const stem = new THREE.Line(stemGeo, new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.18 }));
+                stem.raycast = () => {}; // CRÍTICO: No interceptar clics con el pedestal
+                m.add(stem);
+
+                group.add(m); 
+                pts.push(m);
+
+                if (ghostGroup) { 
+                    const gm = new THREE.Mesh(geo, ghostMat); 
+                    gm.position.set(p.x, p.y, p.z); 
+                    ghostGroup.add(gm); 
+                }
+            });
+
+            window.draw();
+
+            if (ren && !ren.xr.isPresenting) { 
+                group.visible = true; 
+                placed = true; 
+                currentScale = 1.0;
+                group.scale.set(1, 1, 1);
+                window.recenter(); 
+                if (ghostGroup) ghostGroup.visible = false; 
+            } else { 
+                currentScale = 0.35; 
+                group.scale.set(currentScale, currentScale, currentScale); 
+                if (ghostGroup) { 
+                    ghostGroup.scale.set(currentScale, currentScale, currentScale); 
+                    ghostGroup.visible = false; 
+                } 
+            }
+        };
+
+        // Efecto de explosión de partículas 3D cuando se conquista un triángulo
+        function spawnTriangleExplosion(centerPos, colorHex) {
+            if (!fxGroup) return;
+            const pGeo = new THREE.SphereGeometry(0.018, 8, 8);
+            const pMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 1 });
+            for (let i = 0; i < 18; i++) {
+                const p = new THREE.Mesh(pGeo, pMat.clone());
+                p.position.copy(centerPos);
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.015 + Math.random() * 0.03;
+                p.userData.vel = new THREE.Vector3(Math.cos(angle) * speed, 0.01 + Math.random() * 0.03, Math.sin(angle) * speed);
+                p.userData.life = 1.0;
+                fxGroup.add(p);
+                activeParticles.push(p);
+            }
+        }
+
+        // ==========================================
+        // 7. MECÁNICAS DE JUEGO Y REGLAS TÁCTICAS
+        // ==========================================
+        function isMyTurnNow() {
+            if (!S.data || S.data.stat !== 'play') return false;
+            if (S.passPlay) return true; // En modo 1 Celular (2J) ambos juegan en la misma pantalla
+            return S.data.turn === S.role;
+        }
+
+        function getActiveRole() {
+            return S.passPlay ? S.data.turn : S.role;
+        }
+
+        window.rollDice = () => {
+            const d = S.data; 
+            if (!d || d.stat !== 'play') return;
+            if (!isMyTurnNow()) return window.gameToast("✋", t('wait_turn')); 
+            if (d.movs > 0) return window.gameToast("⚡", t('play_turn'));
+            
+            const el = document.getElementById('dice-vis'); 
+            if (el.classList.contains('rolling')) return;
+            el.classList.add('rolling'); 
+            playSfx('roll');
+            
+            setTimeout(() => { 
+                el.classList.remove('rolling'); 
+                const v = Math.ceil(Math.random() * 6); 
+                window.update({ dice: v, movs: v, skips: 0 }); 
+                window.gameToast(t('energy'), `${v} ${t('lines')}`); 
+            }, 420);
+        };
+        
+        window.skipTurn = () => { 
+            const d = S.data; 
+            if (!d || !isMyTurnNow()) return;
+            selPt = null;
+            if (previewLine) previewLine.visible = false;
+            updateValidNodeRings();
+            const newSkips = (d.skips || 0) + 1; 
+            if (newSkips >= 2) {
+                window.update({ stat: 'end', activeSel: null }); 
+            } else { 
+                const nextRole = d.turn === 'host' ? 'guest' : 'host'; 
+                window.update({ movs: 0, turn: nextRole, dice: null, skips: newSkips, activeSel: null }); 
+                window.gameToast(t('pass'), t('turn_skipped')); 
+            } 
+        };
+
+        // Libertad 3D + Regla de Encapsulamiento y No Perforación de Paredes
+        function canConnectNodes(p1, p2) {
+            if (p1 === p2 || !pts[p1] || !pts[p2]) return { ok: false, reason: 'range' };
+            const d = S.data;
+            if (!d || !d.lines) return { ok: false, reason: 'range' };
+            
+            // 1. Verificar que esa misma línea no haya sido trazada ya
+            if (d.lines.some(l => (l.s === p1 && l.e === p2) || (l.s === p2 && l.e === p1))) {
+                return { ok: false, reason: 'occupied' };
+            }
+
+            // 2. Regla de Encapsulamiento: Si alguno de los dos puntos o el punto medio del enlace ya quedó encerrado dentro de una bóveda 3D
+            const posA = pts[p1].position;
+            const posB = pts[p2].position;
+            const midPoint = new THREE.Vector3().addVectors(posA, posB).multiplyScalar(0.5);
+            if (isNodeTrappedInCapsule(p1) || isNodeTrappedInCapsule(p2) || isPointEncapsulated3D(midPoint, d.tris, [p1, p2])) {
+                return { ok: false, reason: 'encapsulated' };
+            }
+
+            // 3. Evitar que la nueva línea atraviese el escudo de energía de un triángulo ya cerrado
+            if (doesSegmentPierceAnyTriangle(p1, p2, d.tris)) {
+                return { ok: false, reason: 'blocked' };
+            }
+            
+            // 4. Evitar que el tubo láser atraviese el centro exacto de otra esfera intermedia
+            for (let i = 0; i < pts.length; i++) {
+                if (i !== p1 && i !== p2) {
+                    if (isNodeBlockingSegment3D(posA, posB, pts[i].position)) {
+                        return { ok: false, reason: 'blocked' };
+                    }
+                }
+            }
+            return { ok: true };
+        }
+
+        function updateValidNodeRings() {
+            pts.forEach((m, idx) => {
+                if (!m.userData.validRing) return;
+                if (selPt !== null && idx !== selPt) {
+                    const check = canConnectNodes(selPt, idx);
+                    m.userData.validRing.visible = check.ok;
+                    if (check.ok && cam) {
+                        m.userData.validRing.lookAt(cam.position);
+                    }
+                } else {
+                    m.userData.validRing.visible = false;
+                }
+            });
+            if (selPt === null && previewLine) {
+                previewLine.visible = false;
+            }
+        }
+
+        window.clickPt = (id) => {
+            const d = S.data; 
+            if (!d || d.stat !== 'play') return;
+
+            // Si está en modo escaneo de terreno AR, primero debe fijar el tablero en la mesa
+            if ((ren && ren.xr.isPresenting || isCameraArActive) && !placed) {
+                window.doPlace();
+                return;
+            }
+
+            // 1. Bloquear si NO es el turno de este jugador
+            if (!isMyTurnNow()) {
+                playSfx('error');
+                const activeName = d.turn === 'host' ? (d.hostName || 'Jugador 1') : (d.guestName || 'Jugador 2');
+                window.gameToast("✋ ESPERA TU TURNO", `Está jugando ${activeName}`);
+                return;
+            }
+
+            // 2. Exigir hundir el dado primero antes de poder seleccionar cualquier punto
+            if (!d.dice || d.movs <= 0) {
+                playSfx('error');
+                const dv = document.getElementById('dice-vis');
+                if (dv) {
+                    dv.classList.add('rolling');
+                    setTimeout(() => dv.classList.remove('rolling'), 350);
+                }
+                window.gameToast("🎲 LANZA EL DADO", "Hunde primero el dado central para activar tus líneas");
+                return;
+            }
+            
+            // 3. Selección del primer punto o unión con el segundo punto (sincronizando en tiempo real con el otro dispositivo)
+            if (selPt === null) { 
+                playSfx('click');
+                selPt = id; 
+                window.highlight(id, true); 
+                updateValidNodeRings();
+                window.update({ activeSel: id });
+                window.gameToast(`NODO #${id + 1} ACTIVO`, "Ahora toca otro punto con anillo verde para trazar la línea");
+            } else { 
+                if (selPt === id) { 
+                    playSfx('click');
+                    window.highlight(id, false); 
+                    selPt = null; 
+                    updateValidNodeRings();
+                    window.update({ activeSel: null });
+                    window.gameToast("CANCELADO", "Selección liberada");
+                } else { 
+                    const prev = selPt;
+                    window.highlight(prev, false); 
+                    selPt = null; 
+                    if (previewLine) previewLine.visible = false;
+                    updateValidNodeRings();
+                    // IMPORTANTE: No enviamos un update intermedio aquí para no pisar el paquete de líneas y triángulos en Firestore/P2P
+                    window.tryLine(prev, id); 
+                } 
+            }
+        };
+
+        window.tryLine = (p1, p2) => {
+            const d = S.data;
+            const check = canConnectNodes(p1, p2);
+            if (!check.ok) {
+                playSfx('error');
+                // Mantener seleccionado el primer punto para que pueda intentar con otro punto válido de inmediato
+                selPt = p1;
+                window.highlight(p1, true);
+                updateValidNodeRings();
+                return window.gameToast(t('error'), t(check.reason));
+            }
+            
+            const activeRole = getActiveRole();
+            const nowTs = Date.now();
+            const nl = [...(d.lines || []), { s: p1, e: p2, own: activeRole, ts: nowTs }]; 
+            const nt = window.checkTri(p1, p2, activeRole, nl); 
+            const sc = { ...(d.sc || { host: 0, guest: 0 }) }; 
+            
+            if (nt.length > 0) { 
+                sc[activeRole] = (sc[activeRole] || 0) + nt.length; 
+                playSfx('win'); 
+                const msgTri = nt.length === 1 
+                    ? `¡1 Triángulo Formado! (+1 PTO)` 
+                    : `¡COMBO X${nt.length}! ¡${nt.length} Triángulos Formados! (+${nt.length} PTS)`;
+                window.gameToast("⚡ CONQUISTA 3D", msgTri);
+                nt.forEach(tri => {
+                    const c = new THREE.Vector3().addVectors(pts[tri.p1].position, pts[tri.p2].position).add(pts[tri.p3].position).divideScalar(3);
+                    const col = activeRole === 'host' ? d.p1.c : (d.p2?.c || '#ff0055');
+                    spawnTriangleExplosion(c, col);
+                });
+            } else { 
+                playSfx('link');
+                window.gameToast("LÍNEA 3D", `Nodos #${p1 + 1} y #${p2 + 1} unidos`); 
+            }
+            
+            let m = d.movs - 1; 
+            let trn = d.turn; 
+            let di = d.dice; 
+            if (m <= 0) { 
+                m = 0;
+                trn = trn === 'host' ? 'guest' : 'host'; 
+                di = null; 
+                selPt = null;
+            }
+            window.update({ 
+                lines: nl, 
+                tris: [...(d.tris || []), ...nt], 
+                sc: sc, 
+                movs: m, 
+                turn: trn, 
+                dice: di, 
+                skips: 0,
+                activeSel: null,
+                lastAction: { type: nt.length > 0 ? 'tri' : 'line', p1, p2, by: activeRole, trisCount: nt.length, ts: nowTs }
+            });
+        };
+
+        // Detección 3D Multitriángulo:
+        // Encuentra TODOS los triángulos (1, 2, 3 o más) que se cierran al trazar la línea entre p1 y p2.
+        window.checkTri = (p1, p2, o, ls) => { 
+            const formedTris = []; 
+            const existingTris = S.data.tris || [];
+            const nowTs = Date.now();
+
+            for (let p3 = 0; p3 < pts.length; p3++) {
+                if (p3 === p1 || p3 === p2) continue;
+
+                const hasL1 = ls.some(l => (l.s === p1 && l.e === p3) || (l.s === p3 && l.e === p1));
+                const hasL2 = ls.some(l => (l.s === p2 && l.e === p3) || (l.s === p3 && l.e === p2));
+
+                if (hasL1 && hasL2) {
+                    const v1 = pts[p1].position; 
+                    const v2 = pts[p2].position; 
+                    const v3 = pts[p3].position;
+
+                    // Verificar que los 3 puntos formen un triángulo real con área > 0 en el espacio 3D
+                    const edge1 = new THREE.Vector3().subVectors(v2, v1);
+                    const edge2 = new THREE.Vector3().subVectors(v3, v1);
+                    const area3D = new THREE.Vector3().crossVectors(edge1, edge2).length() * 0.5;
+
+                    if (area3D > 0.002) { 
+                        const v = [p1, p2, p3].sort((a, b) => a - b); 
+                        const alreadyExists = existingTris.some(t => {
+                            const tv = [t.p1, t.p2, t.p3].sort((a, b) => a - b);
+                            return tv[0] === v[0] && tv[1] === v[1] && tv[2] === v[2];
+                        });
+
+                        if (!alreadyExists) { 
+                            // Calcular el baricentro (centro 3D) del nuevo triángulo candidato
+                            const candidateCenter = new THREE.Vector3().addVectors(v1, v2).add(v3).divideScalar(3);
+
+                            // Evaluar encapsulamiento ÚNICAMENTE contra triángulos antiguos ya existentes (nunca contra los que se forman en este mismo turno)
+                            if (isPointEncapsulated3D(candidateCenter, existingTris, v)) {
+                                window.gameToast("BLOQUEO 3D", t('encapsulated'));
+                                continue;
+                            }
+
+                            formedTris.push({ p1: v[0], p2: v[1], p3: v[2], own: o, ts: nowTs }); 
+                        } 
+                    }
+                }
+            } 
+            return formedTris;
+        };
+
+        // ==========================================
+        // 8.5 SUSCRIPCIÓN DE RESPALDO Y COMPARTIR SALA
+        // ==========================================
+        window.sub = (c) => {
+            if (roomUnsub) roomUnsub();
+            if (!db) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${c}`);
+            roomUnsub = onSnapshot(docRef, s => {
+                if (s.exists()) {
+                    const d = s.data(); 
+                    S.data = d;
+                    if (d.stat === 'play') { 
+                        isMatchmaking = false;
+                        if (matchmakingFallbackTimer) { clearTimeout(matchmakingFallbackTimer); matchmakingFallbackTimer = null; }
+                        if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+                        
+                        if (document.getElementById('s-game').classList.contains('hidden')) {
+                            window.start(); 
+                            playSfx('win');
+                        }
+                        // Forzar siempre redibujado 3D cuando llegan datos desde Firestore
+                        window.draw();
+                        window.ui(); 
+                    } else if (d.stat === 'end') {
+                        window.endGame(d);
+                    }
+                } else if (S.room && !(peerConn && peerConn.open)) { 
+                    window.systemToast("SALA CERRADA", "El anfitrión finalizó la sesión"); 
+                    window.goHome(); 
+                }
+            });
+        };
+
+        window.copyRoomCode = () => {
+            if (!S.room) return;
+            navigator.clipboard?.writeText(S.room).catch(() => {});
+            window.systemToast("COPIADO", `Código ${S.room} copiado al portapapeles`);
+        };
+
+        window.shareRoomDirect = async () => {
+            if (!S.room) return;
+            const joinUrl = `${window.location.origin}${window.location.pathname}?room=${S.room}`;
+            const shareText = `¡Únete a mi partida de 3 LINE-AR en Realidad Aumentada! Código: ${S.room}`;
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: '3 LINE-AR', text: shareText, url: joinUrl });
+                    return;
+                } catch (e) {}
+            }
+            navigator.clipboard?.writeText(joinUrl).catch(() => {});
+            window.systemToast("LINK COPIADO", "Pégalo en WhatsApp para invitar a tu amigo");
+        };
+
+        window.shareApp = async () => {
+            const url = window.location.origin + window.location.pathname;
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: '3 LINE-AR', text: 'Juega conmigo a 3 LINE-AR, el juego táctico en 3D y Realidad Aumentada:', url });
+                    return;
+                } catch (e) {}
+            }
+            navigator.clipboard?.writeText(url).catch(() => {});
+            window.systemToast("ENLACE COPIADO", "Link del juego copiado para compartir");
+        };
+
+        window.start = () => { 
+            showLoad(false); 
+            selPt = null;
+            cpuThinking = false;
+            nav('s-game'); 
+            window.init3D(); 
+            window.buildBoard(); 
+            window.ui();
+            window.gameToast("BATALLA INICIADA", t('roll_dice')); 
+        };
+
+        // ==========================================
+        // 9. INTERFAZ DE PARTIDA E INTELIGENCIA ARTIFICIAL
+        // ==========================================
+        let lastProcessedActionTs = 0;
+
+        window.update = (o) => {
+            if (S.data) {
+                Object.assign(S.data, o);
+            }
+            // 1. Si hay conexión directa P2P entre celulares/PC, enviar el movimiento en tiempo real (< 50ms)
+            if (peerConn && peerConn.open) {
+                try { peerConn.send({ type: 'STATE_PATCH', patch: o }); } catch (e) {}
+            }
+            // 2. Actualizar UI local o fin de juego
+            if (S.cpu || S.passPlay || (peerConn && peerConn.open)) { 
+                if (S.data && S.data.stat === 'end') window.endGame(S.data); 
+                else window.ui(); 
+            }
+            // 3. Respaldar SIEMPRE en Firestore para que ambos dispositivos mantengan las líneas y triángulos sincronizados
+            if (!S.cpu && !S.passPlay && db && S.room) { 
+                updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${S.room}`), { ...o, lastUpdate: Date.now() }).catch(() => {}); 
+            }
+        };
+        
+        window.ui = () => { 
+            const d = S.data;
+            if (!d) return;
+
+            const myScore = S.role === 'host' ? d.sc.host : d.sc.guest;
+            const rivScore = S.role === 'host' ? d.sc.guest : d.sc.host;
+            document.getElementById('sc-p1').innerText = myScore;
+            document.getElementById('sc-p2').innerText = rivScore;
+            document.getElementById('room-lbl').innerText = S.room || '--'; 
+
+            // Nombres e indicadores de turno
+            const p1Name = S.role === 'host' ? (d.hostName || 'J1') : (d.guestName || 'TÚ');
+            const p2Name = S.role === 'host' ? (d.guestName || 'RIVAL') : (d.hostName || 'RIVAL');
+            document.getElementById('p1-name-hud').innerText = p1Name;
+            document.getElementById('p2-name-hud').innerText = p2Name;
+
+            const isP1Turn = (S.role === 'host' && d.turn === 'host') || (S.role === 'guest' && d.turn === 'guest');
+            document.getElementById('p1-turn-dot').classList.toggle('hidden', !isP1Turn);
+            document.getElementById('p2-turn-dot').classList.toggle('hidden', isP1Turn);
+            
+            const b = document.getElementById('mov-hud'); 
+            const dv = document.getElementById('dice-vis');
+            const myTurn = isMyTurnNow();
+
+            if (myTurn && d.movs > 0) { 
+                b.style.opacity = 1; 
+                document.getElementById('mov-cnt').innerText = d.movs; 
+                dv.innerText = d.dice; 
+                dv.classList.remove('my-turn-pulse');
+                dv.style.borderColor = '#39ff14'; 
+                dv.style.color = '#39ff14'; 
+            } else if (myTurn && d.movs === 0) {
+                b.style.opacity = 0;
+                dv.innerHTML = '<i class="fas fa-dice-d20"></i>';
+                dv.classList.add('my-turn-pulse');
+                window.gameToast(S.passPlay ? (d.turn === 'host' ? "TURNO J1" : "TURNO J2") : "TU TURNO", t('roll_dice'));
+            } else { 
+                b.style.opacity = 0; 
+                dv.innerText = d.dice || "?"; 
+                dv.classList.remove('my-turn-pulse');
+                dv.style.borderColor = '#444'; 
+                dv.style.color = '#666';
+                // Mostrar en tiempo real qué punto está seleccionando el rival
+                if (d.activeSel !== undefined && d.activeSel !== null) {
+                    window.gameToast("👀 RIVAL EN JUEGO", `Seleccionó el Nodo #${d.activeSel + 1}`);
+                }
+            }
+
+            // Reproducir efectos visuales y sonoros cuando el rival forma una línea o un triángulo en vivo
+            if (d.lastAction && d.lastAction.ts && d.lastAction.ts > lastProcessedActionTs) {
+                lastProcessedActionTs = d.lastAction.ts;
+                if (d.lastAction.by !== S.role) {
+                    if (d.lastAction.type === 'tri' && pts.length > 0) {
+                        playSfx('win');
+                        const col = d.lastAction.by === 'host' ? d.p1.c : (d.p2?.c || '#ff0055');
+                        const count = d.lastAction.trisCount || 1;
+                        const recentTris = (d.tris || []).slice(-count);
+                        recentTris.forEach(tri => {
+                            if (pts[tri.p1] && pts[tri.p2] && pts[tri.p3]) {
+                                const c = new THREE.Vector3().addVectors(pts[tri.p1].position, pts[tri.p2].position).add(pts[tri.p3].position).divideScalar(3);
+                                spawnTriangleExplosion(c, col);
+                            }
+                        });
+                        const triTxt = count > 1 ? `¡Formó ${count} Triángulos!` : `Unió Nodos #${d.lastAction.p1 + 1} y #${d.lastAction.p2 + 1}`;
+                        window.gameToast("🔺 TRIÁNGULO RIVAL", triTxt);
+                    } else {
+                        playSfx('link');
+                        window.gameToast("⚡ LÍNEA RIVAL", `Unió Nodos #${d.lastAction.p1 + 1} y #${d.lastAction.p2 + 1}`);
+                    }
+                }
+            }
+
+            // Gestión limpia de UI en Realidad Aumentada (WebXR o Cámara AR Universal)
+            const arTxt = document.getElementById('ar-btn-txt');
+            const isAnyAr = (ren && ren.xr.isPresenting) || isCameraArActive;
+            const pcControls = document.getElementById('pc-controls');
+            const acceptBtn = document.getElementById('btn-ar-accept');
+            const acceptTxt = document.getElementById('btn-ar-accept-txt');
+            const recalBtn = document.getElementById('btn-ar-recal');
+
+            if (isAnyAr) {
+                document.getElementById('ar-controls').classList.remove('hidden');
+                document.getElementById('ar-controls').classList.add('flex');
+                document.getElementById('btn-start-ar-float').classList.add('hidden');
+                if (pcControls) pcControls.classList.add('hidden');
+
+                if (!placed) {
+                    document.getElementById('ar-instructions').style.display = 'block';
+                    if (acceptBtn) acceptBtn.classList.add('animate-pulse');
+                    if (acceptTxt) acceptTxt.innerText = "📌 FIJAR JUEGO AQUÍ";
+                    if (recalBtn) recalBtn.classList.add('hidden');
+                } else {
+                    document.getElementById('ar-instructions').style.display = 'none';
+                    if (acceptBtn) acceptBtn.classList.remove('animate-pulse');
+                    if (acceptTxt) acceptTxt.innerText = localArLocked ? "🔒 TABLERO FIJO (DESBLOQUEAR)" : "📌 BLOQUEAR EN MESA";
+                    if (recalBtn) recalBtn.classList.remove('hidden');
+                }
+            } else { 
+                document.getElementById('ar-controls').classList.add('hidden');
+                document.getElementById('ar-controls').classList.remove('flex');
+                document.getElementById('ar-instructions').style.display = 'none';
+                document.getElementById('btn-start-ar-float').classList.remove('hidden');
+                if (pcControls) pcControls.classList.remove('hidden');
+                if (arTxt) {
+                    arTxt.innerText = t('start_ar');
+                }
+            }
+
+            // Sincronizar escala y rotación compartida si fue enviada desde el otro celular en AR
+            if (d.sharedArScale && isAnyAr && placed) {
+                currentScale = d.sharedArScale;
+                if (group) group.scale.set(currentScale, currentScale, currentScale);
+                const sl = document.getElementById('size-slider');
+                if (sl) sl.value = currentScale;
+            }
+            if (d.sharedArRotY !== undefined && isAnyAr && placed && S.role === 'guest') {
+                boardRotationY = d.sharedArRotY;
+                if (group) group.rotation.y = THREE.MathUtils.degToRad(boardRotationY);
+            }
+
+            window.draw();
+
+            if (d.stat === 'play') {
+                window.checkGameEndCondition(); 
+                // Turno de la IA con candado anti-solapamiento
+                if (S.cpu && d.turn === 'guest' && !cpuThinking && d.stat === 'play') { 
+                    cpuThinking = true;
+                    if (d.movs === 0 && !d.dice) {
+                        setTimeout(() => {
+                            cpuThinking = false;
+                            if (S.data && S.data.stat === 'play' && S.data.turn === 'guest') {
+                                const roll = Math.ceil(Math.random() * 6);
+                                playSfx('roll');
+                                window.update({ dice: roll, movs: roll, skips: 0 });
+                            }
+                        }, 900); 
+                    } else if (d.movs > 0) {
+                        setTimeout(() => {
+                            cpuThinking = false;
+                            if (S.data && S.data.stat === 'play' && S.data.turn === 'guest') {
+                                window.cpuMove();
+                            }
+                        }, 850); 
+                    } else {
+                        cpuThinking = false;
+                    }
+                }
+            }
+        };
+
+        window.checkGameEndCondition = () => {
+            const d = S.data; 
+            if (!d || d.stat !== 'play' || pts.length === 0) return;
+            let movesPossible = false;
+            for (let i = 0; i < pts.length; i++) {
+                for (let j = i + 1; j < pts.length; j++) {
+                    if (canConnectNodes(i, j).ok) { 
+                        movesPossible = true; 
+                        break; 
+                    }
+                } 
+                if (movesPossible) break;
+            }
+            if (!movesPossible) { 
+                window.update({ stat: 'end' }); 
+            }
+        };
+
+        // IA Táctica 3D: Prioriza cerrar triángulos 3D y conectar nodos estratégicos cercanos o compartidos
+        window.cpuMove = () => { 
+            if (!S.data || S.data.stat !== 'play') return;
+            let bestMove = null; 
+            let bestScore = -999;
+
+            for (let i = 0; i < pts.length; i++) { 
+                for (let j = i + 1; j < pts.length; j++) { 
+                    if (canConnectNodes(i, j).ok) {
+                        const testLines = [...S.data.lines, { s: i, e: j, own: 'guest' }]; 
+                        const trisWon = window.checkTri(i, j, 'guest', testLines).length;
+                        const dist = pts[i].position.distanceTo(pts[j].position);
+                        // Comprobar si este par de nodos ya tiene alguna conexión para armar figuras coherentes
+                        const touchesExisting = S.data.lines.some(l => l.s === i || l.e === i || l.s === j || l.e === j) ? 1.5 : 0;
+                        const score = (trisWon * 100) + touchesExisting - (dist * 1.2) + (Math.random() * 0.4);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = { s: i, e: j };
+                        }
+                    } 
+                } 
+            }
+
+            if (bestMove) { 
+                const nl = [...S.data.lines, { s: bestMove.s, e: bestMove.e, own: 'guest' }]; 
+                const nt = window.checkTri(bestMove.s, bestMove.e, 'guest', nl); 
+                const sc = { ...S.data.sc }; 
+                if (nt.length > 0) {
+                    sc.guest += nt.length;
+                    playSfx('win');
+                    nt.forEach(tri => {
+                        const c = new THREE.Vector3().addVectors(pts[tri.p1].position, pts[tri.p2].position).add(pts[tri.p3].position).divideScalar(3);
+                        spawnTriangleExplosion(c, S.data.p2.c);
+                    });
+                } else {
+                    playSfx('link');
+                }
+                let mo = S.data.movs - 1; 
+                let trn = S.data.turn; 
+                let di = S.data.dice; 
+                if (mo === 0) { trn = 'host'; di = null; } 
+                window.update({ lines: nl, tris: [...S.data.tris, ...nt], sc: sc, movs: mo, turn: trn, dice: di, skips: 0 }); 
+            } else { 
+                window.update({ movs: 0, turn: 'host', dice: null, skips: (S.data.skips || 0) + 1 }); 
+            }
+        };
+
+        // ==========================================
+        // 10. MOTOR 3D Y REALIDAD AUMENTADA UNIVERSAL (WEBXR + CÁMARA AR)
+        // ==========================================
+        let arSupportedFlag = false;
+        let devicePitch = 0;
+        let deviceYaw = 0;
+
+        // Escuchar sensores de orientación del celular para mover la mira sobre la superficie en Cámara AR Universal
+        window.addEventListener('deviceorientation', (e) => {
+            if (!isCameraArActive || placed) return;
+            if (e.beta !== null && e.gamma !== null) {
+                // Ajustar suavemente la posición de la retícula según hacia dónde inclines el celular
+                const targetZ = THREE.MathUtils.clamp(-0.6 + ((e.beta - 45) * 0.012), -1.2, 0.3);
+                const targetX = THREE.MathUtils.clamp((e.gamma * 0.012), -0.7, 0.7);
+                if (reticle && !placed) {
+                    reticle.position.x += (targetX - reticle.position.x) * 0.2;
+                    reticle.position.z += (targetZ - reticle.position.z) * 0.2;
+                }
+                if (ghostGroup && !placed && reticle) {
+                    ghostGroup.position.copy(reticle.position);
+                }
+            }
+        }, true);
+
+        window.checkAR = () => {
+            const el = document.getElementById('ar-status');
+            if ('xr' in navigator) {
+                navigator.xr.isSessionSupported('immersive-ar').then(ok => {
+                    arSupportedFlag = ok;
+                    if (el) el.innerHTML = '<span class="text-neon font-bold"><i class="fas fa-camera mr-1"></i>REALIDAD AUMENTADA (AR) LISTA</span>';
+                    if (ok && !arInitialized) window.init3D();
+                }).catch(() => {
+                    if (el) el.innerHTML = '<span class="text-neon font-bold"><i class="fas fa-camera mr-1"></i>CÁMARA AR UNIVERSAL LISTA</span>';
+                });
+            } else {
+                if (el) el.innerHTML = '<span class="text-neon font-bold"><i class="fas fa-camera mr-1"></i>CÁMARA AR UNIVERSAL LISTA</span>';
+            }
+        };
+
+        window.checkARButtonVisibility = () => {
+            const btn = document.getElementById('btn-start-ar-float');
+            if (btn) btn.classList.remove('hidden');
+        };
+
+        // Botón Inteligente de Realidad Aumentada:
+        // 1. Intenta WebXR Nativo con detección láser de superficies si está soportado.
+        // 2. Si no, activa la Cámara AR Universal con Mira Láser de Escaneo de Terreno para fijar el tablero en tu mesa.
+        window.toggleARMode = async () => {
+            if (isCameraArActive) {
+                window.stopCameraAR();
+                return;
+            }
+            if (ren && ren.xr.isPresenting) {
+                window.exitAROnly();
+                return;
+            }
+
+            // Si el dispositivo soporta WebXR Nativo (ARCore), lo lanzamos primero para detección láser de plano real
+            if (arSupportedFlag && arBtn) {
+                try {
+                    arBtn.click();
+                    return;
+                } catch (e) {
+                    console.warn("Pasando a Cámara AR Universal:", e);
+                }
+            }
+
+            // Cámara Trasera de Realidad Aumentada Universal con Escaneo de Terreno (100% compatible Android/iOS)
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: "environment" } },
+                        audio: false
+                    });
+                    arCameraStream = stream;
+                    const videoEl = document.getElementById('ar-camera-video');
+                    videoEl.srcObject = stream;
+                    await videoEl.play();
+                    isCameraArActive = true;
+                    cameraArScanning = true;
+                    placed = false;
+                    localArLocked = false;
+                    document.body.classList.add('ar-camera-mode');
+
+                    // Ocultar el tablero temporalmente y mostrar la Mira Láser (Retícula) y el Fantasma para que el usuario elija la mesa
+                    if (group) group.visible = false;
+                    if (reticle) {
+                        reticle.matrixAutoUpdate = true;
+                        reticle.position.set(0, -0.2, -0.35);
+                        reticle.rotation.set(0, 0, 0);
+                        reticle.children.forEach(c => c.material.color.setHex(0x39ff14));
+                        reticle.visible = true;
+                    }
+                    if (ghostGroup) {
+                        ghostGroup.position.set(0, -0.2, -0.35);
+                        ghostGroup.scale.set(0.45, 0.45, 0.45);
+                        ghostGroup.visible = true;
+                    }
+                    if (cam) cam.position.set(0, 1.35, 1.85);
+                    if (controls) {
+                        controls.target.set(0, -0.2, -0.35);
+                        controls.update();
+                    }
+
+                    document.getElementById('ar-instructions').style.display = 'block';
+                    document.getElementById('ar-instr-txt').innerHTML = `<span class='text-neon'>MIRA VERDE DE SUPERFICIE ACTIVA</span><br>Apunta al lugar donde quieres jugar y pulsa <strong>"📌 FIJAR JUEGO AQUÍ"</strong>`;
+                    document.getElementById('size-slider-container').style.display = 'flex';
+                    playSfx('click');
+                    window.ui();
+                    return;
+                } catch (err) {
+                    window.systemToast("PERMISO DE CÁMARA", "Permite el acceso a la cámara en tu navegador para activar la Realidad Aumentada");
+                }
+            }
+        };
+
+        window.stopCameraAR = () => {
+            isCameraArActive = false;
+            cameraArScanning = false;
+            placed = true;
+            localArLocked = false;
+            document.body.classList.remove('ar-camera-mode');
+            const videoEl = document.getElementById('ar-camera-video');
+            if (videoEl) {
+                videoEl.pause();
+                videoEl.srcObject = null;
+            }
+            if (arCameraStream) {
+                arCameraStream.getTracks().forEach(track => track.stop());
+                arCameraStream = null;
+            }
+            if (reticle) reticle.visible = false;
+            if (ghostGroup) ghostGroup.visible = false;
+            if (controls) {
+                controls.enabled = true;
+                controls.enablePan = true;
+            }
+            if (group) {
+                group.visible = true;
+                group.position.set(0, 0, 0);
+                group.scale.set(1, 1, 1);
+            }
+            document.getElementById('size-slider-container').style.display = 'none';
+            window.recenter();
+            window.ui();
+        };
+
+        window.startARSession = () => {
+            window.toggleARMode();
+        };
+
+        window.exitAROnly = () => {
+            if (isCameraArActive) window.stopCameraAR();
+            if (ren && ren.xr.isPresenting) {
+                ren.xr.getSession().end().catch(console.error);
+            }
+        };
+
+        // Función unificada para el botón principal de AR: si aún no está puesto en la mesa lo fija, y si ya está puesto bloquea/desbloquea el movimiento
+        window.placeOrLockAR = () => {
+            if (!placed) {
+                window.doPlace();
+            } else {
+                window.lockLocalARBoard();
+            }
+        };
+
+        // Colocar tablero en el mundo físico (Funciona tanto en WebXR Nativo como en Cámara AR Universal)
+        window.doPlace = () => {
+            if ((ren && ren.xr.isPresenting && !placed) || (isCameraArActive && !placed)) {
+                placed = true; 
+                cameraArScanning = false;
+                localArLocked = true; // Fija el tablero en el lugar para poder moverse alrededor y seleccionar puntos cómodamente
+                if (reticle) {
+                    reticle.visible = false;
+                    if (ren && ren.xr.isPresenting) {
+                        if (reticle.matrixAutoUpdate) { 
+                            group.position.copy(reticle.position); 
+                            group.rotation.copy(reticle.rotation); 
+                        } else {
+                            group.position.setFromMatrixPosition(reticle.matrix); 
+                            group.rotation.setFromRotationMatrix(reticle.matrix);
+                        }
+                    } else {
+                        // En Cámara AR Universal lo ancla exactamente donde estaba la mira verde
+                        group.position.copy(reticle.position);
+                        group.rotation.set(0, THREE.MathUtils.degToRad(boardRotationY), 0);
+                        currentScale = 0.72;
+                        group.scale.set(currentScale, currentScale, currentScale);
+                        if (controls) {
+                            controls.target.copy(group.position);
+                            controls.enablePan = false;
+                            controls.update();
+                        }
+                    }
+                }
+                group.visible = true;
+                if (ghostGroup) ghostGroup.visible = false;
+                document.getElementById('ar-instructions').style.display = 'none';
+                document.getElementById('size-slider-container').style.display = 'flex';
+                playSfx('win');
+                window.gameToast("📌 JUEGO FIJADO EN SUPERFICIE", "Ahora puedes girar alrededor y tocar los puntos para jugar");
+                window.ui();
+            }
+        };
+
+        window.lockLocalARBoard = () => {
+            if (!placed) {
+                window.doPlace();
+                return;
+            }
+            localArLocked = !localArLocked;
+            if (controls && isCameraArActive) {
+                controls.enablePan = !localArLocked;
+            }
+            if (localArLocked) {
+                window.gameToast("🔒 TABLERO FIJO", "El tablero está anclado en la mesa. Gira alrededor y selecciona tus puntos");
+            } else {
+                window.gameToast("🔓 MODO LIBRE", "Puedes desplazar o reacomodar el tablero");
+            }
+            window.ui();
+        };
+
+        window.recalibrateAR = () => {
+            placed = false; 
+            cameraArScanning = true;
+            localArLocked = false;
+            if (controls) {
+                controls.enabled = true;
+                controls.enablePan = true;
+            }
+            if (group) group.visible = false; 
+            if (reticle) {
+                reticle.visible = true;
+                if (isCameraArActive) {
+                    reticle.matrixAutoUpdate = true;
+                    reticle.position.set(0, -0.2, -0.35);
+                }
+            }
+            if (ghostGroup) {
+                ghostGroup.visible = true;
+                if (isCameraArActive) ghostGroup.position.set(0, -0.2, -0.35);
+            }
+            document.getElementById('ar-instructions').style.display = 'block';
+            document.getElementById('ar-instr-txt').innerHTML = `<span class='text-warn'>ELIGE NUEVO LUGAR</span><br>Apunta a la superficie y pulsa <strong>"📌 FIJAR JUEGO AQUÍ"</strong>`;
+            window.ui();
+        };
+
+        // Girar el tablero AR para que dos celulares en la misma mesa lo vean exactamente alineado
+        window.rotateARBoard = (degDelta) => {
+            boardRotationY = (boardRotationY + degDelta) % 360;
+            if (group) {
+                group.rotation.y = THREE.MathUtils.degToRad(boardRotationY);
+            }
+            playSfx('click');
+            window.gameToast("ORIENTACIÓN AR", `Ángulo de mesa: ${boardRotationY}° (Cono verde = Frente)`);
+        };
+
+        // Sincronizar escala y rotación entre los 2 celulares que están en la misma habitación
+        window.syncSharedARWithRival = () => {
+            window.update({
+                sharedArScale: currentScale,
+                sharedArRotY: boardRotationY
+            });
+            playSfx('win');
+            window.gameToast("AR COMPARTIDO", "Tamaño y orientación sincronizados con el otro celular");
+        };
+
+        window.toggleScaleSlider = () => {
+            const sl = document.getElementById('size-slider-container');
+            sl.style.display = sl.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        window.recenter = () => {
+            if (controls) {
+                controls.reset();
+                controls.target.set(0, 0, 0); 
+            }
+            if (cam) cam.position.set(0, 1.9, 2.3); 
+            if (group && (!ren || !ren.xr.isPresenting)) {
+                group.position.set(0, 0, 0);
+                group.rotation.set(0, 0, 0);
+            }
+        };
+
+        window.manualScale = (val) => {
+            currentScale = parseFloat(val);
+            if (group) group.scale.set(currentScale, currentScale, currentScale);
+            if (ghostGroup) ghostGroup.scale.set(currentScale, currentScale, currentScale);
+        };
+
+        window.init3D = () => {
+            if (arInitialized) return; 
+            arInitialized = true;
+            scene = new THREE.Scene(); 
+            cam = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 30);
+            ren = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" }); 
+            ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            ren.setSize(window.innerWidth, window.innerHeight); 
+            ren.xr.enabled = true;
+            ren.domElement.style.position = 'absolute'; 
+            ren.domElement.style.top = '0'; 
+            ren.domElement.style.zIndex = '1';
+            document.body.appendChild(ren.domElement);
+            
+            // hit-test como opcional para que nunca bloquee teléfonos que no tienen sensor Depth API
+            arBtn = ARButton.createButton(ren, { 
+                optionalFeatures: ['hit-test', 'dom-overlay'], 
+                domOverlay: { root: document.body } 
+            });
+            document.getElementById('ar-zone').appendChild(arBtn);
+
+            ren.xr.addEventListener('sessionstart', async () => {
+                document.body.classList.add('ar-active');
+                if (controls) controls.enabled = false; 
+                
+                try {
+                    const session = ren.xr.getSession();
+                    const viewerSpace = await session.requestReferenceSpace('viewer');
+                    arRefSpace = await session.requestReferenceSpace('local');
+                    try { 
+                        arHit = await session.requestHitTestSource({ space: viewerSpace }); 
+                    } catch(err) { 
+                        arHit = null; 
+                    }
+                } catch (e) { console.error("Error AR", e); return; }
+                
+                placed = false; 
+                currentScale = 0.35;
+                group.scale.set(currentScale, currentScale, currentScale);
+                group.visible = false; 
+                reticle.visible = true; 
+                window.ui();
+            });
+
+            // Al salir de AR regresa suavemente a la vista 3D sin desconectar la partida
+            ren.xr.addEventListener('sessionend', () => { 
+                document.body.classList.remove('ar-active'); 
+                if (controls) controls.enabled = true; 
+                arHit = null;
+                if (reticle) reticle.visible = false;
+                if (ghostGroup) ghostGroup.visible = false;
+                placed = true;
+                currentScale = 1.0;
+                if (group) {
+                    group.scale.set(1, 1, 1);
+                    group.visible = true;
+                }
+                window.recenter();
+                window.ui();
+            });
+            
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x112244, 2.8);
+            scene.add(hemiLight);
+            const dirLight = new THREE.DirectionalLight(0x00f3ff, 1.5);
+            dirLight.position.set(2, 5, 3);
+            scene.add(dirLight);
+
+            group = new THREE.Group(); 
+            scene.add(group);
+            
+            reticle = new THREE.Group();
+            const rRing = new THREE.Mesh(new THREE.RingGeometry(0.18, 0.21, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x00f3ff }));
+            const rCross1 = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.015).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x00f3ff }));
+            const rCross2 = new THREE.Mesh(new THREE.PlaneGeometry(0.015, 0.28).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x00f3ff }));
+            reticle.add(rRing); reticle.add(rCross1); reticle.add(rCross2);
+            reticle.visible = false;
+            reticle.matrixAutoUpdate = false;
+            scene.add(reticle);
+
+            ghostGroup = new THREE.Group();
+            scene.add(ghostGroup);
+
+            // CRÍTICO: Inicializar el Raycaster 3D y el Loop de Renderizado (sin esto los toques en las esferas no funcionaban)
+            ray = new THREE.Raycaster();
+            ren.setAnimationLoop(window.loop);
+
+            // Función auxiliar de precisión para encontrar la esfera exacta que el usuario quiso tocar (PC o Celular)
+            function pickNodeFromPointer(clientX, clientY) {
+                if (!ren || !cam || !pts.length || !ray) return null;
+                const rect = ren.domElement.getBoundingClientRect();
+                const normX = ((clientX - rect.left) / rect.width) * 2 - 1;
+                const normY = -((clientY - rect.top) / rect.height) * 2 + 1;
+                const m = new THREE.Vector2(normX, normY);
+                ray.setFromCamera(m, cam);
+                
+                // 1. Intersectar directamente las esferas en 3D
+                const hits = ray.intersectObjects(pts, true);
+                if (hits.length > 0) {
+                    for (let h of hits) {
+                        let obj = h.object;
+                        while (obj && obj.userData.id === undefined) obj = obj.parent;
+                        if (obj && obj.userData.id !== undefined) {
+                            return obj.userData.id;
+                        }
+                    }
+                }
+
+                // 2. Asistencia magnética en pantalla táctil: ideal para dedos en celulares y AR
+                let closestId = null;
+                let minScreenDist = 0.17; // Radio magnético amplio para que nunca falle el toque en móvil
+                const tempVec = new THREE.Vector3();
+                pts.forEach((ptMesh, idx) => {
+                    ptMesh.getWorldPosition(tempVec);
+                    tempVec.project(cam);
+                    if (tempVec.z <= 1.0) {
+                        const d2d = Math.hypot(tempVec.x - m.x, tempVec.y - m.y);
+                        if (d2d < minScreenDist) {
+                            minScreenDist = d2d;
+                            closestId = idx;
+                        }
+                    }
+                });
+                return closestId;
+            }
+
+            let pointerDownPos = { x: 0, y: 0 };
+            let pointerDownTime = 0;
+
+            window.addEventListener('pointerdown', (e) => {
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+                pointerDownTime = Date.now();
+            }, { passive: true });
+
+            // Mostrar línea láser guía cuando tienes un nodo seleccionado y mueves el cursor/dedo hacia otro
+            window.addEventListener('pointermove', (e) => {
+                if (selPt === null || !previewLine || !pts[selPt]) return;
+                const hoveredId = pickNodeFromPointer(e.clientX, e.clientY);
+                if (hoveredId !== null && hoveredId !== selPt && pts[hoveredId]) {
+                    previewLine.geometry.setFromPoints([pts[selPt].position, pts[hoveredId].position]);
+                    previewLine.computeLineDistances();
+                    previewLine.visible = true;
+                } else {
+                    previewLine.visible = false;
+                }
+            }, { passive: true });
+
+            window.addEventListener('pointerup', (e) => {
+                if (e.target.closest('.interactive') || e.target.closest('#ar-zone') || e.target.closest('#size-slider-container') || e.target.closest('.top-bar-pill')) return;
+                
+                const moveDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+                const elapsed = Date.now() - pointerDownTime;
+                // Si el usuario arrastró el dedo para girar/orbitar alrededor del modelo, no dispara selección por accidente
+                if (moveDist > 30 && elapsed > 320) return;
+
+                if (((ren && ren.xr.isPresenting) || isCameraArActive) && !placed) { 
+                    window.doPlace(); 
+                    return; 
+                }
+
+                const pickedId = pickNodeFromPointer(e.clientX, e.clientY);
+                if (pickedId !== null) {
+                    window.clickPt(pickedId);
+                }
+            });
+            
+            controls = new OrbitControls(cam, ren.domElement); 
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.07;
+            controls.maxDistance = 6;
+            controls.minDistance = 0.5;
+            window.recenter();
+        };
+
+        window.loop = (time, frame) => {
+            if (controls && controls.enabled) controls.update(); 
+
+            // Animación de pulso tanto en el nodo seleccionado localmente como en el nodo que está seleccionando el rival en vivo
+            const activeId = selPt !== null ? selPt : (S.data && S.data.activeSel !== undefined ? S.data.activeSel : null);
+            pts.forEach((m, idx) => {
+                if (idx === activeId) {
+                    const s = 1.45 + Math.sin(time * 0.01) * 0.22;
+                    m.scale.set(s, s, s);
+                } else {
+                    m.scale.set(1, 1, 1);
+                }
+                if (m.userData.validRing && m.userData.validRing.visible && cam) {
+                    m.userData.validRing.lookAt(cam.position);
+                }
+            });
+            for (let i = activeParticles.length - 1; i >= 0; i--) {
+                const p = activeParticles[i];
+                p.position.add(p.userData.vel);
+                p.userData.life -= 0.03;
+                p.material.opacity = Math.max(0, p.userData.life);
+                if (p.userData.life <= 0) {
+                    if (fxGroup) fxGroup.remove(p);
+                    p.geometry.dispose();
+                    p.material.dispose();
+                    activeParticles.splice(i, 1);
+                }
+            }
+
+            // Escaneo de superficie en Realidad Aumentada para cualquier jugador
+            if (ren.xr.isPresenting && arRefSpace && !placed) {
+                reticle.visible = true; 
+                if (ghostGroup) ghostGroup.visible = true;
+                let hitFound = false;
+                
+                if (frame && arHit) {
+                    const h = frame.getHitTestResults(arHit);
+                    if (h.length > 0) {
+                        const hitPose = h[0].getPose(arRefSpace);
+                        reticle.matrix.fromArray(hitPose.transform.matrix);
+                        reticle.matrixAutoUpdate = false;
+                        reticle.children.forEach(c => c.material.color.setHex(0x39ff14));
+                        hitFound = true;
+                        document.getElementById('ar-instr-txt').innerHTML = `<span class='text-neon'>${t('ar_floor')}</span><br>${t('ar_tap_fix')}`;
+                    }
+                }
+                if (!hitFound && frame) {
+                    const viewerPose = frame.getViewerPose(arRefSpace);
+                    if (viewerPose) {
+                        reticle.matrixAutoUpdate = true;
+                        const p = viewerPose.transform.position;
+                        const r = viewerPose.transform.orientation;
+                        const dir = new THREE.Vector3(0, -0.1, -0.65).applyQuaternion(new THREE.Quaternion(r.x, r.y, r.z, r.w));
+                        const targetPos = new THREE.Vector3(p.x, p.y, p.z).add(dir);
+                        reticle.position.lerp(targetPos, 0.2);
+                        reticle.rotation.set(0, 0, 0);
+                        reticle.children.forEach(c => c.material.color.setHex(0xffcc00));
+                        document.getElementById('ar-instr-txt').innerHTML = `<span class='text-warn'>${t('ar_air')}</span><br>${t('ar_tap_fix')}`;
+                    }
+                }
+                if (ghostGroup) { 
+                    if (reticle.matrixAutoUpdate) { 
+                        ghostGroup.position.copy(reticle.position); 
+                        ghostGroup.rotation.copy(reticle.rotation); 
+                    } else { 
+                        ghostGroup.position.setFromMatrixPosition(reticle.matrix); 
+                        ghostGroup.rotation.setFromRotationMatrix(reticle.matrix); 
+                    }
+                }
+            }
+            ren.render(scene, cam);
+        };
+
+        function createIconSprite(iconName, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '900 76px "Font Awesome 6 Free"';
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            let char = '\uf005'; // star
+            if (iconName === 'gem') char = '\uf3a5';
+            else if (iconName === 'bolt') char = '\uf0e7';
+            else if (iconName === 'atom') char = '\uf5d2';
+            else if (iconName === 'biohazard') char = '\uf780';
+            ctx.fillText(char, 64, 64);
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(0.24, 0.24, 0.24);
+            return sprite;
+        }
+
+        // Redibujado optimizado con liberación de memoria GPU (Zero Memory Leaks) y resaltado de todos los triángulos
+        window.draw = () => {
+            if (!S.data || !pts.length || !group) return;
+            const d = S.data;
+            const rivalSel = (selPt === null && d.activeSel !== undefined && d.activeSel !== null) ? d.activeSel : null;
+            const linesList = Array.isArray(d.lines) ? d.lines : [];
+            const trisList = Array.isArray(d.tris) ? d.tris : [];
+            const p1Col = (d.p1 && d.p1.c) ? d.p1.c : '#00f3ff';
+            const p2Col = (d.p2 && d.p2.c) ? d.p2.c : '#ff0055';
+            const p1Icon = (d.p1 && d.p1.i) ? d.p1.i : 'gem';
+            const p2Icon = (d.p2 && d.p2.i) ? d.p2.i : 'atom';
+
+            pts.forEach((m, i) => {
+                const trapped = isNodeTrappedInCapsule(i);
+                const own = linesList.filter(l => Number(l.s) === i || Number(l.e) === i).map(l => l.own);
+                const isSelectedNow = (i === selPt || i === rivalSel);
+                const baseCol = isSelectedNow ? '#ffffff' : (trapped ? '#222222' : (own.includes('host') && own.includes('guest') ? '#b829ff' : (own.includes('host') ? p1Col : (own.includes('guest') ? p2Col : '#1c2d42'))));
+                const emiCol = i === selPt ? '#39ff14' : (i === rivalSel ? '#ffcc00' : (trapped ? '#111111' : (own.length > 0 ? baseCol : '#00f3ff')));
+                m.material.color.set(baseCol);
+                m.material.emissive.set(emiCol);
+                m.material.emissiveIntensity = isSelectedNow ? 2.2 : (trapped ? 0.15 : (own.length > 0 ? 1.3 : 0.6));
+            });
+
+            updateValidNodeRings();
+
+            // Liberar geometría y texturas previas antes de borrarlas
+            const toRemove = group.children.filter(c => c.userData.type === 'line' || c.userData.type === 'tri' || c.userData.type === 'icon');
+            toRemove.forEach(c => {
+                disposeHierarchy(c);
+                group.remove(c);
+            });
+
+            const lineRadius = S.prof.skin === 'thick' ? 0.028 : 0.020;
+
+            linesList.forEach(l => {
+                const sIdx = Number(l.s);
+                const eIdx = Number(l.e);
+                if (!pts[sIdx] || !pts[eIdx]) return;
+                const ptsLine = [pts[sIdx].position, pts[eIdx].position];
+                const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ptsLine), 4, lineRadius, 8, false);
+                const col = l.own === 'host' ? p1Col : p2Col;
+                const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col }));
+                mesh.userData.type = 'line'; 
+                mesh.raycast = () => {};
+                group.add(mesh);
+            });
+
+            // Encontrar el timestamp del último grupo de triángulos creados para resaltarlos con más brillo
+            const latestTriTs = trisList.reduce((max, t) => Math.max(max, t.ts || 0), 0);
+
+            trisList.forEach(t => {
+                const idx1 = Number(t.p1), idx2 = Number(t.p2), idx3 = Number(t.p3);
+                if (!pts[idx1] || !pts[idx2] || !pts[idx3]) return;
+                const p1 = pts[idx1].position; const p2 = pts[idx2].position; const p3 = pts[idx3].position;
+                const g = new THREE.BufferGeometry();
+                const vertices = new Float32Array([
+                    p1.x, p1.y, p1.z,
+                    p2.x, p2.y, p2.z,
+                    p3.x, p3.y, p3.z
+                ]);
+                g.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                g.computeVertexNormals();
+                const col = t.own === 'host' ? p1Col : p2Col;
+                const icon = t.own === 'host' ? p1Icon : p2Icon;
+                const isNewlyFormed = latestTriTs > 0 && t.ts === latestTriTs && (Date.now() - latestTriTs < 8000);
+                
+                // Superficie translúcida del triángulo (más brillante si acaba de ser formado)
+                const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ 
+                    color: col, 
+                    opacity: isNewlyFormed ? 0.58 : 0.44, 
+                    transparent: true, 
+                    side: THREE.DoubleSide, 
+                    depthWrite: false 
+                }));
+                mesh.userData.type = 'tri'; 
+                mesh.raycast = () => {}; // CRÍTICO: Los triángulos conquistados no deben bloquear el toque a las esferas detrás de ellos
+                group.add(mesh);
+
+                // Contorno de neón para resaltar claramente cada triángulo individual (especialmente cuando una línea forma 2 o 3 a la vez)
+                const borderGeo = new THREE.BufferGeometry().setFromPoints([p1, p2, p3, p1]);
+                const borderMat = new THREE.LineBasicMaterial({ color: isNewlyFormed ? 0xffffff : col, transparent: true, opacity: 0.9 });
+                const borderLine = new THREE.Line(borderGeo, borderMat);
+                borderLine.userData.type = 'tri';
+                borderLine.raycast = () => {};
+                group.add(borderLine);
+                
+                const center = new THREE.Vector3().addVectors(p1, p2).add(p3).divideScalar(3);
+                const sprite = createIconSprite(icon, col);
+                sprite.position.copy(center);
+                sprite.userData.type = 'icon';
+                sprite.raycast = () => {}; // CRÍTICO: Las insignias 3D tampoco deben bloquear el toque a las esferas
+                group.add(sprite);
+            });
+        };
+        
+        window.highlight = (id, on) => { 
+            if (!pts[id]) return;
+            if (on) pts[id].scale.set(1.45, 1.45, 1.45); 
+            else pts[id].scale.set(1, 1, 1); 
+        };
+
+        // ==========================================
+        // 11. SISTEMA COMERCIAL: TIENDA, RECOMPENSAS Y RANKING
+        // ==========================================
+        window.endGame = async (d) => {
+            if (document.getElementById('s-game').classList.contains('hidden')) return;
+            nav('win-screen'); 
+            playSfx('end');
+            if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+            
+            const myS = S.role === 'host' ? d.sc.host : d.sc.guest; 
+            const rivS = S.role === 'host' ? d.sc.guest : d.sc.host;
+            const win = myS > rivS ? 'WIN' : (myS < rivS ? 'LOSE' : 'DRAW');
+            
+            const tit = document.getElementById('win-title'); 
+            const msg = document.getElementById('win-msg');
+            const elo = document.getElementById('elo-change');
+            const coinsEl = document.getElementById('coins-earned');
+            const ic = document.getElementById('win-icon');
+            
+            let ptsChange = 0;
+            let coinsWon = 15 + (myS * 5); // Recompensa por cada triángulo capturado
+            
+            if (win === 'DRAW') { 
+                ic.innerText = "🤝";
+                tit.innerText = t('draw'); 
+                tit.className = "text-4xl font-black text-warn mb-1 text-center"; 
+                msg.innerText = t('draw_msg');
+                ptsChange = 5;
+                coinsWon += 20;
+            } else if (win === 'WIN') { 
+                ic.innerText = "🏆";
+                tit.innerText = t('victory'); 
+                tit.className = "text-4xl font-black text-neon mb-1 animate-pulse text-center"; 
+                msg.innerText = t('win_msg');
+                ptsChange = 25;
+                coinsWon += 50;
+                S.wins += 1;
+            } else { 
+                ic.innerText = "🛡️";
+                tit.innerText = t('defeat'); 
+                tit.className = "text-4xl font-black text-hot mb-1 text-center"; 
+                msg.innerText = t('lose_msg');
+                ptsChange = -10;
+                S.losses += 1;
+            }
+
+            if (S.vip) coinsWon *= 2; // Bono comercial VIP x2
+            S.lastRewardEarned = coinsWon;
+            S.points = Math.max(100, S.points + ptsChange);
+            S.coins += coinsWon;
+            saveLocalEconomy();
+
+            elo.innerText = `${ptsChange >= 0 ? '+' : ''}${ptsChange} ELO`;
+            coinsEl.innerText = `+${coinsWon} MONEDAS`;
+            document.getElementById('btn-double-reward').classList.remove('hidden');
+
+            if (db && S.user && !S.user.isLocalFallback) {
+                try {
+                    const userRef = doc(db, 'artifacts', appId, 'users', S.user.uid);
+                    await updateDoc(userRef, { 
+                        points: S.points,
+                        coins: S.coins,
+                        wins: S.wins,
+                        losses: S.losses
+                    });
+                } catch(e) {}
+            }
+
+            document.getElementById('final-p1').innerText = myS; 
+            document.getElementById('final-p2').innerText = rivS;
+
+            // Mostrar pausa publicitaria intersticial de Google H5 Games Ads al concluir la partida (si no tiene modo sin anuncios)
+            if (!S.vip) {
+                setTimeout(() => {
+                    window.triggerH5Ad('next', () => {});
+                }, 900);
+            }
+        };
+
+        // Monetización por Video Recompensado (Google H5 Games Ads - Rewarded Ad)
+        window.watchAdForDoubleCoins = () => {
+            const btn = document.getElementById('btn-double-reward');
+            window.triggerH5Ad('reward', () => {
+                const bonus = S.lastRewardEarned || 50;
+                S.coins += bonus;
+                saveLocalEconomy();
+                playSfx('win');
+                btn.classList.add('hidden');
+                document.getElementById('coins-earned').innerText = `+${bonus * 2} MONEDAS (¡DUPLICADO!)`;
+                window.systemToast("RECOMPENSA H5 ADS", `+${bonus} Monedas acreditadas`);
+            });
+        };
+
+        // Tienda 100% Gratuita (Todo se desbloquea con Monedas del Juego o Viendo Propagandas)
+        window.showShop = () => {
+            const hasPlasma = S.ownedSkins.includes('thick');
+            window.showModal(`
+                <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
+                    <h3 class="text-base font-black text-gold"><i class="fas fa-gift mr-1.5"></i>ARSENAL GRATUITO</h3>
+                    <span class="bg-gold/20 border border-gold text-gold text-xs font-mono font-bold px-2.5 py-0.5 rounded-full">
+                        <i class="fas fa-coins mr-1"></i>${S.coins}
+                    </span>
+                </div>
+
+                <div class="text-left space-y-2.5 mb-4">
+                    <!-- Item 1: Skin de Rayo Grueso -->
+                    <div class="bg-white/5 border border-cyber/30 rounded-xl p-3 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-bold text-cyber">LÁSER DE PLASMA PESADO</div>
+                            <div class="text-[9px] text-gray-400">Haces de energía de doble grosor en 3D/AR</div>
+                        </div>
+                        <button onclick="window.buySkin('thick', 300)" class="btn-neon py-1.5 px-3 text-[10px]">
+                            ${hasPlasma ? (S.prof.skin === 'thick' ? 'EQUIPADO' : 'USAR') : '300 <i class="fas fa-coins text-gold"></i>'}
+                        </button>
+                    </div>
+
+                    <!-- Item 2: Video Recompensado Gratis (Monetización Principal) -->
+                    <div class="bg-white/5 border border-neon/40 rounded-xl p-3 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-bold text-neon">VER PROPAGANDA (+100 MONEDAS)</div>
+                            <div class="text-[9px] text-gray-400">Mira un anuncio de Google H5 Ads y gana monedas</div>
+                        </div>
+                        <button onclick="window.triggerH5Ad('reward', () => window.claimFreeAdCoins())" class="btn-neon !border-neon !text-neon py-1.5 px-3 text-[10px]">
+                            <i class="fas fa-play-circle mr-1"></i> VER AD
+                        </button>
+                    </div>
+
+                    <!-- Item 3: Modo Multiplicador x2 Desbloqueable con Propagandas -->
+                    <div class="bg-gradient-to-r from-amber-500/20 to-purple-600/20 border border-gold rounded-xl p-3 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-black text-gold"><i class="fas fa-bolt mr-1"></i>MULTIPLICADOR PRO (GRATIS)</div>
+                            <div class="text-[9px] text-gray-300">Mira un anuncio patrocinado o usa 600 monedas para activar Monedas x2</div>
+                        </div>
+                        <button onclick="window.activateVipFreeWithAd()" class="btn-neon gold py-1.5 px-3 text-[10px]">
+                            ${S.vip ? 'ACTIVO' : '<i class="fas fa-tv mr-1"></i> ACTIVAR'}
+                        </button>
+                    </div>
+                </div>
+                <p class="text-[8px] text-gray-400 font-mono">100% Gratis — Financiado por anuncios de Google H5 Games</p>
+            `);
+        };
+
+        window.buySkin = (skinId, cost) => {
+            if (S.ownedSkins.includes(skinId)) {
+                S.prof.skin = S.prof.skin === skinId ? 'cyber' : skinId;
+                playSfx('click');
+                window.showShop();
+                return;
+            }
+            if (S.coins < cost) {
+                playSfx('error');
+                return window.systemToast("FONDOS INSUFICIENTES", "Mira un anuncio gratis para ganar +100 monedas");
+            }
+            S.coins -= cost;
+            S.ownedSkins.push(skinId);
+            S.prof.skin = skinId;
+            saveLocalEconomy();
+            playSfx('win');
+            window.showShop();
+        };
+
+        window.claimFreeAdCoins = () => {
+            S.coins += 100;
+            saveLocalEconomy();
+            playSfx('win');
+            if (document.getElementById('custom-modal').style.display === 'flex') {
+                window.showShop();
+            }
+            window.systemToast("BONO PUBLICITARIO", "+100 Monedas añadidas gracias al anuncio");
+        };
+
+        window.activateVipFreeWithAd = () => {
+            if (S.vip) return;
+            window.triggerH5Ad('reward', () => {
+                S.vip = true;
+                S.coins += 300;
+                saveLocalEconomy();
+                playSfx('win');
+                window.showShop();
+                window.systemToast("¡MULTIPLICADOR ACTIVO!", "Monedas x2 y +300 monedas gratis activadas");
+            });
+        };
+
+        // Tutorial Interactivo de Reglas (Actualizado con la Regla de Encapsulamiento 3D)
+        window.showTutorial = () => {
+            window.showModal(`
+                <h3 class="text-base font-black text-cyber mb-3"><i class="fas fa-graduation-cap mr-2"></i>MANUAL TÁCTICO</h3>
+                <div class="text-left text-xs space-y-2.5 text-gray-300 leading-relaxed">
+                    <div class="bg-white/5 p-2.5 rounded-lg border-l-2 border-cyber">
+                        <strong class="text-cyber block">1. LANZA EL DADO D20</strong>
+                        En tu turno, toca el dado central para obtener de 1 a 6 puntos de energía (líneas disponibles).
+                    </div>
+                    <div class="bg-white/5 p-2.5 rounded-lg border-l-2 border-neon">
+                        <strong class="text-neon block">2. LIBERTAD TRIDIMENSIONAL</strong>
+                        Conecta esferas en horizontal, vertical o diagonal para formar triángulos 3D (+1 Punto).
+                    </div>
+                    <div class="bg-white/5 p-2.5 rounded-lg border-l-2 border-hot">
+                        <strong class="text-hot block">3. REGLA DE ENCAPSULAMIENTO 3D</strong>
+                        Si cierras un triángulo o bóveda por fuera (usando tus paredes o las del rival), <strong>queda prohibido hacer más triángulos en su interior</strong> o atravesar paredes existentes.
+                    </div>
+                    <div class="bg-white/5 p-2.5 rounded-lg border-l-2 border-purple">
+                        <strong class="text-purple block">4. REALIDAD AUMENTADA MULTIJUGADOR</strong>
+                        Activa el modo AR para proyectar el holograma sobre tu mesa y jugar contra amigos o contra la IA.
+                    </div>
+                </div>
+            `);
+        };
+
+        // Ranking Global Híbrido (Usuarios reales de Firebase + Agentes de Temporada)
+        function mulberry32(a) {
+            return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        function getDailyBots() {
+            const todayStr = new Date().toDateString();
+            let seed = 0;
+            for (let i = 0; i < todayStr.length; i++) seed += todayStr.charCodeAt(i);
+            const rng = mulberry32(seed);
+            const bots = ["CyberKing", "NeonViper", "GlitchPro", "ArMaster", "PolyGon", "VoxelQueen", "MatrixNeo", "GridRunner"];
+            return bots.map(name => {
+                const score = Math.floor(rng() * 1400) + 950; 
+                const wins = Math.floor(score / 40);
+                const losses = Math.floor(rng() * 25);
+                return { displayName: name, points: score, wins, losses };
+            });
+        }
+
+        window.showLeaderboard = async () => {
+            window.showModal(`
+                <h3 class="text-base font-black text-gold mb-3 border-b border-gold/30 pb-2"><i class="fas fa-trophy mr-2"></i>${t('ranking')}</h3>
+                <div class="rank-header">
+                    <div style="width:25px">#</div>
+                    <div style="flex-grow:1">${t('agent')}</div>
+                    <div style="width:55px; text-align:center">V / D</div>
+                    <div style="width:55px; text-align:right">ELO</div>
+                </div>
+                <div id="lb-list" class="flex flex-col gap-1 mb-3 h-60 overflow-y-auto"></div>
+                <div class="bg-cyber/10 p-2.5 rounded-lg flex justify-between items-center text-xs border border-cyber/30">
+                    <span class="text-gray-300">TU RANGO ACTUAL:</span>
+                    <span class="text-neon font-mono font-bold">${S.points} ELO</span>
+                </div>
+            `);
+
+            let allPlayers = getDailyBots();
+            const myData = { 
+                displayName: S.user?.displayName || "TÚ (AGENTE)", 
+                points: S.points, 
+                wins: S.wins, 
+                losses: S.losses,
+                isMe: true 
+            };
+            allPlayers.push(myData);
+            allPlayers.sort((a, b) => b.points - a.points);
+            
+            const list = document.getElementById('lb-list');
+            if (!list) return;
+            list.innerHTML = allPlayers.map((u, i) => {
+                const rankClass = i === 0 ? "rank-1" : (i === 1 ? "rank-2" : (i === 2 ? "rank-3" : ""));
+                const name = u.displayName.split(' ')[0].toUpperCase();
+                return `
+                    <div class="rank-row ${rankClass} ${u.isMe ? 'is-me' : ''}">
+                        <div class="rank-pos">${i + 1}</div>
+                        <div class="rank-name ${u.isMe ? 'text-neon font-bold' : 'text-white/90'}">${name}</div>
+                        <div class="rank-stats"><span class="text-neon">${u.wins || 0}</span>/<span class="text-hot">${u.losses || 0}</span></div>
+                        <div class="rank-pts">${u.points}</div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        // ==========================================
+        // 12. CONTROLES GENERALES Y MODALES
+        // ==========================================
+        window.confirmLogout = () => { 
+            showConfirmModal("CERRAR SESIÓN", "¿Deseas desconectar tu perfil de Agente?", async () => { 
+                if (S.room && S.role === 'host' && db && !S.user?.isLocalFallback) {
+                    await window.update({ stat: 'end' }); 
+                }
+                if (auth) await signOut(auth).catch(()=>{});
+                location.reload(); 
+            }); 
+        };
+
+        window.confirmFinishGame = () => { 
+            showConfirmModal(t('surrender'), "¿Seguro que deseas abandonar esta batalla?", () => {
+                if (S.cpu || S.passPlay) window.goHome();
+                else window.update({ stat: 'end' });
+            }); 
+        };
+        
+        window.showModal = (htmlContent) => {
+            const modal = document.getElementById('custom-modal');
+            const body = document.getElementById('modal-body-content');
+            body.innerHTML = htmlContent;
+            modal.style.display = 'flex';
+        };
+
+        function showConfirmModal(title, message, onConfirm) {
+            window.showModal(`
+                <h3 class="text-base font-bold text-cyber mb-2">${title}</h3>
+                <p class="text-xs text-gray-300 mb-5">${message}</p>
+                <div class="flex justify-center gap-3">
+                    <button onclick="document.getElementById('custom-modal').style.display='none'" class="btn-neon danger py-2 px-5 text-xs">${t('cancel')}</button>
+                    <button id="modal-confirm-btn" class="btn-neon py-2 px-6 text-xs">CONFIRMAR</button>
+                </div>
+            `);
+            document.getElementById('modal-confirm-btn').onclick = () => { 
+                document.getElementById('custom-modal').style.display = 'none'; 
+                onConfirm(); 
+            };
+        }
+        
+        window.goHome = () => {
+            if (ren && ren.xr.isPresenting) { 
+                ren.xr.getSession().end().finally(() => performGoHome()); 
+            } else { 
+                performGoHome(); 
+            }
+        };
+
+        function performGoHome() {
+            window.stopCameraAR();
+            window.stopQRScanner();
+            cleanupPeer();
+            if (roomUnsub) { roomUnsub(); roomUnsub = null; }
+            if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+            if (matchmakingFallbackTimer) { clearTimeout(matchmakingFallbackTimer); matchmakingFallbackTimer = null; }
+            S.room = null; S.data = null; S.cpu = false; S.passPlay = false; isMatchmaking = false;
+            selPt = null;
+            if (group) {
+                disposeHierarchy(group);
+                while (group.children.length > 0) group.remove(group.children[0]); 
+            }
+            arHit = null; 
+            if (reticle) reticle.visible = false;
+            document.body.classList.remove('ar-active', 'ar-camera-mode');
+            document.getElementById('size-slider-container').style.display = 'none';
+            nav('s-menu');
+        }
+        
+        window.rematchOrMenu = () => { window.goHome(); };
+
+        window.setProf = (t, v, el) => {
+            playSfx('click');
+            S.prof[t] = v; 
+            const parent = el.parentNode; 
+            Array.from(parent.children).forEach(c => { 
+                c.classList.remove('active'); 
+                if (t === 'c') { c.style.boxShadow = 'none'; c.style.borderColor = '#333'; } 
+                else { c.style.color = '#555'; c.style.textShadow = 'none'; } 
+            });
+            el.classList.add('active'); 
+            if (t === 'c') { 
+                el.style.boxShadow = `0 0 15px ${v}`; 
+                el.style.borderColor = '#fff'; 
+                const i = document.querySelector('#i-pick .opt-i.active'); 
+                if (i) { i.style.color = v; i.style.textShadow = `0 0 12px ${v}`; } 
+            } else { 
+                const col = S.prof.c; 
+                el.style.color = col; 
+                el.style.textShadow = `0 0 12px ${col}`; 
+            }
+        };
+
+        window.showJoin = () => {
+            const box = document.getElementById('join-box');
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) document.getElementById('code-in').focus();
+        };
+
+        function showLoad(show, txt) { 
+            const l = document.getElementById('mini-loader'); 
+            if (l) { 
+                if (show) { l.classList.remove('hidden'); document.getElementById('mini-load-txt').innerText = txt; } 
+                else l.classList.add('hidden'); 
+            } 
+        }
+        
+        let gameToastTimer = null;
+        window.gameToast = (t, m) => {
+            const e = document.getElementById('game-toast');
+            if (!e) return;
+            document.getElementById('t-head').innerText = t + ":"; 
+            document.getElementById('t-body').innerText = m;
+            e.classList.add('show'); 
+            if (gameToastTimer) clearTimeout(gameToastTimer);
+            gameToastTimer = setTimeout(() => e.classList.remove('show'), 3200);
+        };
+        
+        let sysToastTimer = null;
+        window.systemToast = (t, m) => {
+            const e = document.getElementById('toast');
+            if (!e) return;
+            document.getElementById('s-head').innerText = t; 
+            document.getElementById('s-body').innerText = m;
+            e.classList.add('show'); 
+            if (sysToastTimer) clearTimeout(sysToastTimer);
+            sysToastTimer = setTimeout(() => e.classList.remove('show'), 3200);
+        };
+    </script>
+</body>
+</html>
