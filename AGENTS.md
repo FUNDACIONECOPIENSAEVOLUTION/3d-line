@@ -21,3 +21,13 @@ Ejecutar `node --test tests/static.test.mjs` antes de publicar. Estas pruebas no
 
 ## AWS
 Se requiere conocer el tipo de experiencia AWS, región del proyecto/cuenta y nombre del perfil antes de instalar las reglas oficiales en este AGENTS.md. Conservar el contenido existente. No agregar una segunda sección de reglas AWS: usar marcadores idempotentes. No desplegar recursos ni cargar costos sin consentimiento.
+
+
+## REGLA ECONÓMICA GLOBAL DEL USUARIO — prioridad permanente (2026-10-17)
+- El propietario no dispone actualmente de presupuesto. **Presupuesto por defecto: 0 COP / 0 USD** para desarrollo, alojamientos, credenciales, dominios, servidores, APIs y pruebas. No suponer tarjeta de crédito disponible.
+- Objetivo estratégico tras terminar cada proyecto: ayudar a conseguir recursos reales mediante monetización legítima, ventas, convocatorias, alianzas y fondos; nunca declarar ingresos o postulaciones conseguidas sin evidencia.
+- Priorizar servicios **oficiales** con planes gratuitos verificables (GitHub Pages/Actions, Cloudflare Pages Free, Firebase Spark), comparando límites, requisitos de cuenta y cuotas antes de recomendar. Nada de pruebas gratis que requieran tarjeta o de configurar Blaze/Pay-as-you-go sin autorización explícita y revisión del riesgo de cobros.
+- Mantener aplicaciones utilizables sin servidor de pago; activar OAuth protegido con BFF y secretos en el servidor solo cuando haya plataforma gratuita apropiada y se pruebe su configuración.
+- No solicitar ni publicar contraseñas, tokens, claves privadas, cookies, credenciales de OAuth, archivos .env o Firebase Admin. Los valores de configuración **web Firebase** no son contraseñas: proteger el acceso con reglas de Firestore/Realtime Database, IAM, restricciones de API, App Check cuando proceda y límites de uso.
+- No romper modos 3D/AR ni inicio de sesión de un juego por trasladar arquitectura de otro. Hacer cambios reversibles y mantener cada repositorio/recursos separados.
+- Registrar instrucciones, costos, pruebas reales, despliegues y restricciones en AGENTS.md y documentos de traspaso para que otras IAs o próximas conversaciones no tengan que releer todo.
