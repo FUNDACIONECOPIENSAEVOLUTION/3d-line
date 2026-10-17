@@ -39,3 +39,12 @@ Cloudflare Pages puede vincular el repositorio con GitHub y actualizar automáti
 
 ## DECISIÓN OPERATIVA ACTIVA: coste cero y cuotas de seguridad
 Antes de activar Cloudflare, App Check, bases de datos, facturación o lanzar nuevas versiones de producción, leer `docs/PLAN_SEGURIDAD_0_COP.md`. La decisión vigente es: proteger ahora cuentas/código y reglas de acceso necesarias; reservar recursos y despliegues de nube para MVP y releases significativos; no habilitar Blaze ni servicios con tarjeta sin autorización explícita. El siguiente paso del usuario es GitHub passkey/2FA, luego comprobar Spark Firebase sin cambiar servicios.
+
+
+## Separación de cuentas Google y proyectos Firebase (decisión del propietario, 2026-10-17)
+- 3 LINE-AR corresponde a la cuenta de Google **personal del desarrollador**. Su proyecto Firebase existente se identifica como `d-line-g` (en consola puede mostrarse el nombre `3d-line-g`), plan Spark. No asumir que está bajo la cuenta Google de la Fundación.
+- ECOAJEDREZ 3D/AR corresponde a la cuenta de Google **institucional de la Fundación**. Debe tener identidad y datos separados de `d-line-g`; no enlazar ECOAJEDREZ al Firebase personal ni mezclar UID, progreso o reglas.
+- En la cuenta de la Fundación solo se vio un proyecto de ejemplo de Firebase; **NO reutilizarlo automáticamente**. No crear un nuevo proyecto hasta que el juego lo necesite realmente y se compruebe el plan gratuito.
+- El código BFF Google de ECOAJEDREZ está preparado, pero sin servidor Cloudflare/credenciales desplegados. Mantener invitado y no prometer autenticación Google operativa.
+- No escribir correos de titulares, contraseñas, credenciales, claves privadas o tokens en archivos públicos, commits, logs ni documentación. Si se requiere comprobar propiedad o permisos, hacerlo en cada consola con el titular.
+- Presupuesto máximo actual 0 COP / 0 USD: no crear servicios, activar facturación ni pasar a Blaze sin aprobación expresa. Realizar la configuración de seguridad paso por paso.
