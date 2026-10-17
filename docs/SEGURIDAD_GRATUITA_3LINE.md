@@ -22,3 +22,19 @@
 - Los juegos `3d-line` y `Ecoajedrez-AR` deben tener archivos, datos de partidas y permisos separados incluso si comparten cuenta de propietario.
 
 **No compartas contraseñas, claves, accesos de administrador, tokens, códigos 2FA ni credenciales OAuth por chat.**
+
+
+## Cloudflare Pages Free: configuración preparada para 3 LINE-AR
+El repositorio incorpora `package.json`, `scripts/build-static.mjs` y `_headers`; no cambia el juego en GitHub Pages. Para publicarlo también en Cloudflare, entra a https://dash.cloudflare.com/ → Workers & Pages → Create application → Pages → Import an existing Git repository.
+- Autoriza acceso a GitHub **únicamente** al repositorio `FUNDACIONECOPIENSAEVOLUTION/3d-line` cuando Cloudflare lo permita.
+- Production branch: `main`.
+- Root directory: raíz del repositorio (vacío/default).
+- Build command: `npm run build`.
+- Build output directory: `dist`.
+- Plan: Free. Usa el subdominio `*.pages.dev` asignado, no compres dominio.
+- Después de desplegar: verifica visualmente el juego en 3D/AR, QR, tutorial y modos Ascenso y Galáctico. No desactives GitHub Pages hasta que todo funcione.
+- Cuando el dominio *.pages.dev esté definido, si Google requiere acceso directo Firebase, agrega **el dominio exacto** a Authentication → Settings → Authorized domains en `d-line-g`; nunca usar * ni abrir todos los dominios.
+- Cambiar Firebase a BFF en este juego requerirá una migración separada y pruebas de login; no simplemente copiar `auth.js` del otro juego.
+- Cuidar el presupuesto: Cloudflare Free y Firebase Spark; no vincular tarjeta ni usar Blaze.
+
+**Atención comercial:** GitHub Pages no permite usar su hosting gratuito como plataforma principal de negocio online/SaaS; conservarlo como prototipo y usar hosting con condiciones comerciales apropiadas cuando los juegos empiecen a generar recursos. Consulta https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits .
