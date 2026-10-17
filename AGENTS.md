@@ -31,3 +31,8 @@ Se requiere conocer el tipo de experiencia AWS, región del proyecto/cuenta y no
 - No solicitar ni publicar contraseñas, tokens, claves privadas, cookies, credenciales de OAuth, archivos .env o Firebase Admin. Los valores de configuración **web Firebase** no son contraseñas: proteger el acceso con reglas de Firestore/Realtime Database, IAM, restricciones de API, App Check cuando proceda y límites de uso.
 - No romper modos 3D/AR ni inicio de sesión de un juego por trasladar arquitectura de otro. Hacer cambios reversibles y mantener cada repositorio/recursos separados.
 - Registrar instrucciones, costos, pruebas reales, despliegues y restricciones en AGENTS.md y documentos de traspaso para que otras IAs o próximas conversaciones no tengan que releer todo.
+
+
+## Hosting comercial: condición oficial que no debemos olvidar
+GitHub Pages es apropiado como **demostración y prueba**. Según los límites oficiales de GitHub, no debe usarse como hosting gratuito principal de un negocio online o software comercial SaaS. Para lanzamiento monetizado, evaluar Cloudflare Pages Free u otro servicio oficial cuyas condiciones permitan la actividad, sin inventar costes ni desplegar servicios cobrables.
+Cloudflare Pages puede vincular el repositorio con GitHub y actualizar automáticamente; su URL gratuita es *.pages.dev. Verificar límites en https://developers.cloudflare.com/pages/platform/limits/ .
