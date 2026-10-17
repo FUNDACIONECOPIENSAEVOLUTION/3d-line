@@ -1,0 +1,33 @@
+name: 3 LINE-AR - security and regression
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: 3line-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check app syntax
+        run: |
+          node --check game.js
+          node --check auth.js
+          node --check scripts/security-audit.mjs
+      - name: Scan for private credentials
+        run: node scripts/security-audit.mjs
+      - name: Regression tests
+        run: node --test tests/static.test.mjs
