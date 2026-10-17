@@ -29,5 +29,9 @@ jobs:
           node --check scripts/security-audit.mjs
       - name: Scan for private credentials
         run: node scripts/security-audit.mjs
+      - name: Cloudflare public-only build
+        run: |
+          node scripts/build-static.mjs
+          node scripts/security-audit.mjs
       - name: Regression tests
         run: node --test tests/static.test.mjs
