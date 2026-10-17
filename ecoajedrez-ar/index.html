@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08131c"><title>ECOAJEDREZ 3D · AR</title>
+<style>
+:root{color-scheme:dark;--b:#08131c;--p:#102330;--s:#315064;--g:#91f2c7;--a:#fbd38a;--t:#f0f8fb;--d:#a8c1c9}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--b);color:var(--t);font-family:system-ui,'Segoe UI',sans-serif}
+button,select,input{font:inherit;color:inherit;background:#153143;border:1px solid #456273;border-radius:10px;padding:10px}
+button{cursor:pointer}button:hover{border-color:var(--g)}button:disabled{opacity:.45;cursor:not-allowed}
+main{display:grid;grid-template-columns:305px 1fr;width:100%;height:100dvh;min-height:380px}
+aside{background:linear-gradient(160deg,#12303e,#08131c);border-right:1px solid var(--s);padding:22px;overflow:auto;z-index:3}
+.head{display:flex;gap:12px;align-items:center}.chessIcon{font-size:27px;background:#205b50;width:48px;height:48px;border-radius:14px;display:grid;place-items:center}
+h1{font-size:22px;letter-spacing:.6px;margin:0}h2{font-size:12px;letter-spacing:1.2px;color:var(--a);text-transform:uppercase;margin:0 0 10px}
+.desc,.help{font-size:12px;color:var(--d);line-height:1.55}.ver{color:var(--g);letter-spacing:1.6px;font-size:11px;margin-top:3px}
+section{border-top:1px solid #25485b;padding-top:15px;margin-top:16px}
+label{display:block;font-size:12px;color:#c0d1d7;margin:10px 0 5px}
+select,input{width:100%}.twocol{display:flex;gap:7px}.twocol>*{flex:1;min-width:0}
+.accent{background:linear-gradient(100deg,#3cbb99,#acf6d2);color:#073328;font-weight:800;border-color:#b5fbe2}.status{background:#153946;border:1px solid #3f797b;padding:11px;border-radius:11px;font-size:13px;font-weight:700;line-height:1.4}
+#history{font-size:12px;color:#e3f0f4;line-height:1.5;max-height:85px;overflow:auto;min-height:24px}
+#scene{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#203d50,#06111a 78%)}
+#render{display:block;width:100%;height:100%;touch-action:none}
+.banner{position:absolute;left:20px;top:18px;pointer-events:none;text-shadow:0 2px 16px #000}.banner strong{letter-spacing:2px;font-size:clamp(17px,2.6vw,30px)}.banner strong span{color:#ffd58a}
+.banner div{font-size:12px;line-height:1.7;color:#bce0dd}
+.bottom{position:absolute;bottom:18px;left:18px;right:18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bottom button{font-size:13px;background:#193e4cd9;backdrop-filter:blur(10px)}
+#arButtonHolder button{background:#287d68!important;border-color:#a9ffda!important;color:#fff!important;font-size:13px!important;font-weight:800!important;border-radius:10px!important;padding:11px 16px!important;position:static!important;bottom:auto!important;left:auto!important;max-width:none!important}
+#arMessage{position:absolute;top:85px;left:50%;transform:translateX(-50%);width:min(95%,430px);padding:12px;text-align:center;border-radius:13px;background:#102c37e8;border:1px solid #6ad3b6;display:none;z-index:5;font-size:13px;font-weight:700;pointer-events:none}
+#toast{position:absolute;top:85px;right:18px;max-width:290px;background:#102c37;border:1px solid #72d2bb;padding:13px;border-radius:12px;display:none;z-index:4;font-size:13px}
+kbd{background:#294454;border:1px solid #52798b;padding:1px 5px;border-radius:5px}
+@media(max-width:720px){html,body{overflow:auto}main{display:flex;flex-direction:column;height:100dvh}aside{order:2;height:42%;border-right:0;border-top:1px solid var(--s);padding:13px 16px}#scene{order:1;height:58%;flex-shrink:0}.head{align-items:center}h1{font-size:19px}section{margin-top:12px;padding-top:12px}.banner{top:10px;left:12px}.banner div{font-size:10px}.bottom{left:9px;right:9px;bottom:9px}.bottom button{padding:8px}#arButtonHolder button{padding:8px 10px!important}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head>
+<body>
+<main>
+<aside>
+<div class="head"><div class="chessIcon">♞</div><div><h1>ECOAJEDREZ</h1><div class="ver">3D • AR | v0.2.0-alpha</div></div></div>
+<p class="desc">Una arena de ajedrez viva. Empieza en 3D; pasa a realidad aumentada cuando tu dispositivo sea compatible.</p>
+<section><h2>Configuración de partida</h2>
+<label for="lang">Idioma · Language · 语言</label><select id="lang"><option value="es">Español</option><option value="en">English</option><option value="zh">简体中文</option></select>
+<label for="mode" data-i18n="mode">Modo de juego</label><select id="mode"><option value="bot" data-i18n="bot">Contra computadora</option><option value="local" data-i18n="local">Dos jugadores locales</option></select>
+<label for="difficulty" data-i18n="difficulty">Dificultad de demostración</label><select id="difficulty"><option value="easy" data-i18n="easy">Principiante</option><option value="medium" data-i18n="medium">Intermedio</option><option value="advanced" data-i18n="advanced">Avanzado (básico)</option></select>
+<label for="theme" data-i18n="scenario">Escenario 3D</label><select id="theme"><option value="classic" data-i18n="classic">Clásico de obsidiana</option><option value="jungle" data-i18n="jungle">Selva encantada</option></select>
+</section>
+<section><h2 data-i18n="game">Partida</h2><div class="status" id="status">Preparando tablero…</div>
+<div class="twocol" style="margin-top:10px"><button id="reset" class="accent" data-i18n="new">Nueva partida</button><button id="undo" data-i18n="undo">Deshacer</button></div>
+<label for="moveInput" data-i18n="keyboard">Movimiento por teclado (e2e4)</label>
+<div class="twocol"><input id="moveInput" maxlength="5" placeholder="e2e4" autocomplete="off" spellcheck="false"><button id="playMove" data-i18n="move">Mover</button></div>
+<label data-i18n="historyTitle">Movimientos</label><div id="history">—</div>
+</section>
+<section><h2 data-i18n="about">Cómo jugar</h2><div class="help" id="help">Toca una figura y una casilla iluminada. Arrastra para girar el tablero. En Android compatible, pulsa AR, apunta a una mesa y toca para fijarlo.</div>
+<div class="help" style="margin-top:12px"><strong>AR experimental:</strong> necesita HTTPS, WebXR immersive-ar y detección de superficies. La partida remota y los títulos Elo/FIDE todavía no están implementados.</div></section>
+</aside>
+<div id="scene"><canvas id="render" aria-label="Tablero 3D interactivo"></canvas>
+<div class="banner"><strong>ECO<span>AJEDREZ</span> · 3D AR</strong><div>REALIDAD AUMENTADA · FANTASÍA · ESTRATEGIA</div></div>
+<div id="arMessage" role="status">Busca una superficie y toca para colocar el tablero.</div><div id="toast" role="status"></div>
+<div class="bottom"><span id="arButtonHolder"></span><button id="center" data-i18n="center">Centrar cámara</button><button id="rotate" data-i18n="rotate">Girar vista</button><span class="help">3D / WebXR</span></div>
+</div>
+</main>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
