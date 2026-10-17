@@ -1,0 +1,23 @@
+# Información privada y entornos locales
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.p8
+serviceAccount*.json
+firebase-adminsdk*.json
+credentials.json
+secrets.json
+private-key.json
+*.keystore
+*.jks
+google-services.private.json
+node_modules/
+dist/
+.wrangler/
+.firebase/
+.DS_Store
